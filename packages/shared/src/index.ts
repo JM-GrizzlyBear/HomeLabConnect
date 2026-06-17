@@ -1,6 +1,7 @@
 export * from "./contracts/enums";
 export * from "./contracts/primitives";
 export * from "./contracts/pagination";
+export * from "./contracts/role";
 export * from "./contracts/auth";
 export * from "./contracts/patient";
 export * from "./contracts/med-team";

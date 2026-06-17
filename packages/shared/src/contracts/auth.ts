@@ -5,7 +5,8 @@ import { isoDateTime, phone, uuid } from "./primitives";
 export const RegisterInputSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  role: RoleSchema,
+  // Role is always "patient" for self-registration. Admins create all other roles.
+  role: RoleSchema.optional().default("patient"),
   firstName: z.string().min(1).max(80),
   lastName: z.string().min(1).max(80),
   middleName: z.string().max(80).optional().nullable(),
