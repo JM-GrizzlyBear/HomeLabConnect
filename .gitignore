@@ -9,6 +9,9 @@ build/
 out/
 *.tsbuildinfo
 
+# Turbo
+.turbo
+
 # --- Env files (never commit secrets) ---
 .env
 .env.local

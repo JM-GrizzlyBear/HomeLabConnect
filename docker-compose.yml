@@ -30,7 +30,9 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL}
+      # Inside the docker network, Postgres is service "db" on internal port 5432
+      # (independent of the host-side POSTGRES_PORT mapping).
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
       API_PORT: ${API_PORT}
