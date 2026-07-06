@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import * as schema from "./schema.js";
+import * as schema from "./schema/index.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, "../../../../../.env") });
 
@@ -15,7 +15,7 @@ import {
   patients,
   roles,
   users,
-} from "./schema.js";
+} from "./schema/index.js";
 import { SEED_PATIENTS } from "./seeds/patient.seeds.js";
 import { SEED_ROLES } from "./seeds/role.seeds.js";
 import { SEED_USERS } from "./seeds/user.seeds.js";

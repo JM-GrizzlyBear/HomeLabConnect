@@ -7,10 +7,10 @@ config({ path: resolve(process.cwd(), "../../.env") });
 
 /**
  * Drizzle Kit config — used by `pnpm db:generate` to produce SQL
- * migrations from the schema in src/infrastructure/db/schema.ts.
+ * migrations from the schema in src/infrastructure/db/schema/index.ts.
  */
 export default defineConfig({
-  schema: "./src/infrastructure/db/schema.ts",
+  schema: "./src/infrastructure/db/schema/index.ts",
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
