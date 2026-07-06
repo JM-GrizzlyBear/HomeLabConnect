@@ -1,5 +1,7 @@
 import {
   boolean,
+  date,
+  doublePrecision,
   foreignKey,
   pgEnum,
   pgTable,
@@ -20,6 +22,13 @@ export const userRoleEnum = pgEnum("user_role", [
   "doctor",
   "support",
   "admin",
+]);
+
+export const genderEnum = pgEnum("gender", [
+  "male",
+  "female",
+  "other",
+  "prefer_not_to_say",
 ]);
 
 export const roles = pgTable("roles", {
@@ -73,3 +82,39 @@ export const users = pgTable(
 
 export type UserRow = typeof users.$inferSelect;
 export type NewUserRow = typeof users.$inferInsert;
+
+export const patients = pgTable(
+  "patients",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().unique("patients_user_id_unique"),
+    dateOfBirth: date("date_of_birth", { mode: "string" }),
+    gender: genderEnum("gender"),
+    address1: varchar("address_1", { length: 255 }),
+    address2: varchar("address_2", { length: 255 }),
+    city: varchar("city", { length: 120 }),
+    province: varchar("province", { length: 120 }),
+    postalCode: varchar("postal_code", { length: 20 }),
+    latitude: doublePrecision("latitude"),
+    longitude: doublePrecision("longitude"),
+    emergencyContactName: varchar("emergency_contact_name", { length: 160 }),
+    emergencyContactPhone: varchar("emergency_contact_phone", { length: 40 }),
+    medicalNotes: text("medical_notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    userFk: foreignKey({
+      columns: [t.userId],
+      foreignColumns: [users.id],
+      name: "patients_user_id_users_id_fk",
+    }),
+  }),
+);
+
+export type PatientRow = typeof patients.$inferSelect;
+export type NewPatientRow = typeof patients.$inferInsert;
