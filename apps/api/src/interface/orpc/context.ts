@@ -1,9 +1,11 @@
 import type { Role } from "@homelabconnect/shared";
+import type { CreatePatientProfileUseCase } from "../../application/use-cases/create-patient-profile";
 import type { CreateRoleUseCase } from "../../application/use-cases/create-role";
 import type { GetMeUseCase } from "../../application/use-cases/get-me";
 import type { ListRolesUseCase } from "../../application/use-cases/list-roles";
 import type { LoginUserUseCase } from "../../application/use-cases/login-user";
 import type { RegisterUserUseCase } from "../../application/use-cases/register-user";
+import type { UpdatePatientProfileUseCase } from "../../application/use-cases/update-patient-profile";
 import type { UpdateRoleUseCase } from "../../application/use-cases/update-role";
 import type { TokenService } from "../../application/ports/token-service";
 
@@ -19,6 +21,8 @@ export interface UseCases {
   listRoles: ListRolesUseCase;
   createRole: CreateRoleUseCase;
   updateRole: UpdateRoleUseCase;
+  createPatientProfile: CreatePatientProfileUseCase;
+  updatePatientProfile: UpdatePatientProfileUseCase;
 }
 
 export interface Context {
