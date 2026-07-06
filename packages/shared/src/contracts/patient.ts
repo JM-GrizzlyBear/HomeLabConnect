@@ -22,7 +22,7 @@ export const PatientSchema = z.object({
 });
 export type Patient = z.infer<typeof PatientSchema>;
 
-export const UpsertPatientProfileInputSchema = z.object({
+const PatientProfileFieldsSchema = z.object({
   dateOfBirth: isoDate.optional().nullable(),
   gender: GenderSchema.optional().nullable(),
   address1: z.string().max(255).optional().nullable(),
@@ -36,6 +36,19 @@ export const UpsertPatientProfileInputSchema = z.object({
   emergencyContactPhone: phone.optional().nullable(),
   medicalNotes: z.string().max(5000).optional().nullable(),
 });
+
+export const CreatePatientProfileInputSchema = PatientProfileFieldsSchema;
+export type CreatePatientProfileInput = z.infer<
+  typeof CreatePatientProfileInputSchema
+>;
+
+export const UpdatePatientProfileInputSchema = PatientProfileFieldsSchema;
+export type UpdatePatientProfileInput = z.infer<
+  typeof UpdatePatientProfileInputSchema
+>;
+
+// Backward compatibility if old code still imports Upsert*
+export const UpsertPatientProfileInputSchema = PatientProfileFieldsSchema;
 export type UpsertPatientProfileInput = z.infer<
   typeof UpsertPatientProfileInputSchema
 >;
