@@ -15,6 +15,13 @@
       "when": 1781944867521,
       "tag": "0001_outgoing_namor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783341439104,
+      "tag": "0002_romantic_mindworm",
+      "breakpoints": true
     }
   ]
 }
