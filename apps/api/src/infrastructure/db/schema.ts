@@ -6,6 +6,7 @@ import {
   pgEnum,
   pgTable,
   text,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -15,6 +16,16 @@ import {
 // Implemented so far: `roles`, `users`. Add patients, appointments,
 // chat, etc. as you build each feature, then run `pnpm db:generate &&
 // pnpm db:migrate`.
+
+export const dayOfWeekEnum = pgEnum("day_of_week", [
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat",
+  "sun",
+]);
 
 export const userRoleEnum = pgEnum("user_role", [
   "patient",
@@ -118,3 +129,67 @@ export const patients = pgTable(
 
 export type PatientRow = typeof patients.$inferSelect;
 export type NewPatientRow = typeof patients.$inferInsert;
+
+// Add table: med_team_members
+export const medTeamMembers = pgTable(
+  "med_team_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().unique("med_team_members_user_id_unique"),
+    licenseNumber: varchar("license_number", { length: 120 }),
+    specialization: varchar("specialization", { length: 160 }),
+    serviceAreaCity: varchar("service_area_city", { length: 120 }),
+    isAvailable: boolean("is_available").notNull().default(true),
+    rating: doublePrecision("rating"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    userFk: foreignKey({
+      columns: [t.userId],
+      foreignColumns: [users.id],
+      name: "med_team_members_user_id_users_id_fk",
+    }),
+  }),
+);
+
+export type MedTeamMemberRow = typeof medTeamMembers.$inferSelect;
+export type NewMedTeamMemberRow = typeof medTeamMembers.$inferInsert;
+
+// Add table: med_team_shifts
+export const medTeamShifts = pgTable(
+  "med_team_shifts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    medTeamMemberId: uuid("med_team_member_id").notNull(),
+    dayOfWeek: dayOfWeekEnum("day_of_week").notNull(),
+    shiftStart: time("shift_start").notNull(), // e.g. "08:00:00"
+    shiftEnd: time("shift_end").notNull(), // e.g. "17:00:00"
+    isActive: boolean("is_active").notNull().default(true),
+    effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+    effectiveUntil: date("effective_until", { mode: "string" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    memberFk: foreignKey({
+      columns: [t.medTeamMemberId],
+      foreignColumns: [medTeamMembers.id],
+      name: "med_team_shifts_member_id_med_team_members_id_fk",
+    }),
+    uniqSchedule: uniqueIndex(
+      "med_team_shifts_member_day_start_from_unique",
+    ).on(t.medTeamMemberId, t.dayOfWeek, t.shiftStart, t.effectiveFrom),
+  }),
+);
+
+export type MedTeamShiftRow = typeof medTeamShifts.$inferSelect;
+export type NewMedTeamShiftRow = typeof medTeamShifts.$inferInsert;
