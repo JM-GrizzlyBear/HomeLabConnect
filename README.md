@@ -108,20 +108,20 @@ docker compose ps
 ### 5) Generate and apply migrations
 
 ```bash
-turbo run --filter @homelabconnect/api db:generate
-turbo run --filter @homelabconnect/api db:migrate
+turbo run db:generate --filter=@homelabconnect/api
+turbo run db:migrate --filter=@homelabconnect/api
 ```
 
 ### 6) Seed sample data
 
 ```bash
-turbo run --filter @homelabconnect/api db:seed
+turbo run db:seed --filter=@homelabconnect/api
 ```
 
 ### 7) Run the API
 
 ```bash
-turbo run --filter @homelabconnect/api dev
+turbo run dev --filter=@homelabconnect/api
 ```
 
 Expected API URL:
@@ -205,31 +205,31 @@ support@homelabconnect.local / support123
 Run API dev server:
 
 ```bash
-turbo run --filter @homelabconnect/api dev
+turbo run dev --filter=@homelabconnect/api
 ```
 
 Typecheck API:
 
 ```bash
-turbo run --filter @homelabconnect/api typecheck
+turbo run typecheck --filter=@homelabconnect/api
 ```
 
 Generate migration:
 
 ```bash
-turbo run --filter @homelabconnect/api db:generate
+turbo run db:generate --filter=@homelabconnect/api
 ```
 
 Migrate DB:
 
 ```bash
-turbo run --filter @homelabconnect/api db:migrate
+turbo run db:migrate --filter=@homelabconnect/api
 ```
 
 Seed DB:
 
 ```bash
-turbo run --filter @homelabconnect/api db:seed
+turbo run db:seed --filter=@homelabconnect/api
 ```
 
 Start DB only:
@@ -271,3 +271,59 @@ CORS errors:
 Docker full-stack startup fails:
 
 - Client and web app are not implemented yet, so API + DB local workflow is currently the supported path.
+
+---
+
+## Database and seed coverage
+
+The API uses Drizzle ORM with PostgreSQL. The schema now covers the complete appointment workflow:
+
+| Area                  | Tables                                                                                                                              |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Identity and profiles | `roles`, `users`, `patients`, `doctors`, `med_team_members`, `support_agents`, `admins`                                             |
+| Availability          | `med_team_shifts`, `med_team_shift_overrides`, `support_shifts`, `support_shift_overrides`                                          |
+| Laboratory workflow   | `lab_procedures`, `appointments`, `appointment_procedures`, `appointment_assignments`, `reschedule_proposals`, `appointment_events` |
+| Chat and delivery     | `chat_conversations`, `chat_participants`, `chat_messages`, `notifications`                                                         |
+| Platform and security | `sessions`, `audit_logs`, `permissions`, `role_permissions`, `user_permission_overrides`                                            |
+
+Procedure prices are stored as integer minor units. Date-times are timezone-aware; recurring shift times are local `time` values and currently assume the service area's timezone.
+
+### Recommended database workflow
+
+Run commands from the repository root:
+
+```bash
+docker compose up -d db
+turbo run db:generate --filter=@homelabconnect/api
+turbo run db:migrate --filter=@homelabconnect/api
+turbo run db:seed --filter=@homelabconnect/api
+turbo run typecheck --filter=@homelabconnect/api
+```
+
+`db:generate` compares the Drizzle schema with migration metadata and creates a SQL migration. `db:migrate` applies pending migrations. `db:seed` inserts demo records in dependency order and is designed to be rerunnable.
+
+The seed order is:
+
+```text
+roles -> users -> profiles -> schedules -> lab procedures -> appointments ->
+appointment history -> chat -> notifications/sessions/audit logs -> permissions
+```
+
+The fixture data includes doctor, support, and admin profiles; recurring and one-off schedules; blood, urine, and X-ray procedures; an accepted appointment with an assignment and event history; a support chat; a notification; a demo session; an audit record; and role/user permission examples.
+
+To inspect the data interactively:
+
+```bash
+turbo run db:studio --filter=@homelabconnect/api
+```
+
+To reset the local database and rebuild it from migrations and seeds:
+
+```bash
+docker compose down -v
+docker compose up -d db
+turbo run db:migrate --filter=@homelabconnect/api
+turbo run db:seed --filter=@homelabconnect/api
+```
+
+Appointment, chat, and notification persistence is ready for application services. Their CRUD and workflow routers are the next API layer to implement.
