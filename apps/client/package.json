@@ -1,0 +1,36 @@
+{
+  "name": "@homelabconnect/client",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "client": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@homelabconnect/shared": "workspace:*",
+    "@orpc/client": "1.14.4",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "jose": "5.9.6",
+    "lucide-react": "0.446.0",
+    "next": "15.0.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "server-only": "0.0.1",
+    "tailwind-merge": "2.5.4"
+  },
+  "devDependencies": {
+    "@homelabconnect/api": "workspace:*",
+    "@orpc/server": "1.14.4",
+    "@types/node": "20.16.11",
+    "@types/react": "18.3.11",
+    "@types/react-dom": "18.3.1",
+    "autoprefixer": "10.4.20",
+    "postcss": "8.4.47",
+    "tailwindcss": "3.4.13",
+    "typescript": "5.6.3"
+  }
+}
