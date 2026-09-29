@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findMenuLink, type NavEntry, visibleMenu } from "./menu";
+import { findMenuLink, type NavEntry, visibleMenu } from "../../src/navigation/menu";
 
 const labels = (entries: NavEntry[]) =>
   entries.map((entry) =>

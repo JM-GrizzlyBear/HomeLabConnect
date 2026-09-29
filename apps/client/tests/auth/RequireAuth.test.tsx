@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { mockApi, renderApp, sampleUser } from "../test/renderApp";
+import { mockApi, renderApp, sampleUser } from "../support/renderApp";
 
 describe("protected pages", () => {
   beforeEach(() => localStorage.clear());

@@ -1,6 +1,6 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../test/testApp.js";
+import { buildTestApp } from "../../support/testApp.js";
 
 const registration = {
   email: "juan@example.com",

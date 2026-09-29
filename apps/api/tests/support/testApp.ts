@@ -1,17 +1,17 @@
 // Builds the real Express app on in-memory fakes, wired the same way as main.ts.
-import { AuthenticateRequest } from "../application/use-cases/authenticateRequest.js";
-import { CheckSystemHealth } from "../application/use-cases/checkSystemHealth.js";
-import { GetCurrentUser } from "../application/use-cases/getCurrentUser.js";
-import { Login } from "../application/use-cases/login.js";
-import { Logout } from "../application/use-cases/logout.js";
-import { RegisterPatient } from "../application/use-cases/registerPatient.js";
-import { createApp } from "../infrastructure/http/app.js";
-import { GetCurrentUserController } from "../interface/http/controllers/getCurrentUserController.js";
-import { HealthController } from "../interface/http/controllers/healthController.js";
-import { LoginController } from "../interface/http/controllers/loginController.js";
-import { LogoutController } from "../interface/http/controllers/logoutController.js";
-import { RegisterPatientController } from "../interface/http/controllers/registerPatientController.js";
-import { Authenticate } from "../interface/http/middleware/authenticate.js";
+import { AuthenticateRequest } from "../../src/application/use-cases/authenticateRequest.js";
+import { CheckSystemHealth } from "../../src/application/use-cases/checkSystemHealth.js";
+import { GetCurrentUser } from "../../src/application/use-cases/getCurrentUser.js";
+import { Login } from "../../src/application/use-cases/login.js";
+import { Logout } from "../../src/application/use-cases/logout.js";
+import { RegisterPatient } from "../../src/application/use-cases/registerPatient.js";
+import { createApp } from "../../src/infrastructure/http/app.js";
+import { GetCurrentUserController } from "../../src/interface/http/controllers/getCurrentUserController.js";
+import { HealthController } from "../../src/interface/http/controllers/healthController.js";
+import { LoginController } from "../../src/interface/http/controllers/loginController.js";
+import { LogoutController } from "../../src/interface/http/controllers/logoutController.js";
+import { RegisterPatientController } from "../../src/interface/http/controllers/registerPatientController.js";
+import { Authenticate } from "../../src/interface/http/middleware/authenticate.js";
 import {
   FakePasswordHasher,
   FakeTokenService,

@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { AccountDeactivated, InvalidCredentials } from "../../domain/identity/identityErrors.js";
+import {
+  AccountDeactivated,
+  InvalidCredentials,
+} from "../../../src/domain/identity/identityErrors.js";
 import {
   FakePasswordHasher,
   FakeTokenService,
   FixedClock,
   InMemorySessionRepository,
   InMemoryUserRepository,
-} from "../../test/fakes.js";
-import { Login } from "./login.js";
-import { Logout } from "./logout.js";
+} from "../../support/fakes.js";
+import { Login } from "../../../src/application/use-cases/login.js";
+import { Logout } from "../../../src/application/use-cases/logout.js";
 
 function setup() {
   const clock = new FixedClock();

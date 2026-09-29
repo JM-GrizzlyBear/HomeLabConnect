@@ -57,7 +57,23 @@ Example: _admin creates a lab procedure_.
 5. **Adapter (driving)** — `src/interface/http/controllers/createLabProcedureController.ts` validates the request (shared Zod schema from `@homelabconnect/shared`) and calls the use case; a presenter shapes the response.
 6. **Route** — register it in `src/infrastructure/http/routes.ts`.
 7. **Wire** — construct the repository, use case and controller in `src/main.ts`.
-8. **Test** — use case unit test + a supertest route test; then `turbo run lint typecheck arch test`.
+8. **Test** — `tests/application/use-cases/createLabProcedure.test.ts` (use case with a fake repository) and a supertest route test in `tests/infrastructure/http/`; then `turbo run lint typecheck arch test`.
 
 The health check (`GET /api/health`) is a complete, minimal example of every step:
 `SystemHealth` → `DatabaseHealthProbe` + `CheckSystemHealth` → `HealthController` + `HealthPresenter` → `DrizzleDatabaseHealthProbe` + `routes.ts` → `main.ts`.
+
+## Tests
+
+Tests never live in `src/`. Each app keeps them in its own `tests/` folder, which **mirrors `src/`**:
+
+```
+apps/api/tests/                          apps/client/tests/
+├── domain/identity/identity.test.ts     ├── pages/LoginPage.test.tsx
+├── application/use-cases/login.test.ts  ├── auth/RequireAuth.test.tsx
+├── interface/http/middleware/…          ├── navigation/menu.test.ts
+├── infrastructure/http/auth.test.ts     └── support/   renderApp, setup
+└── support/   fakes.ts, testApp.ts
+```
+
+- `tests/support/` holds shared helpers: in-memory fakes for the ports, the app wired on fakes, render helpers and test setup.
+- Tests import the code under test from `src/` with relative paths. `src/` never imports from `tests/`, and the production build (`tsconfig.build.json`) only compiles `src/`.

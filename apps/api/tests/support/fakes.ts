@@ -1,14 +1,20 @@
 // In-memory stand-ins for the ports, for unit and route tests. Not part of the build.
 import { randomUUID } from "node:crypto";
-import type { Clock } from "../application/ports/clock.js";
-import type { PasswordHasher } from "../application/ports/passwordHasher.js";
-import type { NewSession, SessionRepository } from "../application/ports/sessionRepository.js";
-import type { AccessTokenClaims, TokenService } from "../application/ports/tokenService.js";
-import type { NewPatientAccount, UserRepository } from "../application/ports/userRepository.js";
-import type { BaseRole } from "../domain/identity/baseRole.js";
-import { EmailAlreadyTaken } from "../domain/identity/identityErrors.js";
-import type { Session } from "../domain/identity/session.js";
-import { User, type UserProps } from "../domain/identity/user.js";
+import type { Clock } from "../../src/application/ports/clock.js";
+import type { PasswordHasher } from "../../src/application/ports/passwordHasher.js";
+import type {
+  NewSession,
+  SessionRepository,
+} from "../../src/application/ports/sessionRepository.js";
+import type { AccessTokenClaims, TokenService } from "../../src/application/ports/tokenService.js";
+import type {
+  NewPatientAccount,
+  UserRepository,
+} from "../../src/application/ports/userRepository.js";
+import type { BaseRole } from "../../src/domain/identity/baseRole.js";
+import { EmailAlreadyTaken } from "../../src/domain/identity/identityErrors.js";
+import type { Session } from "../../src/domain/identity/session.js";
+import { User, type UserProps } from "../../src/domain/identity/user.js";
 
 export class FixedClock implements Clock {
   constructor(public current = new Date("2026-01-15T08:00:00Z")) {}

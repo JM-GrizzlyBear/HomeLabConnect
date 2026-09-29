@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { JwtTokenService } from "./jwtTokenService.js";
+import { JwtTokenService } from "../../../src/infrastructure/auth/jwtTokenService.js";
 
 const secret = "a-test-secret-that-is-at-least-32-chars";
 const claims = { userId: "b8f1c7a2-0000-4000-8000-000000000001", sessionId: "s-1" };

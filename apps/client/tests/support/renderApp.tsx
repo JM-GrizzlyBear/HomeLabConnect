@@ -1,8 +1,8 @@
 import { render } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { vi } from "vitest";
-import { AuthProvider } from "../auth/AuthProvider";
-import { routes } from "../router";
+import { AuthProvider } from "../../src/auth/AuthProvider";
+import { routes } from "../../src/router";
 
 type Handler = (body: unknown, init: RequestInit) => { status: number; body?: unknown };
 

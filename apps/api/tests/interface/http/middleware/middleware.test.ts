@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
-import type { AuthContext } from "../../../application/use-cases/authenticateRequest.js";
-import { AuthenticateRequest } from "../../../application/use-cases/authenticateRequest.js";
+import type { AuthContext } from "../../../../src/application/use-cases/authenticateRequest.js";
+import { AuthenticateRequest } from "../../../../src/application/use-cases/authenticateRequest.js";
 import {
   PasswordChangeRequired,
   RoleNotAllowed,
   Unauthenticated,
-} from "../../../domain/identity/identityErrors.js";
+} from "../../../../src/domain/identity/identityErrors.js";
 import {
   FakeTokenService,
   FixedClock,
   InMemorySessionRepository,
   InMemoryUserRepository,
-} from "../../../test/fakes.js";
-import type { HttpRequest } from "../httpTypes.js";
-import { Authenticate } from "./authenticate.js";
-import { RequireBaseRole } from "./requireBaseRole.js";
+} from "../../../support/fakes.js";
+import type { HttpRequest } from "../../../../src/interface/http/httpTypes.js";
+import { Authenticate } from "../../../../src/interface/http/middleware/authenticate.js";
+import { RequireBaseRole } from "../../../../src/interface/http/middleware/requireBaseRole.js";
 
 const request = (overrides: Partial<HttpRequest> = {}): HttpRequest => ({
   body: undefined,

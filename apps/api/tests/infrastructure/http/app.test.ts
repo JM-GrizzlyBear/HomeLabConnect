@@ -1,6 +1,6 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../test/testApp.js";
+import { buildTestApp } from "../../support/testApp.js";
 
 describe("GET /api/health", () => {
   it("returns 200 when the database is reachable", async () => {

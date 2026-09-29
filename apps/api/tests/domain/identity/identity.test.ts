@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { Email } from "./email.js";
-import { InvalidEmail, WeakPassword } from "./identityErrors.js";
-import { assertPasswordIsStrong } from "./passwordPolicy.js";
-import { isSessionActive, type Session } from "./session.js";
+import { Email } from "../../../src/domain/identity/email.js";
+import { InvalidEmail, WeakPassword } from "../../../src/domain/identity/identityErrors.js";
+import { assertPasswordIsStrong } from "../../../src/domain/identity/passwordPolicy.js";
+import { isSessionActive, type Session } from "../../../src/domain/identity/session.js";
 
 describe("Email", () => {
   it("normalises case and surrounding spaces", () => {

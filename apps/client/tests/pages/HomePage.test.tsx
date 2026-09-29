@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { health, mockApi, renderApp } from "../test/renderApp";
+import { health, mockApi, renderApp } from "../support/renderApp";
 
 describe("HomePage", () => {
   it("shows the API and database status", async () => {

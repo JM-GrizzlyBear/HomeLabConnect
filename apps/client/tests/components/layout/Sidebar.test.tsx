@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { mockApi, renderApp, sampleUser } from "../../test/renderApp";
+import { mockApi, renderApp, sampleUser } from "../../support/renderApp";
 
 const admin = { ...sampleUser, role: "admin" as const, firstName: "System", lastName: "Admin" };
 

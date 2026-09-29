@@ -3,15 +3,15 @@ import {
   AccountDeactivated,
   Unauthenticated,
   UserNotFound,
-} from "../../domain/identity/identityErrors.js";
+} from "../../../src/domain/identity/identityErrors.js";
 import {
   FakeTokenService,
   FixedClock,
   InMemorySessionRepository,
   InMemoryUserRepository,
-} from "../../test/fakes.js";
-import { AuthenticateRequest } from "./authenticateRequest.js";
-import { GetCurrentUser } from "./getCurrentUser.js";
+} from "../../support/fakes.js";
+import { AuthenticateRequest } from "../../../src/application/use-cases/authenticateRequest.js";
+import { GetCurrentUser } from "../../../src/application/use-cases/getCurrentUser.js";
 
 async function setup() {
   const clock = new FixedClock();
