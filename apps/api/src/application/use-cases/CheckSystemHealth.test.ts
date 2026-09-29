@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { DatabaseHealthProbe } from "../ports/DatabaseHealthProbe.js";
-import { CheckSystemHealth } from "./CheckSystemHealth.js";
+import type { DatabaseHealthProbe } from "../ports/databaseHealthProbe.js";
+import { CheckSystemHealth } from "./checkSystemHealth.js";
 
 const probe = (reachable: boolean): DatabaseHealthProbe => ({
   isReachable: async () => reachable,
