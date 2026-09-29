@@ -159,6 +159,7 @@ DATABASE_URL=postgres://homelabconnect:homelabconnectpass@localhost:5433/homelab
 
 # Auth
 JWT_SECRET=change-me-to-a-long-random-string
+SESSION_TTL_MINUTES=720
 
 # Server
 PORT=4000
@@ -230,3 +231,5 @@ All seeded accounts use the password **`Password123`** and end in `@homelabconne
 | seniormedtech | Med Team (Senior Med Tech)     |
 | support       | Support                        |
 | patient01–20  | Patient                        |
+
+`president` and `seniormedtech` use custom roles, so they are seeded with Module 2 (Roles & Permissions).

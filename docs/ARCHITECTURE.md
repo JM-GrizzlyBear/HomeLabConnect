@@ -29,7 +29,7 @@ The API (`apps/api`) follows **Clean Architecture** as described by Robert C. Ma
 | ----------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | 1. Entities             | `src/domain`         | Business objects and rules, e.g. `SystemHealth`, `DomainError`. Plain TypeScript.                                                                                                                 | Only `src/domain`                                         |
 | 2. Use cases            | `src/application`    | One class per use case (`use-cases/`) and the **ports** it needs (`ports/`: repository, mailer, payment gateway interfaces…).                                                                     | `src/domain`                                              |
-| 3. Interface adapters   | `src/interface`      | `http/controllers` (request → use case input), `http/presenters` (use case output → response), `http/middleware`. Framework-free: they use `HttpRequest`/`HttpResponse` from `http/HttpTypes.ts`. | `src/application`, `src/domain`, `@homelabconnect/shared` |
+| 3. Interface adapters   | `src/interface`      | `http/controllers` (request → use case input), `http/presenters` (use case output → response), `http/middleware`. Framework-free: they use `HttpRequest`/`HttpResponse` from `http/httpTypes.ts`. | `src/application`, `src/domain`, `@homelabconnect/shared` |
 | 4. Frameworks & drivers | `src/infrastructure` | Express app and routes, Drizzle schema and repository implementations, Stripe, mail, config. Implements the ports.                                                                                | Anything                                                  |
 | Composition root        | `src/main.ts`        | Creates the concrete classes and injects them through constructors.                                                                                                                               | Anything                                                  |
 
@@ -46,13 +46,15 @@ This is **enforced**: `turbo run arch` runs [dependency-cruiser](../apps/api/.de
 
 ## Recipe: adding a feature
 
+File names are camelCase (`createLabProcedure.ts`). The class or type inside keeps PascalCase (`export class CreateLabProcedure`).
+
 Example: _admin creates a lab procedure_.
 
-1. **Entity** — `src/domain/catalog/LabProcedure.ts`: the object and its rules (e.g. price must be > 0, in centavos). Throw a `DomainError` subclass when a rule is broken.
-2. **Port** — `src/application/ports/LabProcedureRepository.ts`: the interface the use case needs (`save`, `findByCode`, …).
-3. **Use case** — `src/application/use-cases/CreateLabProcedure.ts`: takes an input DTO, uses the entity and the port, returns an output DTO. Unit-test it with a fake repository.
-4. **Adapter (driven)** — `src/infrastructure/db/schema/labProcedures.ts` (Drizzle table) and `src/infrastructure/db/DrizzleLabProcedureRepository.ts` implementing the port. Run `turbo run db:generate` then `turbo run db:migrate`.
-5. **Adapter (driving)** — `src/interface/http/controllers/CreateLabProcedureController.ts` validates the request (shared Zod schema from `@homelabconnect/shared`) and calls the use case; a presenter shapes the response.
+1. **Entity** — `src/domain/catalog/labProcedure.ts`: the object and its rules (e.g. price must be > 0, in centavos). Throw a `DomainError` subclass when a rule is broken.
+2. **Port** — `src/application/ports/labProcedureRepository.ts`: the interface the use case needs (`save`, `findByCode`, …).
+3. **Use case** — `src/application/use-cases/createLabProcedure.ts`: takes an input DTO, uses the entity and the port, returns an output DTO. Unit-test it with a fake repository.
+4. **Adapter (driven)** — `src/infrastructure/db/schema/labProcedures.ts` (Drizzle table) and `src/infrastructure/db/drizzleLabProcedureRepository.ts` implementing the port. Run `turbo run db:generate` then `turbo run db:migrate`.
+5. **Adapter (driving)** — `src/interface/http/controllers/createLabProcedureController.ts` validates the request (shared Zod schema from `@homelabconnect/shared`) and calls the use case; a presenter shapes the response.
 6. **Route** — register it in `src/infrastructure/http/routes.ts`.
 7. **Wire** — construct the repository, use case and controller in `src/main.ts`.
 8. **Test** — use case unit test + a supertest route test; then `turbo run lint typecheck arch test`.
