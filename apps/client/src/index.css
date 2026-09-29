@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Brand green. Use bg-brand-600, text-brand-700, etc.; retune the whole app here.
+   "static" always emits the variables, because charts read them directly (var(--color-brand-500)). */
+@theme static {
+  --color-brand-50: #effaf3;
+  --color-brand-100: #d7f3e1;
+  --color-brand-200: #b1e6c7;
+  --color-brand-300: #7fd3a6;
+  --color-brand-400: #4bb983;
+  --color-brand-500: #289d68;
+  --color-brand-600: #1b7f53;
+  --color-brand-700: #166645;
+  --color-brand-800: #145139;
+  --color-brand-900: #114330;
+  --color-brand-950: #08261b;
+}

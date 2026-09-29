@@ -1,5 +1,6 @@
 import type { ComponentStatus } from "@homelabconnect/shared";
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { fetchHealth } from "../api/health";
 
 type Status = ComponentStatus | "checking" | "unreachable";
@@ -45,6 +46,20 @@ export function HomePage() {
         <div className="mt-6 flex justify-center gap-3">
           <StatusBadge label="API" status={api} />
           <StatusBadge label="DB" status={db} />
+        </div>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Link
+            to="/login"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/register"
+            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
+          >
+            Create account
+          </Link>
         </div>
       </div>
     </main>
