@@ -1,0 +1,18 @@
+import type { ComponentStatus } from "../../domain/health/SystemHealth.js";
+import { SystemHealth } from "../../domain/health/SystemHealth.js";
+import type { DatabaseHealthProbe } from "../ports/DatabaseHealthProbe.js";
+
+export interface CheckSystemHealthOutput {
+  overall: ComponentStatus;
+  database: ComponentStatus;
+}
+
+export class CheckSystemHealth {
+  constructor(private readonly database: DatabaseHealthProbe) {}
+
+  async execute(): Promise<CheckSystemHealthOutput> {
+    const reachable = await this.database.isReachable();
+    const health = SystemHealth.of({ database: reachable ? "ok" : "down" });
+    return { overall: health.overall, database: health.database };
+  }
+}
