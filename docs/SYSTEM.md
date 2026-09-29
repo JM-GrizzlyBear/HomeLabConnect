@@ -10,32 +10,34 @@ Patients pay online with **Stripe** (card) or in **cash** when the team arrives.
 
 ## 2. Technology Stack
 
-| Layer          | Technology                                      | Purpose                                              |
-| -------------- | ----------------------------------------------- | ---------------------------------------------------- |
-| Frontend       | React 18 + Vite                                 | Single-page web app for every role                   |
-| Styling        | Tailwind CSS                                    | Utility-first styling, responsive layouts            |
-| Backend        | Node.js 20 + Express 4                          | REST API, business logic, background jobs            |
-| Database       | PostgreSQL 16                                   | Relational data storage (47 tables)                  |
-| Payments       | Stripe (Checkout + Webhooks + Refunds)          | Online card payments and refunds                     |
-| Authentication | JWT + bcrypt                                    | Stateless sessions, hashed passwords                 |
-| Email          | Nodemailer (Mailpit for local testing)          | Temporary passwords and notification emails          |
-| Real-time      | Server-Sent Events (SSE)                        | Live notification bell                               |
-| File storage   | MinIO (S3-compatible)                           | Result files and attachments                         |
-| DevOps         | Docker Compose, pnpm workspaces                 | Local Postgres/Mailpit/MinIO, monorepo tooling       |
+| Layer          | Technology                                 | Purpose                                         |
+| -------------- | ------------------------------------------ | ----------------------------------------------- |
+| Frontend       | React 19 + Vite, TypeScript                | Single-page web app for every role              |
+| Styling        | Tailwind CSS v4                            | Utility-first styling, responsive layouts       |
+| Backend        | Node.js 24 + Express 5, TypeScript         | REST API, business logic, background jobs       |
+| Database       | PostgreSQL 16 + Drizzle ORM                | Relational data storage (47 tables), migrations |
+| Payments       | Stripe (Checkout + Webhooks + Refunds)     | Online card payments and refunds                |
+| Authentication | JWT + bcrypt                               | Stateless sessions, hashed passwords            |
+| Email          | Nodemailer (Mailpit for local testing)     | Temporary passwords and notification emails     |
+| Real-time      | Server-Sent Events (SSE)                   | Live notification bell                          |
+| File storage   | S3-compatible storage (to be chosen)¹      | Result files and attachments                    |
+| DevOps         | Docker Compose, pnpm workspaces, Turborepo | Local Postgres/Mailpit, monorepo task pipeline  |
+
+¹ MinIO no longer publishes Docker images, so the storage server is decided in the Doctor module. The API talks to it through the S3 API, so any S3-compatible server works.
 
 ---
 
 ## 3. User Roles
 
-| Role         | What they do                                                                              |
-| ------------ | ----------------------------------------------------------------------------------------- |
-| **Patient**  | Registers, books home visits, pays, tracks appointments, views results, opens tickets     |
-| **Med Team** | Receives assigned visits, follows daily routes, collects samples, records cash payments   |
-| **Doctor**   | Reviews collected samples and uploads/releases lab results                                |
-| **Support**  | Handles support tickets and chats (auto-assigned to agents currently on shift)            |
-| **Admin**    | Manages users, roles, permissions, procedures, promotions, schedules, payments, reports   |
+| Role         | What they do                                                                            |
+| ------------ | --------------------------------------------------------------------------------------- |
+| **Patient**  | Registers, books home visits, pays, tracks appointments, views results, opens tickets   |
+| **Med Team** | Receives assigned visits, follows daily routes, collects samples, records cash payments |
+| **Doctor**   | Reviews collected samples and uploads/releases lab results                              |
+| **Support**  | Handles support tickets and chats (auto-assigned to agents currently on shift)          |
+| **Admin**    | Manages users, roles, permissions, procedures, promotions, schedules, payments, reports |
 
-Admins can create **custom roles** (e.g. *Senior Med Tech*, *President*) on top of a base role. Access is checked per permission (`<module>.<action>`, e.g. `payments.refund`) in this order:
+Admins can create **custom roles** (e.g. _Senior Med Tech_, _President_) on top of a base role. Access is checked per permission (`<module>.<action>`, e.g. `payments.refund`) in this order:
 user override → custom role grant → base role grant → deny.
 
 ---
@@ -60,6 +62,7 @@ user override → custom role grant → base role grant → deny.
 ## 5. Payment Flow (Stripe)
 
 ### 5.1 Online payment (card)
+
 1. The patient books an appointment and clicks **Pay now**.
 2. The backend creates a **Stripe Checkout Session** (currency `php`, amount in centavos) and saves a `payments` row with status `pending` and the session ID as `provider_reference`.
 3. The patient is redirected to Stripe's hosted checkout page and pays.
@@ -69,15 +72,18 @@ user override → custom role grant → base role grant → deny.
 7. The patient gets a "Payment received" notification, and results unlock once the appointment is fully paid.
 
 ### 5.2 Cash payment
+
 - The med team records a cash payment during the visit (`payments.record_cash` permission).
 - The payment is saved with `provider = cash` and status `paid`.
 
 ### 5.3 Refunds
+
 - An admin issues a full or partial refund (`payments.refund` permission).
 - Stripe payments are refunded through the **Stripe Refunds API**. Cash refunds are recorded manually.
 - Status becomes `refunded` or `partially_refunded`, and the patient is notified.
 
 ### 5.4 Payment statuses
+
 `pending` → `paid` → `partially_refunded` / `refunded`
 `pending` → `failed` / `expired`
 
@@ -91,28 +97,32 @@ user override → custom role grant → base role grant → deny.
             ▼
 [ Node.js + Express API ] ──► [ PostgreSQL ]
       │        │   │
-      │        │   └────────► [ MinIO: result files ]
+      │        │   └────────► [ S3 storage: result files ]
       │        └────────────► [ SMTP / Mailpit: emails ]
       ▼
 [ Stripe API ] ◄── webhooks ── Stripe
 ```
 
-The backend follows **Clean Architecture**:
-- **Domain:** entities and business errors
-- **Application:** use cases and ports (interfaces)
-- **Infrastructure:** database, Stripe, email and storage implementations
-- **Interface:** Express routes and middleware (auth, permissions)
+The backend follows **Clean Architecture** (Uncle Bob). Dependencies point inward only, and `turbo run arch` enforces this. See [ARCHITECTURE.md](ARCHITECTURE.md) for the full rules and the recipe for adding a feature.
+
+- **Domain (Entities):** business objects, rules and business errors
+- **Application (Use Cases):** use cases and ports (interfaces)
+- **Interface (Interface Adapters):** controllers, presenters and middleware (auth, permissions), with no framework code
+- **Infrastructure (Frameworks & Drivers):** Express, database, Stripe, email and storage implementations
+- **main.ts:** the composition root that wires everything together
 
 ### Folder structure
+
 ```
 .
 ├── apps
 │   ├── api                 Node.js + Express backend
 │   │   └── src
-│   │       ├── domain
-│   │       ├── application
-│   │       ├── infrastructure  (db, stripe, mail, storage)
-│   │       └── interface       (routes, middleware)
+│   │       ├── domain          (entities)
+│   │       ├── application     (use cases, ports)
+│   │       ├── interface       (controllers, presenters, middleware)
+│   │       ├── infrastructure  (http, db, stripe, mail, storage)
+│   │       └── main.ts         (composition root)
 │   └── client              React + Vite + Tailwind frontend
 ├── packages
 │   └── shared              Validation schemas and types shared by api and client
@@ -124,15 +134,16 @@ The backend follows **Clean Architecture**:
 
 ## 7. Database Design (PostgreSQL)
 
-| Domain                              | Tables                                                                                                   |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Identity & access                   | users, roles, custom_roles, modules, permissions, role_permissions, custom_role_permissions, user_permission_overrides, leave_approval_rules, sessions, audit_logs |
-| People, scheduling & teams          | patients, employees, doctors, med_team_members, support_agents, employee_shifts, employee_shift_overrides, leave_requests, holidays, med_teams, team_rosters, team_roster_members, system_settings |
-| Catalog & pricing                   | lab_procedures, promotions, promotion_procedures                                                         |
-| Appointments, results & routing     | appointments, appointment_procedures, appointment_assignments, reschedule_proposals, appointment_events, appointment_notes, appointment_attachments, result_files, appointment_reviews, promotion_redemptions, daily_routes, route_stops |
-| Payments, support & reports         | payments, payment_webhook_events, support_tickets, chat_conversations, chat_participants, chat_messages, notifications, saved_reports |
+| Domain                          | Tables                                                                                                                                                                                                                                   |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identity & access               | users, roles, custom_roles, modules, permissions, role_permissions, custom_role_permissions, user_permission_overrides, leave_approval_rules, sessions, audit_logs                                                                       |
+| People, scheduling & teams      | patients, employees, doctors, med_team_members, support_agents, employee_shifts, employee_shift_overrides, leave_requests, holidays, med_teams, team_rosters, team_roster_members, system_settings                                       |
+| Catalog & pricing               | lab_procedures, promotions, promotion_procedures                                                                                                                                                                                         |
+| Appointments, results & routing | appointments, appointment_procedures, appointment_assignments, reschedule_proposals, appointment_events, appointment_notes, appointment_attachments, result_files, appointment_reviews, promotion_redemptions, daily_routes, route_stops |
+| Payments, support & reports     | payments, payment_webhook_events, support_tickets, chat_conversations, chat_participants, chat_messages, notifications, saved_reports                                                                                                    |
 
 **Conventions**
+
 - Money is stored as integers in centavos (`85000` = ₱850.00), which is also the unit Stripe uses.
 - Timestamps are timezone-aware (`timestamptz`).
 - `payments.provider_reference` is unique (Stripe session/payment intent ID).
@@ -172,35 +183,35 @@ MAIL_FROM="HomeLabConnect <no-reply@homelabconnect.local>"
 ## 9. Running the System Locally
 
 ```bash
-# 1. Install dependencies
-pnpm install
+# 1. Install dependencies (pnpm is only used for installing)
+pnpm i
 
 # 2. Create env file
 cp .env.example .env
 
-# 3. Start Postgres, Mailpit and MinIO
+# 3. Start Postgres and Mailpit (inbox: http://localhost:8025)
 docker compose up -d
 
 # 4. Create tables and seed data
-pnpm db:migrate
-pnpm db:seed
+turbo run db:migrate
+turbo run db:seed
 
-# 5. Run backend and frontend (two terminals)
-pnpm api        # http://localhost:4000
-pnpm client     # http://localhost:5173
+# 5. Run backend and frontend together
+turbo run dev   # API http://localhost:4000, client http://localhost:5173
 
-# 6. Forward Stripe webhooks to your local API (third terminal)
+# 6. Forward Stripe webhooks to your local API (second terminal)
 stripe login
 stripe listen --forward-to localhost:4000/api/payments/webhook
 # copy the printed whsec_... into STRIPE_WEBHOOK_SECRET
 ```
 
 ### Stripe test cards
-| Card number           | Result                  |
-| --------------------- | ----------------------- |
-| 4242 4242 4242 4242   | Payment succeeds        |
-| 4000 0000 0000 9995   | Declined (insufficient) |
-| 4000 0025 0000 3155   | Requires 3D Secure      |
+
+| Card number         | Result                  |
+| ------------------- | ----------------------- |
+| 4242 4242 4242 4242 | Payment succeeds        |
+| 4000 0000 0000 9995 | Declined (insufficient) |
+| 4000 0025 0000 3155 | Requires 3D Secure      |
 
 Use any future expiry date, any 3-digit CVC and any postal code.
 
@@ -210,12 +221,12 @@ Use any future expiry date, any 3-digit CVC and any postal code.
 
 All seeded accounts use the password **`Password123`** and end in `@homelabconnect.local`.
 
-| Email            | Role                          |
-| ---------------- | ----------------------------- |
-| admin            | Admin (full access)           |
-| president        | Admin (custom role: President)|
-| doctor           | Doctor                        |
-| medteam          | Med Team (lead, Team Makati)  |
-| seniormedtech    | Med Team (Senior Med Tech)    |
-| support          | Support                       |
-| patient01–20     | Patient                       |
+| Email         | Role                           |
+| ------------- | ------------------------------ |
+| admin         | Admin (full access)            |
+| president     | Admin (custom role: President) |
+| doctor        | Doctor                         |
+| medteam       | Med Team (lead, Team Makati)   |
+| seniormedtech | Med Team (Senior Med Tech)     |
+| support       | Support                        |
+| patient01–20  | Patient                        |
