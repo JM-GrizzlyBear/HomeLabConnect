@@ -1,0 +1,52 @@
+import type { ComponentStatus } from "@homelabconnect/shared";
+import { useEffect, useState } from "react";
+import { fetchHealth } from "../api/health";
+
+type Status = ComponentStatus | "checking" | "unreachable";
+
+function StatusBadge({ label, status }: { label: string; status: Status }) {
+  const color =
+    status === "ok"
+      ? "bg-emerald-100 text-emerald-800"
+      : status === "checking"
+        ? "bg-slate-100 text-slate-600"
+        : "bg-rose-100 text-rose-800";
+  return (
+    <span className={`rounded-full px-3 py-1 text-sm font-medium ${color}`}>
+      {label}: {status}
+    </span>
+  );
+}
+
+export function HomePage() {
+  const [api, setApi] = useState<Status>("checking");
+  const [db, setDb] = useState<Status>("checking");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchHealth(controller.signal)
+      .then((health) => {
+        setApi(health.status);
+        setDb(health.db);
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setApi("unreachable");
+        setDb("unreachable");
+      });
+    return () => controller.abort();
+  }, []);
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
+        <h1 className="text-2xl font-semibold text-slate-900">HomeLabConnect</h1>
+        <p className="mt-2 text-slate-600">Home laboratory service platform</p>
+        <div className="mt-6 flex justify-center gap-3">
+          <StatusBadge label="API" status={api} />
+          <StatusBadge label="DB" status={db} />
+        </div>
+      </div>
+    </main>
+  );
+}
