@@ -7,6 +7,7 @@ dist/
 build/
 coverage/
 .vite/
+.turbo/
 
 # Environment files (keep the example)
 .env
