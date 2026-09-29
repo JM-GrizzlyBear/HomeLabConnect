@@ -1,9 +1,10 @@
-import type { DomainErrorKind } from "../../../domain/errors/DomainError.js";
-import { DomainError } from "../../../domain/errors/DomainError.js";
-import type { HttpResponse } from "../HttpTypes.js";
+import type { DomainErrorKind } from "../../../domain/errors/domainError.js";
+import { DomainError } from "../../../domain/errors/domainError.js";
+import type { HttpResponse } from "../httpTypes.js";
+import { InvalidRequest, type RequestIssue } from "../requestValidation.js";
 
 export interface ErrorBody {
-  error: { code: string; message: string };
+  error: { code: string; message: string; issues?: RequestIssue[] };
 }
 
 const statusByKind: Record<DomainErrorKind, number> = {
@@ -15,6 +16,12 @@ const statusByKind: Record<DomainErrorKind, number> = {
 };
 
 export function presentError(error: unknown): HttpResponse<ErrorBody> {
+  if (error instanceof InvalidRequest) {
+    return {
+      status: 400,
+      body: { error: { code: "invalid_request", message: error.message, issues: error.issues } },
+    };
+  }
   if (error instanceof DomainError) {
     return {
       status: statusByKind[error.kind],

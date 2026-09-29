@@ -1,0 +1,20 @@
+import { boolean, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { timestamps, timestamptz } from "./columns.js";
+import { roles } from "./roles.js";
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  /** Always stored lower-cased, so the unique constraint ignores case. */
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  roleId: text("role_id")
+    .notNull()
+    .references(() => roles.id),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  phone: text("phone"),
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  lastLoginAt: timestamptz("last_login_at"),
+  ...timestamps,
+});

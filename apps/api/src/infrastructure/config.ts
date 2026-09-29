@@ -6,6 +6,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   APP_URL: z.url().default("http://localhost:5173"),
   DATABASE_URL: z.url(),
+  JWT_SECRET: z.string().min(32, "must be at least 32 characters"),
+  SESSION_TTL_MINUTES: z.coerce.number().int().positive().default(720),
 });
 
 export interface Config {
@@ -13,6 +15,8 @@ export interface Config {
   port: number;
   appUrl: string;
   databaseUrl: string;
+  jwtSecret: string;
+  sessionTtlMinutes: number;
 }
 
 /** Reads the repo-root .env (if present) and validates every variable the API needs. */
@@ -33,5 +37,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port: parsed.data.PORT,
     appUrl: parsed.data.APP_URL,
     databaseUrl: parsed.data.DATABASE_URL,
+    jwtSecret: parsed.data.JWT_SECRET,
+    sessionTtlMinutes: parsed.data.SESSION_TTL_MINUTES,
   };
 }

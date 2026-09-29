@@ -1,6 +1,6 @@
-import type { CheckSystemHealth } from "../../../application/use-cases/CheckSystemHealth.js";
-import type { Controller, HttpResponse } from "../HttpTypes.js";
-import { presentHealth } from "../presenters/HealthPresenter.js";
+import type { CheckSystemHealth } from "../../../application/use-cases/checkSystemHealth.js";
+import type { Controller, HttpResponse } from "../httpTypes.js";
+import { presentHealth } from "../presenters/healthPresenter.js";
 
 export class HealthController implements Controller {
   constructor(private readonly checkSystemHealth: CheckSystemHealth) {}

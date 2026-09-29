@@ -1,6 +1,6 @@
 import type { HealthResponse } from "@homelabconnect/shared";
-import type { CheckSystemHealthOutput } from "../../../application/use-cases/CheckSystemHealth.js";
-import type { HttpResponse } from "../HttpTypes.js";
+import type { CheckSystemHealthOutput } from "../../../application/use-cases/checkSystemHealth.js";
+import type { HttpResponse } from "../httpTypes.js";
 
 export function presentHealth(output: CheckSystemHealthOutput): HttpResponse<HealthResponse> {
   return {

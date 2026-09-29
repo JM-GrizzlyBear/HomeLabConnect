@@ -1,15 +1,16 @@
 import cors from "cors";
 import express, { type ErrorRequestHandler, type Express } from "express";
 import helmet from "helmet";
-import { presentError, presentNotFound } from "../../interface/http/presenters/ErrorPresenter.js";
-import { type Controllers, createRouter } from "./routes.js";
+import { presentError, presentNotFound } from "../../interface/http/presenters/errorPresenter.js";
+import { type Controllers, createRouter, type Middlewares } from "./routes.js";
 
 export interface AppOptions {
   corsOrigin: string;
   controllers: Controllers;
+  middlewares: Middlewares;
 }
 
-export function createApp({ corsOrigin, controllers }: AppOptions): Express {
+export function createApp({ corsOrigin, controllers, middlewares }: AppOptions): Express {
   const app = express();
 
   app.disable("x-powered-by");
@@ -17,7 +18,7 @@ export function createApp({ corsOrigin, controllers }: AppOptions): Express {
   app.use(cors({ origin: corsOrigin, credentials: true }));
   app.use(express.json({ limit: "1mb" }));
 
-  app.use("/api", createRouter(controllers));
+  app.use("/api", createRouter(controllers, middlewares));
 
   app.use((_req, res) => {
     const { status, body } = presentNotFound();
