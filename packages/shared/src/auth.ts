@@ -59,10 +59,16 @@ export const currentUserSchema = z.object({
   mustChangePassword: z.boolean(),
 });
 
+/** The signed-in user plus what they may do. Returned by login, /auth/me and password change. */
+export const sessionUserSchema = currentUserSchema.extend({
+  /** Effective permission keys (e.g. "users.view"), after roles and overrides. */
+  permissions: z.array(z.string()),
+});
+
 export const loginResponseSchema = z.object({
   token: z.string(),
   expiresAt: z.iso.datetime(),
-  user: currentUserSchema,
+  user: sessionUserSchema,
 });
 
 export type BaseRole = z.infer<typeof baseRoleSchema>;
@@ -70,4 +76,5 @@ export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type RegisterPatientRequest = z.infer<typeof registerPatientRequestSchema>;
 export type ChangePasswordRequest = z.infer<typeof changePasswordRequestSchema>;
 export type CurrentUser = z.infer<typeof currentUserSchema>;
+export type SessionUser = z.infer<typeof sessionUserSchema>;
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
