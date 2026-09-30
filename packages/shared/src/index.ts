@@ -4,3 +4,5 @@ export * from "./profile.js";
 export * from "./users.js";
 export * from "./permissions.js";
 export * from "./roles.js";
+export * from "./money.js";
+export * from "./catalog.js";
