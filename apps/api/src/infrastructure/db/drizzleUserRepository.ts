@@ -14,6 +14,7 @@ import type { ProfileChanges } from "../../domain/identity/profile.js";
 import { User } from "../../domain/identity/user.js";
 import type { Database } from "./client.js";
 import { isUniqueViolation } from "./errors.js";
+import { likePattern } from "./likePattern.js";
 import { customRoles, employees, patients, users } from "./schema/index.js";
 
 type UserRow = typeof users.$inferSelect;
@@ -47,11 +48,6 @@ function toListItem({ user, customRole }: ListRow): UserListItem {
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
   };
-}
-
-/** Escapes LIKE wildcards so a search for "50%" matches the text literally. */
-function likePattern(search: string): string {
-  return `%${search.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
 }
 
 function listFilter({ search, role, isActive }: UserListQuery): SQL | undefined {

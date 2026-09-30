@@ -20,6 +20,15 @@ import { ResolvePermissions } from "./application/use-cases/resolvePermissions.j
 import { ReissueTemporaryPassword } from "./application/use-cases/reissueTemporaryPassword.js";
 import { SetUserActive } from "./application/use-cases/setUserActive.js";
 import { UpdateProfile } from "./application/use-cases/updateProfile.js";
+import { CreateLabProcedure } from "./application/use-cases/createLabProcedure.js";
+import { CreateProcedureCategory } from "./application/use-cases/createProcedureCategory.js";
+import { DeleteProcedureCategory } from "./application/use-cases/deleteProcedureCategory.js";
+import { GetLabProcedure } from "./application/use-cases/getLabProcedure.js";
+import { ListLabProcedures } from "./application/use-cases/listLabProcedures.js";
+import { ListProcedureCategories } from "./application/use-cases/listProcedureCategories.js";
+import { RenameProcedureCategory } from "./application/use-cases/renameProcedureCategory.js";
+import { SetLabProcedureActive } from "./application/use-cases/setLabProcedureActive.js";
+import { UpdateLabProcedure } from "./application/use-cases/updateLabProcedure.js";
 import { BcryptPasswordHasher } from "./infrastructure/auth/bcryptPasswordHasher.js";
 import { CryptoTemporaryPasswordGenerator } from "./infrastructure/auth/cryptoTemporaryPasswordGenerator.js";
 import { JwtTokenService } from "./infrastructure/auth/jwtTokenService.js";
@@ -30,6 +39,8 @@ import { DrizzleRoleRepository } from "./infrastructure/db/drizzleRoleRepository
 import { DrizzleDatabaseHealthProbe } from "./infrastructure/db/drizzleDatabaseHealthProbe.js";
 import { DrizzleSessionRepository } from "./infrastructure/db/drizzleSessionRepository.js";
 import { DrizzleUserRepository } from "./infrastructure/db/drizzleUserRepository.js";
+import { DrizzleLabProcedureRepository } from "./infrastructure/db/drizzleLabProcedureRepository.js";
+import { DrizzleProcedureCategoryRepository } from "./infrastructure/db/drizzleProcedureCategoryRepository.js";
 import { createApp } from "./infrastructure/http/app.js";
 import { NodemailerAccountEmails } from "./infrastructure/mail/nodemailerAccountEmails.js";
 import { SystemClock } from "./infrastructure/systemClock.js";
@@ -51,6 +62,15 @@ import { RegisterPatientController } from "./interface/http/controllers/register
 import { ReissueTemporaryPasswordController } from "./interface/http/controllers/reissueTemporaryPasswordController.js";
 import { SetUserActiveController } from "./interface/http/controllers/setUserActiveController.js";
 import { UpdateProfileController } from "./interface/http/controllers/updateProfileController.js";
+import { CreateLabProcedureController } from "./interface/http/controllers/createLabProcedureController.js";
+import { CreateProcedureCategoryController } from "./interface/http/controllers/createProcedureCategoryController.js";
+import { DeleteProcedureCategoryController } from "./interface/http/controllers/deleteProcedureCategoryController.js";
+import { GetLabProcedureController } from "./interface/http/controllers/getLabProcedureController.js";
+import { ListLabProceduresController } from "./interface/http/controllers/listLabProceduresController.js";
+import { ListProcedureCategoriesController } from "./interface/http/controllers/listProcedureCategoriesController.js";
+import { RenameProcedureCategoryController } from "./interface/http/controllers/renameProcedureCategoryController.js";
+import { SetLabProcedureActiveController } from "./interface/http/controllers/setLabProcedureActiveController.js";
+import { UpdateLabProcedureController } from "./interface/http/controllers/updateLabProcedureController.js";
 import { Authenticate } from "./interface/http/middleware/authenticate.js";
 
 const config = loadConfig();
@@ -64,6 +84,8 @@ const hasher = new BcryptPasswordHasher();
 const tokens = new JwtTokenService(config.jwtSecret);
 const access = new DrizzleAccessRepository(db);
 const roles = new DrizzleRoleRepository(db);
+const categories = new DrizzleProcedureCategoryRepository(db);
+const procedures = new DrizzleLabProcedureRepository(db);
 const temporaryPasswords = new CryptoTemporaryPasswordGenerator();
 const accountEmails = new NodemailerAccountEmails({
   smtpHost: config.smtpHost,
@@ -132,6 +154,29 @@ const app = createApp({
     updateCustomRole: new UpdateCustomRoleController(new UpdateCustomRole(roles)),
     deleteCustomRole: new DeleteCustomRoleController(new DeleteCustomRole(roles)),
     assignCustomRole: new AssignCustomRoleController(new AssignCustomRole(users, roles)),
+    listProcedureCategories: new ListProcedureCategoriesController(
+      new ListProcedureCategories(categories),
+    ),
+    createProcedureCategory: new CreateProcedureCategoryController(
+      new CreateProcedureCategory(categories),
+    ),
+    renameProcedureCategory: new RenameProcedureCategoryController(
+      new RenameProcedureCategory(categories),
+    ),
+    deleteProcedureCategory: new DeleteProcedureCategoryController(
+      new DeleteProcedureCategory(categories),
+    ),
+    listLabProcedures: new ListLabProceduresController(new ListLabProcedures(procedures)),
+    getLabProcedure: new GetLabProcedureController(new GetLabProcedure(procedures)),
+    createLabProcedure: new CreateLabProcedureController(
+      new CreateLabProcedure(procedures, categories),
+    ),
+    updateLabProcedure: new UpdateLabProcedureController(
+      new UpdateLabProcedure(procedures, categories),
+    ),
+    setLabProcedureActive: new SetLabProcedureActiveController(
+      new SetLabProcedureActive(procedures),
+    ),
   },
   middlewares: {
     authenticate: new Authenticate(authenticateRequest),

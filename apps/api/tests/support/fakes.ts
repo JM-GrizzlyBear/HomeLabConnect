@@ -42,6 +42,23 @@ import { EmailAlreadyTaken } from "../../src/domain/identity/identityErrors.js";
 import type { PatientDetails, ProfileChanges } from "../../src/domain/identity/profile.js";
 import type { Session } from "../../src/domain/identity/session.js";
 import { User, type UserProps } from "../../src/domain/identity/user.js";
+import type {
+  LabProcedureListPage,
+  LabProcedureListQuery,
+  LabProcedureRecord,
+  LabProcedureRepository,
+} from "../../src/application/ports/labProcedureRepository.js";
+import type {
+  ProcedureCategoryRecord,
+  ProcedureCategoryRepository,
+} from "../../src/application/ports/procedureCategoryRepository.js";
+import {
+  CategoryNameTaken,
+  ProcedureCodeTaken,
+  ProcedureNameTaken,
+} from "../../src/domain/catalog/catalogErrors.js";
+import type { LabProcedure, LabProcedureDetails } from "../../src/domain/catalog/labProcedure.js";
+import type { ProcedureCategory } from "../../src/domain/catalog/procedureCategory.js";
 
 export class FixedClock implements Clock {
   constructor(public current = new Date("2026-01-15T08:00:00Z")) {}
@@ -376,6 +393,158 @@ export class InMemoryAccessRepository implements AccessRepository {
       baseGrants: baseRole === "admin" ? [] : defaultBaseGrants[baseRole],
       customRole: role?.entries ?? this.customRole.get(userId) ?? [],
       overrides: this.overrides.get(userId) ?? [],
+    };
+  }
+}
+
+const sameText = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/** Procedure categories in memory; counts come from the procedures fake. */
+export class InMemoryProcedureCategoryRepository implements ProcedureCategoryRepository {
+  readonly categories = new Map<string, ProcedureCategory>();
+  procedures?: InMemoryLabProcedureRepository;
+
+  /** Adds a category directly, for arranging tests. */
+  add(name: string): ProcedureCategory {
+    const category = { id: randomUUID(), name };
+    this.categories.set(category.id, category);
+    return category;
+  }
+
+  async list(): Promise<ProcedureCategoryRecord[]> {
+    return [...this.categories.values()]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((category) => this.record(category));
+  }
+
+  async findById(id: string): Promise<ProcedureCategoryRecord | null> {
+    const category = this.categories.get(id);
+    return category ? this.record(category) : null;
+  }
+
+  async findByName(name: string): Promise<ProcedureCategory | null> {
+    return [...this.categories.values()].find((category) => sameText(category.name, name)) ?? null;
+  }
+
+  async create(name: string): Promise<ProcedureCategoryRecord> {
+    if (await this.findByName(name)) throw new CategoryNameTaken();
+    return this.record(this.add(name));
+  }
+
+  async rename(id: string, name: string): Promise<void> {
+    const category = this.categories.get(id);
+    if (category) this.categories.set(id, { ...category, name });
+  }
+
+  async delete(id: string): Promise<void> {
+    this.categories.delete(id);
+  }
+
+  private record(category: ProcedureCategory): ProcedureCategoryRecord {
+    const procedureCount = [...(this.procedures?.procedures.values() ?? [])].filter(
+      (procedure) => procedure.categoryId === category.id,
+    ).length;
+    return { ...category, procedureCount };
+  }
+}
+
+/** Lab procedures in memory, joined to the categories fake for names. */
+export class InMemoryLabProcedureRepository implements LabProcedureRepository {
+  readonly procedures = new Map<string, LabProcedure & { createdAt: Date; updatedAt: Date }>();
+
+  constructor(private readonly categories: InMemoryProcedureCategoryRepository) {
+    categories.procedures = this;
+  }
+
+  /** Adds a procedure directly, for arranging tests. Defaults fill the rest. */
+  add(procedure: Partial<LabProcedure> & { code: string; categoryId: string }): LabProcedure {
+    const now = new Date("2026-01-01T00:00:00Z");
+    const created = {
+      id: randomUUID(),
+      name: procedure.code,
+      priceCentavos: 35_000,
+      specimen: "blood" as const,
+      turnaroundHours: 24,
+      fastingHours: 0,
+      preparation: null,
+      description: null,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+      ...procedure,
+    };
+    this.procedures.set(created.id, created);
+    return created;
+  }
+
+  async list(query: LabProcedureListQuery): Promise<LabProcedureListPage> {
+    const search = query.search?.toLowerCase();
+    const matches = [...this.procedures.values()]
+      .filter(
+        (procedure) =>
+          (!search ||
+            procedure.code.toLowerCase().includes(search) ||
+            procedure.name.toLowerCase().includes(search)) &&
+          (!query.categoryId || procedure.categoryId === query.categoryId) &&
+          (query.isActive === null || procedure.isActive === query.isActive),
+      )
+      .map((procedure) => this.record(procedure))
+      .sort(
+        (a, b) => a.category.name.localeCompare(b.category.name) || a.name.localeCompare(b.name),
+      );
+    const start = (query.page - 1) * query.pageSize;
+    return { items: matches.slice(start, start + query.pageSize), total: matches.length };
+  }
+
+  async findById(id: string): Promise<LabProcedureRecord | null> {
+    const procedure = this.procedures.get(id);
+    return procedure ? this.record(procedure) : null;
+  }
+
+  async findByCode(code: string): Promise<LabProcedure | null> {
+    return [...this.procedures.values()].find((procedure) => procedure.code === code) ?? null;
+  }
+
+  async findByName(name: string): Promise<LabProcedure | null> {
+    return (
+      [...this.procedures.values()].find((procedure) => sameText(procedure.name, name)) ?? null
+    );
+  }
+
+  async create(details: LabProcedureDetails): Promise<LabProcedureRecord> {
+    this.assertUnique(details, null);
+    const created = this.add(details);
+    return this.record(this.procedures.get(created.id) ?? created);
+  }
+
+  async update(id: string, details: LabProcedureDetails): Promise<void> {
+    this.assertUnique(details, id);
+    const procedure = this.procedures.get(id);
+    if (procedure) this.procedures.set(id, { ...procedure, ...details });
+  }
+
+  async setActive(id: string, isActive: boolean): Promise<void> {
+    const procedure = this.procedures.get(id);
+    if (procedure) this.procedures.set(id, { ...procedure, isActive });
+  }
+
+  private assertUnique(details: LabProcedureDetails, ownId: string | null) {
+    for (const other of this.procedures.values()) {
+      if (other.id === ownId) continue;
+      if (other.code === details.code) throw new ProcedureCodeTaken();
+      if (sameText(other.name, details.name)) throw new ProcedureNameTaken();
+    }
+  }
+
+  private record(procedure: LabProcedure): LabProcedureRecord {
+    const stored = this.procedures.get(procedure.id);
+    const category = this.categories.categories.get(procedure.categoryId);
+    if (!category) throw new Error(`Procedure ${procedure.code} has no category.`);
+    return {
+      ...procedure,
+      category,
+      createdAt: stored?.createdAt ?? new Date(0),
+      updatedAt: stored?.updatedAt ?? new Date(0),
     };
   }
 }

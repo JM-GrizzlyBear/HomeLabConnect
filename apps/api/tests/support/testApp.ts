@@ -19,6 +19,24 @@ import { ResolvePermissions } from "../../src/application/use-cases/resolvePermi
 import { ReissueTemporaryPassword } from "../../src/application/use-cases/reissueTemporaryPassword.js";
 import { SetUserActive } from "../../src/application/use-cases/setUserActive.js";
 import { UpdateProfile } from "../../src/application/use-cases/updateProfile.js";
+import { CreateLabProcedure } from "../../src/application/use-cases/createLabProcedure.js";
+import { CreateProcedureCategory } from "../../src/application/use-cases/createProcedureCategory.js";
+import { DeleteProcedureCategory } from "../../src/application/use-cases/deleteProcedureCategory.js";
+import { GetLabProcedure } from "../../src/application/use-cases/getLabProcedure.js";
+import { ListLabProcedures } from "../../src/application/use-cases/listLabProcedures.js";
+import { ListProcedureCategories } from "../../src/application/use-cases/listProcedureCategories.js";
+import { RenameProcedureCategory } from "../../src/application/use-cases/renameProcedureCategory.js";
+import { SetLabProcedureActive } from "../../src/application/use-cases/setLabProcedureActive.js";
+import { UpdateLabProcedure } from "../../src/application/use-cases/updateLabProcedure.js";
+import { CreateLabProcedureController } from "../../src/interface/http/controllers/createLabProcedureController.js";
+import { CreateProcedureCategoryController } from "../../src/interface/http/controllers/createProcedureCategoryController.js";
+import { DeleteProcedureCategoryController } from "../../src/interface/http/controllers/deleteProcedureCategoryController.js";
+import { GetLabProcedureController } from "../../src/interface/http/controllers/getLabProcedureController.js";
+import { ListLabProceduresController } from "../../src/interface/http/controllers/listLabProceduresController.js";
+import { ListProcedureCategoriesController } from "../../src/interface/http/controllers/listProcedureCategoriesController.js";
+import { RenameProcedureCategoryController } from "../../src/interface/http/controllers/renameProcedureCategoryController.js";
+import { SetLabProcedureActiveController } from "../../src/interface/http/controllers/setLabProcedureActiveController.js";
+import { UpdateLabProcedureController } from "../../src/interface/http/controllers/updateLabProcedureController.js";
 import { createApp } from "../../src/infrastructure/http/app.js";
 import { AssignCustomRoleController } from "../../src/interface/http/controllers/assignCustomRoleController.js";
 import { CreateCustomRoleController } from "../../src/interface/http/controllers/createCustomRoleController.js";
@@ -44,6 +62,8 @@ import {
   FakePasswordHasher,
   FakeTemporaryPasswordGenerator,
   InMemoryAccessRepository,
+  InMemoryLabProcedureRepository,
+  InMemoryProcedureCategoryRepository,
   InMemoryRoleRepository,
   FakeTokenService,
   FixedClock,
@@ -59,6 +79,8 @@ export function buildTestApp({ databaseReachable = true } = {}) {
   const tokens = new FakeTokenService();
   const roles = new InMemoryRoleRepository(users);
   const access = new InMemoryAccessRepository(users, roles);
+  const categories = new InMemoryProcedureCategoryRepository();
+  const procedures = new InMemoryLabProcedureRepository(categories);
   const resolvePermissions = new ResolvePermissions(access, clock);
   const emails = new FakeAccountEmails();
   const passwords = new FakeTemporaryPasswordGenerator();
@@ -103,6 +125,29 @@ export function buildTestApp({ databaseReachable = true } = {}) {
       updateCustomRole: new UpdateCustomRoleController(new UpdateCustomRole(roles)),
       deleteCustomRole: new DeleteCustomRoleController(new DeleteCustomRole(roles)),
       assignCustomRole: new AssignCustomRoleController(new AssignCustomRole(users, roles)),
+      listProcedureCategories: new ListProcedureCategoriesController(
+        new ListProcedureCategories(categories),
+      ),
+      createProcedureCategory: new CreateProcedureCategoryController(
+        new CreateProcedureCategory(categories),
+      ),
+      renameProcedureCategory: new RenameProcedureCategoryController(
+        new RenameProcedureCategory(categories),
+      ),
+      deleteProcedureCategory: new DeleteProcedureCategoryController(
+        new DeleteProcedureCategory(categories),
+      ),
+      listLabProcedures: new ListLabProceduresController(new ListLabProcedures(procedures)),
+      getLabProcedure: new GetLabProcedureController(new GetLabProcedure(procedures)),
+      createLabProcedure: new CreateLabProcedureController(
+        new CreateLabProcedure(procedures, categories),
+      ),
+      updateLabProcedure: new UpdateLabProcedureController(
+        new UpdateLabProcedure(procedures, categories),
+      ),
+      setLabProcedureActive: new SetLabProcedureActiveController(
+        new SetLabProcedureActive(procedures),
+      ),
     },
     middlewares: {
       authenticate: new Authenticate(authenticateRequest),
@@ -112,5 +157,16 @@ export function buildTestApp({ databaseReachable = true } = {}) {
     },
   });
 
-  return { app, clock, users, sessions, roles, access, emails, passwords };
+  return {
+    app,
+    clock,
+    users,
+    sessions,
+    roles,
+    access,
+    emails,
+    passwords,
+    categories,
+    procedures,
+  };
 }

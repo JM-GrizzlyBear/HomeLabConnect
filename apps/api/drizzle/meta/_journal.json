@@ -29,6 +29,13 @@
       "when": 1790753402737,
       "tag": "0003_solid_shape",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790776500761,
+      "tag": "0004_first_archangel",
+      "breakpoints": true
     }
   ]
 }

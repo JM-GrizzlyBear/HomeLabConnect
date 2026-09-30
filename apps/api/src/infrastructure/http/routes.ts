@@ -18,6 +18,15 @@ import type { RegisterPatientController } from "../../interface/http/controllers
 import type { ReissueTemporaryPasswordController } from "../../interface/http/controllers/reissueTemporaryPasswordController.js";
 import type { SetUserActiveController } from "../../interface/http/controllers/setUserActiveController.js";
 import type { UpdateProfileController } from "../../interface/http/controllers/updateProfileController.js";
+import type { CreateLabProcedureController } from "../../interface/http/controllers/createLabProcedureController.js";
+import type { CreateProcedureCategoryController } from "../../interface/http/controllers/createProcedureCategoryController.js";
+import type { DeleteProcedureCategoryController } from "../../interface/http/controllers/deleteProcedureCategoryController.js";
+import type { GetLabProcedureController } from "../../interface/http/controllers/getLabProcedureController.js";
+import type { ListLabProceduresController } from "../../interface/http/controllers/listLabProceduresController.js";
+import type { ListProcedureCategoriesController } from "../../interface/http/controllers/listProcedureCategoriesController.js";
+import type { RenameProcedureCategoryController } from "../../interface/http/controllers/renameProcedureCategoryController.js";
+import type { SetLabProcedureActiveController } from "../../interface/http/controllers/setLabProcedureActiveController.js";
+import type { UpdateLabProcedureController } from "../../interface/http/controllers/updateLabProcedureController.js";
 import type { Middleware } from "../../interface/http/httpTypes.js";
 import { RequirePermission } from "../../interface/http/middleware/requirePermission.js";
 import { adapt } from "./expressAdapter.js";
@@ -41,6 +50,15 @@ export interface Controllers {
   updateCustomRole: UpdateCustomRoleController;
   deleteCustomRole: DeleteCustomRoleController;
   assignCustomRole: AssignCustomRoleController;
+  listProcedureCategories: ListProcedureCategoriesController;
+  createProcedureCategory: CreateProcedureCategoryController;
+  renameProcedureCategory: RenameProcedureCategoryController;
+  deleteProcedureCategory: DeleteProcedureCategoryController;
+  listLabProcedures: ListLabProceduresController;
+  getLabProcedure: GetLabProcedureController;
+  createLabProcedure: CreateLabProcedureController;
+  updateLabProcedure: UpdateLabProcedureController;
+  setLabProcedureActive: SetLabProcedureActiveController;
 }
 
 export interface Middlewares {
@@ -108,6 +126,44 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.post("/roles", adapt(controllers.createCustomRole, ...can("roles.manage")));
   router.put("/roles/:id", adapt(controllers.updateCustomRole, ...can("roles.manage")));
   router.delete("/roles/:id", adapt(controllers.deleteCustomRole, ...can("roles.manage")));
+
+  // Anyone with procedures.view reads the catalogue; only managers see inactive procedures.
+  router.get(
+    "/catalog/categories",
+    adapt(controllers.listProcedureCategories, ...can("procedures.view")),
+  );
+  router.post(
+    "/catalog/categories",
+    adapt(controllers.createProcedureCategory, ...can("procedures.manage")),
+  );
+  router.put(
+    "/catalog/categories/:id",
+    adapt(controllers.renameProcedureCategory, ...can("procedures.manage")),
+  );
+  router.delete(
+    "/catalog/categories/:id",
+    adapt(controllers.deleteProcedureCategory, ...can("procedures.manage")),
+  );
+  router.get(
+    "/catalog/procedures",
+    adapt(controllers.listLabProcedures, ...can("procedures.view")),
+  );
+  router.get(
+    "/catalog/procedures/:id",
+    adapt(controllers.getLabProcedure, ...can("procedures.view")),
+  );
+  router.post(
+    "/catalog/procedures",
+    adapt(controllers.createLabProcedure, ...can("procedures.manage")),
+  );
+  router.put(
+    "/catalog/procedures/:id",
+    adapt(controllers.updateLabProcedure, ...can("procedures.manage")),
+  );
+  router.patch(
+    "/catalog/procedures/:id/status",
+    adapt(controllers.setLabProcedureActive, ...can("procedures.manage")),
+  );
 
   return router;
 }
