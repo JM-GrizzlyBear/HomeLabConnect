@@ -2,6 +2,8 @@ import { render } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { vi } from "vitest";
 import { AuthProvider } from "../../src/auth/AuthProvider";
+import { TooltipProvider } from "../../src/components/ui/tooltip";
+import { FeedbackProvider } from "../../src/feedback/FeedbackProvider";
 import { routes } from "../../src/router";
 
 type Handler = (body: unknown, init: RequestInit) => { status: number; body?: unknown };
@@ -26,7 +28,11 @@ export function renderApp(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(
     <AuthProvider>
-      <RouterProvider router={router} />
+      <TooltipProvider>
+        <FeedbackProvider>
+          <RouterProvider router={router} />
+        </FeedbackProvider>
+      </TooltipProvider>
     </AuthProvider>,
   );
   return router;
