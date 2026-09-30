@@ -38,7 +38,7 @@ Patients pay online with **Stripe** (card) or in **cash** when the team arrives.
 | **Admin**    | Manages users, roles, permissions, procedures, promotions, schedules, payments, reports |
 
 Admins can create **custom roles** (e.g. _Senior Med Tech_, _President_) on top of a base role. Access is checked per permission (`<module>.<action>`, e.g. `payments.refund`) in this order:
-user override → custom role grant → base role grant → deny.
+user override → custom role grant → base role grant → deny. The full catalogue and rules are in [PERMISSIONS.md](PERMISSIONS.md).
 
 ---
 
