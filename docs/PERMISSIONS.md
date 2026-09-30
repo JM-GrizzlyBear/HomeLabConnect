@@ -64,6 +64,11 @@ Seeded examples:
 | reports      | view, save, export                                                           |                                |             |                         |                           |
 | settings     | view, manage                                                                 |                                |             |                         |                           |
 
+### What "view" shows in the catalogue
+
+- `procedures.view` shows **active** procedures only. People with `procedures.manage` also see inactive ones and can filter by status; for everyone else an inactive procedure answers 404.
+- Category changes (add, rename, delete) need `procedures.manage`.
+
 ## Adding a permission (for a new module)
 
 1. Add the action to its module in `packages/shared/src/permissions.ts` (and to `defaultBaseGrants` if a base role should have it). Update the counts in the catalogue test and the table above.
