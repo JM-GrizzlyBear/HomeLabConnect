@@ -7,6 +7,10 @@ erDiagram
     modules ||--o{ permissions : "groups"
     roles ||--o{ role_permissions : "base role grants"
     permissions ||--o{ role_permissions : "granted by"
+    roles ||--o{ custom_roles : "base of"
+    custom_roles ||--o{ custom_role_permissions : "allows / denies"
+    permissions ||--o{ custom_role_permissions : "decided by"
+    custom_roles ||--o{ users : "held by"
 
     modules {
         text id PK "e.g. payments"
@@ -22,9 +26,30 @@ erDiagram
         text role_id PK, FK "patient | med_team | doctor | support"
         text permission_id PK, FK
     }
+    custom_roles {
+        uuid id PK
+        text name UK "unique ignoring case"
+        text base_role_id FK "fixed once created"
+        text description
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    custom_role_permissions {
+        uuid custom_role_id PK, FK
+        text permission_id PK, FK
+        text effect "grant | deny"
+    }
+    users {
+        uuid id PK
+        text role_id FK "base role"
+        uuid custom_role_id FK "optional, same base role"
+    }
 ```
 
 **Notes**
 
-- All three tables are written by `turbo run db:seed` from `packages/shared/src/permissions.ts`. Permissions removed from the catalogue are deleted, along with their grants.
+- `modules`, `permissions` and `role_permissions` are written by `turbo run db:seed` from `packages/shared/src/permissions.ts`. Permissions removed from the catalogue are deleted, along with their grants.
 - Admin has no `role_permissions` rows: it always has every permission.
+- A custom role lists only the permissions it changes; everything else is inherited from its base role.
+- A user's custom role must be built on the user's base role. A custom role can't be deleted while `users.custom_role_id` points at it (`ON DELETE RESTRICT`).
+- The seed creates the _President_ and _Senior Med Tech_ roles once; admins' later edits to them are kept on re-seed.

@@ -19,6 +19,23 @@ For each key, the first layer with an opinion decides:
 
 Permissions are resolved **on every request**, so a changed role or override applies on the user's next click without signing in again. Login, `/auth/me` and password change return the user's effective `permissions` so the client can hide what they can't use.
 
+## Custom roles
+
+Admins with `roles.manage` build custom roles at **Users → Roles & Permissions**. A custom role:
+
+- is **built on one base role**, which is fixed once the role exists;
+- lists only what it **changes**: each permission is _Inherit_ (the default), _Allow_ or _Deny_;
+- can only be given to users of the same base role, by someone with `roles.assign` (from the "⋯" menu on All Users, or when creating a staff account);
+- can't be deleted while anyone holds it;
+- can't be given to yourself, so an admin can't lock themselves out.
+
+Seeded examples:
+
+| Role            | Built on | Changes                                                 |
+| --------------- | -------- | ------------------------------------------------------- |
+| President       | Admin    | denies `settings.manage`, `roles.manage`                |
+| Senior Med Tech | Med Team | allows `routes.manage`, `teams.roster`, `leave.approve` |
+
 ## Catalogue and default grants
 
 **P** patient · **M** med team · **D** doctor · **S** support. Admin has everything.
