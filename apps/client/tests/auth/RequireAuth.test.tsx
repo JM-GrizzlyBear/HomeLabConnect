@@ -44,7 +44,8 @@ describe("protected pages", () => {
     });
     const router = renderApp("/app");
 
-    await userEvent.click(await screen.findByRole("button", { name: "Log out" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Account menu" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Log out" }));
 
     expect(await screen.findByRole("heading", { name: "Login" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/login");

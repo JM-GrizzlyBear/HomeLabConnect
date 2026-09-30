@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { mockApi, renderApp, sampleUser } from "../support/renderApp";
@@ -25,7 +25,9 @@ describe("RegisterPage", () => {
     await fillRequiredFields();
     await userEvent.click(screen.getByRole("button", { name: "Create account" }));
 
-    expect(await screen.findByText("Account created. Sign in to continue.")).toBeInTheDocument();
+    const dialog = within(await screen.findByRole("dialog"));
+    expect(dialog.getByText("Account created")).toBeInTheDocument();
+    expect(dialog.getByText(/Sign in with juan@example.com/)).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/login");
     expect(screen.getByLabelText("Email")).toHaveValue("juan@example.com");
     // Empty optional fields are left out, not sent as "".

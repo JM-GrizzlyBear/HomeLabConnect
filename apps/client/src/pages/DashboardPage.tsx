@@ -1,10 +1,11 @@
 import { Link } from "react-router";
 import { useAuth } from "../auth/authContext";
-import { Card } from "../components/Card";
+import { ContentCard } from "../components/layout/ContentCard";
 import { BarChart } from "../components/charts/BarChart";
 import { DonutChart, DonutLegend, ProgressRing } from "../components/charts/DonutChart";
 import { LineChart } from "../components/charts/LineChart";
-import { PageHeader, pillActionClass } from "../components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "../components/layout/PageHeader";
 import { sampleDashboards } from "./dashboard/sampleData";
 
 /** Home page after sign-in: a card grid tailored to the user's role. */
@@ -19,15 +20,15 @@ export function DashboardPage() {
         title={`Welcome back, ${user.firstName}`}
         action={
           user.role === "patient" ? (
-            <Link to="/app/support/tickets" className={pillActionClass}>
-              Contact support
-            </Link>
+            <Button asChild>
+              <Link to="/app/support/tickets">Contact support</Link>
+            </Button>
           ) : undefined
         }
       />
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <Card title={data.stats.title} sample>
+        <ContentCard title={data.stats.title} sample>
           <dl className="grid grid-cols-2 gap-3">
             {data.stats.items.map((item) => (
               <div key={item.label} className="rounded-xl bg-brand-50 px-3 py-3">
@@ -36,9 +37,9 @@ export function DashboardPage() {
               </div>
             ))}
           </dl>
-        </Card>
+        </ContentCard>
 
-        <Card title={data.donut.title} sample>
+        <ContentCard title={data.donut.title} sample>
           <div className="flex items-center gap-6">
             <DonutChart
               size={130}
@@ -50,9 +51,9 @@ export function DashboardPage() {
               <DonutLegend segments={data.donut.segments} />
             </div>
           </div>
-        </Card>
+        </ContentCard>
 
-        <Card title={data.trend.title} sample className="md:col-span-2 xl:col-span-1">
+        <ContentCard title={data.trend.title} sample className="md:col-span-2 xl:col-span-1">
           <div className="pt-8">
             <LineChart
               values={data.trend.values}
@@ -60,9 +61,9 @@ export function DashboardPage() {
               tooltipValue={data.trend.tooltipValue}
             />
           </div>
-        </Card>
+        </ContentCard>
 
-        <Card title={data.bars.title} sample className="md:col-span-2">
+        <ContentCard title={data.bars.title} sample className="md:col-span-2">
           <div className="flex flex-col gap-8 sm:flex-row sm:items-center">
             <div className="min-w-0 flex-1">
               <p className="mb-5 flex items-baseline gap-3">
@@ -75,9 +76,9 @@ export function DashboardPage() {
               <ProgressRing percent={data.bars.ring.percent} label={data.bars.ring.label} />
             </div>
           </div>
-        </Card>
+        </ContentCard>
 
-        <Card title={data.breakdown.title} sample>
+        <ContentCard title={data.breakdown.title} sample>
           <div className="flex flex-col items-center gap-5">
             <DonutChart
               size={160}
@@ -90,7 +91,7 @@ export function DashboardPage() {
               <DonutLegend segments={data.breakdown.segments} />
             </div>
           </div>
-        </Card>
+        </ContentCard>
       </div>
     </>
   );

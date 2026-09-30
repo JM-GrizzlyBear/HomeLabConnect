@@ -1,11 +1,13 @@
 import { Navigate } from "react-router";
 import { useAuth } from "../auth/authContext";
 import { AuthLayout } from "../components/AuthLayout";
+import { useFeedback } from "../feedback/feedbackContext";
 import { ChangePasswordForm } from "../forms/ChangePasswordForm";
 
 /** Where a user signed in with a temporary password must go before anything else. */
 export function ChangePasswordPage() {
   const { user, signOut } = useAuth();
+  const feedback = useFeedback();
 
   // Once the password is changed the user is updated and this sends them on to the app.
   // Everyone else changes their password from the profile page.
@@ -28,7 +30,15 @@ export function ChangePasswordPage() {
         </>
       }
     >
-      <ChangePasswordForm submitLabel="Save and continue" />
+      <ChangePasswordForm
+        submitLabel="Save and continue"
+        onChanged={() =>
+          feedback.success({
+            title: "Password changed",
+            description: "Your new password is set. Welcome to HomeLabConnect!",
+          })
+        }
+      />
     </AuthLayout>
   );
 }

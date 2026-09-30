@@ -1,5 +1,17 @@
+import { ChevronDownIcon, LogOutIcon, UserIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "../../auth/authContext";
 import { roleLabels } from "../../auth/roleLabels";
 import { type NavGroup, type NavLink as MenuLink, visibleMenu } from "../../navigation/menu";
@@ -80,60 +92,76 @@ function initials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase();
 }
 
-/** Profile, the role's menu, and log out. `onNavigate` closes the mobile drawer. */
+/** Profile (with an account menu) and the role's menu. `onNavigate` closes the mobile drawer. */
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [signingOut, setSigningOut] = useState(false);
   if (!user) return null;
 
   async function handleSignOut() {
-    setSigningOut(true);
     await signOut();
     navigate("/login", { replace: true });
   }
 
   return (
     <div className="flex h-full flex-col bg-white px-5 py-8">
-      <div className="flex flex-col items-center text-center">
-        <div className="flex size-20 items-center justify-center rounded-full bg-brand-50 text-2xl font-semibold text-brand-700 ring-4 ring-brand-400 ring-offset-4">
-          {initials(user.firstName, user.lastName)}
-        </div>
-        <p className="mt-5 font-semibold text-slate-900">
-          {user.firstName} {user.lastName}
-        </p>
-        <p className="mt-0.5 max-w-full truncate text-xs text-slate-500">{user.email}</p>
-        <span className="mt-2 rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-medium text-brand-700 ring-1 ring-brand-200">
-          {roleLabels[user.role]}
-        </span>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Account menu"
+            className="group flex flex-col items-center rounded-2xl p-2 text-center transition outline-none hover:bg-slate-50 focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            <Avatar className="size-20 ring-4 ring-brand-400 ring-offset-4">
+              <AvatarFallback className="bg-brand-50 text-2xl font-semibold text-brand-700">
+                {initials(user.firstName, user.lastName)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="mt-5 flex items-center gap-1 font-semibold text-slate-900">
+              {user.firstName} {user.lastName}
+              <ChevronDownIcon className="size-4 text-slate-400 transition-transform group-data-[state=open]:rotate-180" />
+            </span>
+            <span className="mt-0.5 max-w-full truncate text-xs text-slate-500">{user.email}</span>
+            <Badge variant="secondary" className="mt-2 ring-1 ring-brand-200">
+              {roleLabels[user.role]}
+            </Badge>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" className="w-56">
+          <DropdownMenuItem
+            onSelect={() => {
+              onNavigate?.();
+              navigate("/app/profile");
+            }}
+          >
+            <UserIcon />
+            Account profile
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onSelect={() => void handleSignOut()}>
+            <LogOutIcon />
+            Log out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      <div className="my-6 h-0.5 rounded-full bg-brand-400/60" />
+      <Separator className="my-6 h-0.5! rounded-full bg-brand-400/60" />
 
-      <nav aria-label="Main" className="-mx-1 flex-1 overflow-y-auto px-1">
-        <ul className="space-y-1">
-          {visibleMenu(user.role).map((entry) =>
-            entry.kind === "group" ? (
-              <Group key={entry.label} entry={entry} onNavigate={onNavigate} />
-            ) : (
-              <li key={entry.path}>
-                <TopLink entry={entry} onNavigate={onNavigate} />
-              </li>
-            ),
-          )}
-        </ul>
-      </nav>
-
-      <div className="my-6 h-0.5 rounded-full bg-brand-400/60" />
-
-      <button
-        type="button"
-        onClick={handleSignOut}
-        disabled={signingOut}
-        className="mx-auto w-40 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold tracking-wide text-white uppercase shadow-md shadow-brand-600/25 transition hover:bg-brand-700 disabled:opacity-60"
-      >
-        {signingOut ? "Logging out…" : "Log out"}
-      </button>
+      <ScrollArea className="-mx-1 min-h-0 flex-1 px-1">
+        <nav aria-label="Main">
+          <ul className="space-y-1">
+            {visibleMenu(user.role).map((entry) =>
+              entry.kind === "group" ? (
+                <Group key={entry.label} entry={entry} onNavigate={onNavigate} />
+              ) : (
+                <li key={entry.path}>
+                  <TopLink entry={entry} onNavigate={onNavigate} />
+                </li>
+              ),
+            )}
+          </ul>
+        </nav>
+      </ScrollArea>
     </div>
   );
 }

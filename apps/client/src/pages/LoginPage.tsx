@@ -1,14 +1,14 @@
 import { loginRequestSchema } from "@homelabconnect/shared";
 import { type FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { ApiError } from "../api/apiClient";
+import { TextInputField } from "@/components/form/TextInputField";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "../auth/authContext";
-import { Alert } from "../components/Alert";
 import { AuthLayout } from "../components/AuthLayout";
-import { Button } from "../components/Button";
 import { LockIcon, MailIcon } from "../components/icons";
-import { TextField } from "../components/TextField";
+import { useFeedback } from "../feedback/feedbackContext";
 import { toFieldErrors } from "../forms/fieldErrors";
+import { handleSubmitError } from "../forms/submitErrors";
 
 interface LoginLocationState {
   from?: string;
@@ -17,18 +17,17 @@ interface LoginLocationState {
 
 export function LoginPage() {
   const { signIn } = useAuth();
+  const feedback = useFeedback();
   const navigate = useNavigate();
   const state = (useLocation().state ?? {}) as LoginLocationState;
 
   const [email, setEmail] = useState(state.registeredEmail ?? "");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFormError(null);
 
     const parsed = loginRequestSchema.safeParse({ email, password });
     if (!parsed.success) {
@@ -42,10 +41,8 @@ export function LoginPage() {
       await signIn(parsed.data.email, parsed.data.password);
       navigate(state.from ?? "/app", { replace: true });
     } catch (error) {
-      setFormError(
-        error instanceof ApiError ? error.message : "Could not reach the server. Try again.",
-      );
       setSubmitting(false);
+      handleSubmitError(error, { title: "Couldn't sign you in", feedback, setFieldErrors });
     }
   }
 
@@ -63,13 +60,10 @@ export function LoginPage() {
       }
     >
       <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-        {state.registeredEmail && !formError && (
-          <Alert tone="success">Account created. Sign in to continue.</Alert>
-        )}
-        {formError && <Alert tone="error">{formError}</Alert>}
-        <TextField
+        <TextInputField
           label="Email"
           hideLabel
+          size="lg"
           icon={<MailIcon />}
           placeholder="Email address"
           type="email"
@@ -78,9 +72,10 @@ export function LoginPage() {
           onChange={(e) => setEmail(e.target.value)}
           error={fieldErrors.email}
         />
-        <TextField
+        <TextInputField
           label="Password"
           hideLabel
+          size="lg"
           icon={<LockIcon />}
           placeholder="Password"
           type="password"
@@ -90,7 +85,7 @@ export function LoginPage() {
           error={fieldErrors.password}
         />
         <div className="flex justify-center pt-2">
-          <Button type="submit" loading={submitting} className="min-w-40">
+          <Button type="submit" size="lg" loading={submitting} className="min-w-40">
             Login Now
           </Button>
         </div>

@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { mockApi, renderApp, sampleUser } from "../support/renderApp";
@@ -39,7 +39,32 @@ describe("LoginPage", () => {
     await userEvent.type(screen.getByLabelText("Password"), "Wrong1234");
     await userEvent.click(screen.getByRole("button", { name: "Login Now" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Email or password is incorrect.");
+    const dialog = within(await screen.findByRole("dialog"));
+    expect(dialog.getByText("Couldn't sign you in")).toBeInTheDocument();
+    expect(dialog.getByText("Email or password is incorrect.")).toBeInTheDocument();
+  });
+
+  it("tells a user whose temporary password expired to ask an admin", async () => {
+    mockApi({
+      "POST /api/auth/login": () => ({
+        status: 401,
+        body: {
+          error: {
+            code: "temporary_password_expired",
+            message: "Your temporary password has expired. Ask an admin to send you a new one.",
+          },
+        },
+      }),
+    });
+    renderApp("/login");
+
+    await userEvent.type(screen.getByLabelText("Email"), "ana@example.com");
+    await userEvent.type(screen.getByLabelText("Password"), "Xk7mP2qR9wTz");
+    await userEvent.click(screen.getByRole("button", { name: "Login Now" }));
+
+    expect(await screen.findByRole("dialog")).toHaveTextContent(
+      "Your temporary password has expired. Ask an admin to send you a new one.",
+    );
   });
 
   it("validates before calling the API", async () => {

@@ -1,13 +1,15 @@
 import { registerPatientRequestSchema } from "@homelabconnect/shared";
+import { format } from "date-fns";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { ApiError } from "../api/apiClient";
+import { DatePickerField } from "@/components/form/DatePicker";
+import { TextInputField } from "@/components/form/TextInputField";
+import { Button } from "@/components/ui/button";
 import { register } from "../api/auth";
-import { Alert } from "../components/Alert";
 import { AuthLayout } from "../components/AuthLayout";
-import { Button } from "../components/Button";
-import { TextField } from "../components/TextField";
+import { useFeedback } from "../feedback/feedbackContext";
 import { toFieldErrors } from "../forms/fieldErrors";
+import { handleSubmitError } from "../forms/submitErrors";
 
 const emptyForm = {
   firstName: "",
@@ -23,22 +25,22 @@ type FormValues = typeof emptyForm;
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const feedback = useFeedback();
   const [values, setValues] = useState<FormValues>(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const set = (name: keyof FormValues) => (value: string) =>
+    setValues((current) => ({ ...current, [name]: value }));
   const field = (name: keyof FormValues) => ({
     name,
     value: values[name],
-    onChange: (e: { target: { value: string } }) =>
-      setValues((current) => ({ ...current, [name]: e.target.value })),
+    onChange: (e: { target: { value: string } }) => set(name)(e.target.value),
     error: fieldErrors[name],
   });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFormError(null);
 
     const parsed = registerPatientRequestSchema.safeParse({
       ...values,
@@ -55,18 +57,19 @@ export function RegisterPage() {
     setSubmitting(true);
     try {
       const user = await register(parsed.data);
+      feedback.success({
+        title: "Account created",
+        description: `Welcome, ${user.firstName}! Sign in with ${user.email} to continue.`,
+      });
       navigate("/login", { state: { registeredEmail: user.email } });
     } catch (error) {
       setSubmitting(false);
-      if (!(error instanceof ApiError)) {
-        setFormError("Could not reach the server. Try again.");
-      } else if (error.code === "email_taken") {
-        setFieldErrors({ email: error.message });
-      } else if (error.issues.length > 0) {
-        setFieldErrors(toFieldErrors(error.issues));
-      } else {
-        setFormError(error.message);
-      }
+      handleSubmitError(error, {
+        title: "Couldn't create your account",
+        feedback,
+        setFieldErrors,
+        fieldByCode: { email_taken: "email" },
+      });
     }
   }
 
@@ -84,23 +87,25 @@ export function RegisterPage() {
       }
     >
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit} noValidate>
-        {formError && (
-          <div className="sm:col-span-2">
-            <Alert tone="error">{formError}</Alert>
-          </div>
-        )}
-        <TextField label="First name" autoComplete="given-name" {...field("firstName")} />
-        <TextField label="Last name" autoComplete="family-name" {...field("lastName")} />
-        <TextField
+        <TextInputField label="First name" autoComplete="given-name" {...field("firstName")} />
+        <TextInputField label="Last name" autoComplete="family-name" {...field("lastName")} />
+        <TextInputField
           label="Email"
           type="email"
           autoComplete="email"
           className="sm:col-span-2"
           {...field("email")}
         />
-        <TextField label="Mobile number" type="tel" autoComplete="tel" {...field("phone")} />
-        <TextField label="Birth date" type="date" required={false} {...field("birthDate")} />
-        <TextField
+        <TextInputField label="Mobile number" type="tel" autoComplete="tel" {...field("phone")} />
+        <DatePickerField
+          label="Birth date"
+          required={false}
+          value={values.birthDate}
+          onChange={set("birthDate")}
+          max={format(new Date(), "yyyy-MM-dd")}
+          error={fieldErrors.birthDate}
+        />
+        <TextInputField
           label="Home address"
           autoComplete="street-address"
           required={false}
@@ -108,7 +113,7 @@ export function RegisterPage() {
           className="sm:col-span-2"
           {...field("address")}
         />
-        <TextField
+        <TextInputField
           label="Password"
           type="password"
           autoComplete="new-password"
@@ -116,7 +121,7 @@ export function RegisterPage() {
           className="sm:col-span-2"
           {...field("password")}
         />
-        <Button type="submit" loading={submitting} className="mt-2 sm:col-span-2">
+        <Button type="submit" size="lg" loading={submitting} className="mt-2 sm:col-span-2">
           Create account
         </Button>
       </form>

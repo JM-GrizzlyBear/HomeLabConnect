@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { mockApi, renderApp, sampleUser } from "../support/renderApp";
@@ -45,7 +45,9 @@ describe("ProfilePage", () => {
     await userEvent.type(screen.getByLabelText(/Home address/), "12 Rizal St, Makati");
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(await screen.findByText("Your profile has been saved.")).toBeInTheDocument();
+    expect(
+      within(await screen.findByRole("dialog")).getByText("Profile saved"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Juanito Dela Cruz")).toBeInTheDocument();
     expect(sent).toEqual({
       firstName: "Juanito",
@@ -84,7 +86,9 @@ describe("ProfilePage", () => {
     await userEvent.type(screen.getByLabelText("Confirm new password"), "NewPassword456");
     await userEvent.click(screen.getByRole("button", { name: "Change password" }));
 
-    expect(await screen.findByText(/Password changed/)).toBeInTheDocument();
+    expect(
+      within(await screen.findByRole("dialog")).getByText("Password changed"),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Current password")).toHaveValue("");
   });
 });

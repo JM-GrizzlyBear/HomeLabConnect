@@ -1,12 +1,12 @@
 import { changePasswordFormSchema, type CurrentUser } from "@homelabconnect/shared";
 import { type FormEvent, useState } from "react";
-import { ApiError } from "../api/apiClient";
+import { TextInputField } from "@/components/form/TextInputField";
+import { Button } from "@/components/ui/button";
 import { changePassword } from "../api/auth";
 import { useAuth } from "../auth/authContext";
-import { Alert } from "../components/Alert";
-import { Button } from "../components/Button";
-import { TextField } from "../components/TextField";
+import { useFeedback } from "../feedback/feedbackContext";
 import { toFieldErrors } from "./fieldErrors";
+import { handleSubmitError } from "./submitErrors";
 
 const emptyForm = { currentPassword: "", newPassword: "", confirmPassword: "" };
 
@@ -31,9 +31,9 @@ export function ChangePasswordForm({
   onChanged,
 }: ChangePasswordFormProps) {
   const { token, updateUser } = useAuth();
+  const feedback = useFeedback();
   const [values, setValues] = useState<FormValues>(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const field = (name: keyof FormValues) => ({
@@ -46,7 +46,6 @@ export function ChangePasswordForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFormError(null);
 
     const parsed = changePasswordFormSchema.safeParse(values);
     if (!parsed.success) {
@@ -64,16 +63,12 @@ export function ChangePasswordForm({
       updateUser(user);
       onChanged?.(user);
     } catch (error) {
-      const codeField = error instanceof ApiError ? fieldByCode[error.code] : undefined;
-      if (!(error instanceof ApiError)) {
-        setFormError("Could not reach the server. Try again.");
-      } else if (codeField) {
-        setFieldErrors({ [codeField]: error.message });
-      } else if (error.issues.length > 0) {
-        setFieldErrors(toFieldErrors(error.issues));
-      } else {
-        setFormError(error.message);
-      }
+      handleSubmitError(error, {
+        title: "Couldn't change your password",
+        feedback,
+        setFieldErrors,
+        fieldByCode,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -81,21 +76,20 @@ export function ChangePasswordForm({
 
   return (
     <form className="grid gap-4" onSubmit={handleSubmit} noValidate>
-      {formError && <Alert tone="error">{formError}</Alert>}
-      <TextField
+      <TextInputField
         label="Current password"
         type="password"
         autoComplete="current-password"
         {...field("currentPassword")}
       />
-      <TextField
+      <TextInputField
         label="New password"
         type="password"
         autoComplete="new-password"
         hint="At least 8 characters, with a letter and a number."
         {...field("newPassword")}
       />
-      <TextField
+      <TextInputField
         label="Confirm new password"
         type="password"
         autoComplete="new-password"

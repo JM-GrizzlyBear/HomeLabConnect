@@ -1,16 +1,21 @@
 import { type Profile, updateProfileRequestSchema } from "@homelabconnect/shared";
+import { format } from "date-fns";
+import { CircleAlertIcon } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
-import { ApiError } from "../api/apiClient";
+import { DatePickerField } from "@/components/form/DatePicker";
+import { TextInputField } from "@/components/form/TextInputField";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { fetchProfile, updateProfile } from "../api/profile";
 import { useAuth } from "../auth/authContext";
 import { roleLabels } from "../auth/roleLabels";
-import { Alert } from "../components/Alert";
-import { Button } from "../components/Button";
-import { Card } from "../components/Card";
+import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
-import { TextField } from "../components/TextField";
+import { useFeedback } from "../feedback/feedbackContext";
 import { ChangePasswordForm } from "../forms/ChangePasswordForm";
 import { toFieldErrors } from "../forms/fieldErrors";
+import { handleSubmitError } from "../forms/submitErrors";
 
 interface FormValues {
   firstName: string;
@@ -42,6 +47,7 @@ const fieldByCode: Record<string, string> = { phone_required: "phone" };
 
 export function ProfilePage() {
   const { token, user, updateUser } = useAuth();
+  const feedback = useFeedback();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -62,9 +68,12 @@ export function ProfilePage() {
     <>
       <PageHeader title="Account Profile" />
       <div className="grid items-start gap-6 lg:grid-cols-5">
-        <Card title="Personal details" className="lg:col-span-3">
+        <ContentCard title="Personal details" className="lg:col-span-3">
           {loadError ? (
-            <Alert tone="error">{loadError}</Alert>
+            <Alert variant="destructive">
+              <CircleAlertIcon />
+              <AlertDescription>{loadError}</AlertDescription>
+            </Alert>
           ) : profile ? (
             <ProfileForm
               profile={profile}
@@ -74,12 +83,23 @@ export function ProfilePage() {
               }}
             />
           ) : (
-            <p className="text-sm text-slate-500">Loading your profile…</p>
+            <div className="grid gap-4 sm:grid-cols-2" aria-label="Loading your profile">
+              {Array.from({ length: 4 }, (_, i) => (
+                <Skeleton key={i} className="h-16" />
+              ))}
+            </div>
           )}
-        </Card>
-        <Card title="Password" className="lg:col-span-2">
-          <PasswordSection />
-        </Card>
+        </ContentCard>
+        <ContentCard title="Password" className="lg:col-span-2">
+          <ChangePasswordForm
+            onChanged={() =>
+              feedback.success({
+                title: "Password changed",
+                description: "Other devices signed in to your account have been logged out.",
+              })
+            }
+          />
+        </ContentCard>
       </div>
     </>
   );
@@ -93,27 +113,23 @@ function ProfileForm({
   onSaved: (profile: Profile) => void;
 }) {
   const { token } = useAuth();
+  const feedback = useFeedback();
   const isPatient = profile.role === "patient";
   const [values, setValues] = useState<FormValues>(() => toFormValues(profile));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const set = (name: keyof FormValues) => (value: string) =>
+    setValues((current) => ({ ...current, [name]: value }));
   const field = (name: keyof FormValues) => ({
     name,
     value: values[name],
-    onChange: (e: { target: { value: string } }) => {
-      setSaved(false);
-      setValues((current) => ({ ...current, [name]: e.target.value }));
-    },
+    onChange: (e: { target: { value: string } }) => set(name)(e.target.value),
     error: fieldErrors[errorKeys[name]],
   });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFormError(null);
-    setSaved(false);
 
     const parsed = updateProfileRequestSchema.safeParse({
       firstName: values.firstName,
@@ -135,19 +151,15 @@ function ProfileForm({
     try {
       const updated = await updateProfile(token, parsed.data);
       setValues(toFormValues(updated));
-      setSaved(true);
       onSaved(updated);
+      feedback.success({ title: "Profile saved", description: "Your details are up to date." });
     } catch (error) {
-      const codeField = error instanceof ApiError ? fieldByCode[error.code] : undefined;
-      if (!(error instanceof ApiError)) {
-        setFormError("Could not reach the server. Try again.");
-      } else if (codeField) {
-        setFieldErrors({ [codeField]: error.message });
-      } else if (error.issues.length > 0) {
-        setFieldErrors(toFieldErrors(error.issues));
-      } else {
-        setFormError(error.message);
-      }
+      handleSubmitError(error, {
+        title: "Couldn't save your profile",
+        feedback,
+        setFieldErrors,
+        fieldByCode,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -155,16 +167,7 @@ function ProfileForm({
 
   return (
     <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit} noValidate>
-      {(formError || saved) && (
-        <div className="sm:col-span-2">
-          {formError ? (
-            <Alert tone="error">{formError}</Alert>
-          ) : (
-            <Alert tone="success">Your profile has been saved.</Alert>
-          )}
-        </div>
-      )}
-      <TextField
+      <TextInputField
         label="Email"
         type="email"
         value={profile.email}
@@ -172,9 +175,9 @@ function ProfileForm({
         hint={`${roleLabels[profile.role]} account. Your sign-in email can't be changed here.`}
         className="sm:col-span-2"
       />
-      <TextField label="First name" autoComplete="given-name" {...field("firstName")} />
-      <TextField label="Last name" autoComplete="family-name" {...field("lastName")} />
-      <TextField
+      <TextInputField label="First name" autoComplete="given-name" {...field("firstName")} />
+      <TextInputField label="Last name" autoComplete="family-name" {...field("lastName")} />
+      <TextInputField
         label="Mobile number"
         type="tel"
         autoComplete="tel"
@@ -183,8 +186,15 @@ function ProfileForm({
       />
       {isPatient && (
         <>
-          <TextField label="Birth date" type="date" required={false} {...field("birthDate")} />
-          <TextField
+          <DatePickerField
+            label="Birth date"
+            required={false}
+            value={values.birthDate}
+            onChange={set("birthDate")}
+            max={format(new Date(), "yyyy-MM-dd")}
+            error={fieldErrors[errorKeys.birthDate]}
+          />
+          <TextInputField
             label="Home address"
             autoComplete="street-address"
             required={false}
@@ -200,20 +210,5 @@ function ProfileForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-function PasswordSection() {
-  const [changed, setChanged] = useState(false);
-
-  return (
-    <div className="grid gap-4">
-      {changed && (
-        <Alert tone="success">
-          Password changed. Other devices signed in to your account have been logged out.
-        </Alert>
-      )}
-      <ChangePasswordForm onChanged={() => setChanged(true)} />
-    </div>
   );
 }

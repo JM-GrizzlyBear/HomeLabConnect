@@ -45,16 +45,13 @@ describe("Sidebar", () => {
 
   it("opens the group of the current page and marks the page active", async () => {
     signedInAs(admin);
-    renderApp("/app/users/all");
+    renderApp("/app/scheduling/shifts");
 
-    expect(await screen.findByRole("button", { name: "Users" })).toHaveAttribute(
+    expect(await screen.findByRole("button", { name: "Scheduling" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
-    expect(mainNav().getByRole("link", { name: "All Users" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    expect(mainNav().getByRole("link", { name: "Shifts" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByText(/coming soon/)).toBeInTheDocument();
   });
 
@@ -69,7 +66,8 @@ describe("Sidebar", () => {
     signedInAs(admin);
     const router = renderApp("/app");
 
-    await userEvent.click(await screen.findByRole("button", { name: "Log out" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Account menu" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Log out" }));
 
     expect(await screen.findByRole("heading", { name: "Login" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/login");
