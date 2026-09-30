@@ -1,6 +1,6 @@
 import { categoryRequestSchema, type ProcedureCategory } from "@homelabconnect/shared";
 import { PencilIcon, Trash2Icon } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { TextInputField } from "@/components/form/TextInputField";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,8 +14,7 @@ import { ApiError } from "../../api/apiClient";
 import { createCategory, deleteCategory, renameCategory } from "../../api/catalog";
 import { useAuth } from "../../auth/authContext";
 import { useFeedback } from "../../feedback/feedbackContext";
-import { toFieldErrors } from "../../forms/fieldErrors";
-import { handleSubmitError } from "../../forms/submitErrors";
+import { useFormState } from "../../forms/useFormState";
 
 interface ManageCategoriesDialogProps {
   open: boolean;
@@ -34,91 +33,8 @@ export function ManageCategoriesDialog({
   onClose,
   onChanged,
 }: ManageCategoriesDialogProps) {
-  const { token } = useAuth();
-  const feedback = useFeedback();
-  const [newName, setNewName] = useState("");
-  const [addError, setAddError] = useState<string | undefined>();
-  const [adding, setAdding] = useState(false);
-  const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
-  const [renameError, setRenameError] = useState<string | undefined>();
-  const [saving, setSaving] = useState(false);
-
-  async function add(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const parsed = categoryRequestSchema.safeParse({ name: newName });
-    if (!parsed.success) {
-      setAddError(toFieldErrors(parsed.error.issues).name);
-      return;
-    }
-    if (!token) return;
-    setAdding(true);
-    try {
-      await createCategory(token, parsed.data.name);
-      setNewName("");
-      setAddError(undefined);
-      onChanged();
-    } catch (error) {
-      handleSubmitError(error, {
-        title: "Couldn't add the category",
-        feedback,
-        setFieldErrors: (errors) => setAddError(errors.name),
-        fieldByCode,
-      });
-    } finally {
-      setAdding(false);
-    }
-  }
-
-  async function rename(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!editing || !token) return;
-    const parsed = categoryRequestSchema.safeParse({ name: editing.name });
-    if (!parsed.success) {
-      setRenameError(toFieldErrors(parsed.error.issues).name);
-      return;
-    }
-    setSaving(true);
-    try {
-      await renameCategory(token, editing.id, parsed.data.name);
-      setEditing(null);
-      setRenameError(undefined);
-      onChanged();
-    } catch (error) {
-      handleSubmitError(error, {
-        title: "Couldn't rename the category",
-        feedback,
-        setFieldErrors: (errors) => setRenameError(errors.name),
-        fieldByCode,
-      });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function remove(category: ProcedureCategory) {
-    const confirmed = await feedback.confirm({
-      title: `Delete ${category.name}?`,
-      description: "Only empty categories can be deleted.",
-      confirmLabel: "Delete category",
-      destructive: true,
-    });
-    if (!confirmed || !token) return;
-    try {
-      await deleteCategory(token, category.id);
-      onChanged();
-    } catch (error) {
-      feedback.error({
-        title: "Couldn't delete the category",
-        description:
-          error instanceof ApiError ? error.message : "Could not reach the server. Try again.",
-      });
-    }
-  }
-
-  function startEditing(category: ProcedureCategory) {
-    setEditing({ id: category.id, name: category.name });
-    setRenameError(undefined);
-  }
+  // Only one row is renamed at a time.
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -132,55 +48,23 @@ export function ManageCategoriesDialog({
 
         <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border">
           {categories.map((category) =>
-            editing?.id === category.id ? (
-              <li key={category.id} className="p-3">
-                <form onSubmit={rename} className="flex items-start gap-2" noValidate>
-                  <TextInputField
-                    label={`New name for ${category.name}`}
-                    hideLabel
-                    size="sm"
-                    autoFocus
-                    value={editing.name}
-                    onChange={(e) => setEditing({ id: category.id, name: e.target.value })}
-                    error={renameError}
-                    className="min-w-0 flex-1"
-                  />
-                  <Button type="submit" size="sm" loading={saving}>
-                    Save
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(null)}>
-                    Cancel
-                  </Button>
-                </form>
-              </li>
+            editingId === category.id ? (
+              <RenameCategoryRow
+                key={category.id}
+                category={category}
+                onDone={() => {
+                  setEditingId(null);
+                  onChanged();
+                }}
+                onCancel={() => setEditingId(null)}
+              />
             ) : (
-              <li key={category.id} className="flex items-center gap-2 px-3 py-2">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-800">{category.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {category.procedureCount === 1
-                      ? "1 procedure"
-                      : `${category.procedureCount} procedures`}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Rename ${category.name}`}
-                  onClick={() => startEditing(category)}
-                >
-                  <PencilIcon />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Delete ${category.name}`}
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => void remove(category)}
-                >
-                  <Trash2Icon />
-                </Button>
-              </li>
+              <CategoryRow
+                key={category.id}
+                category={category}
+                onRename={() => setEditingId(category.id)}
+                onDeleted={onChanged}
+              />
             ),
           )}
           {categories.length === 0 && (
@@ -190,21 +74,150 @@ export function ManageCategoriesDialog({
           )}
         </ul>
 
-        <form onSubmit={add} className="flex items-start gap-2" noValidate>
-          <TextInputField
-            label="New category"
-            hideLabel
-            placeholder="New category name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            error={addError}
-            className="min-w-0 flex-1"
-          />
-          <Button type="submit" variant="outline" loading={adding}>
-            Add category
-          </Button>
-        </form>
+        <AddCategoryForm onAdded={onChanged} />
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CategoryRow({
+  category,
+  onRename,
+  onDeleted,
+}: {
+  category: ProcedureCategory;
+  onRename(): void;
+  onDeleted(): void;
+}) {
+  const { token } = useAuth();
+  const feedback = useFeedback();
+
+  async function remove() {
+    const confirmed = await feedback.confirm({
+      title: `Delete ${category.name}?`,
+      description: "Only empty categories can be deleted.",
+      confirmLabel: "Delete category",
+      destructive: true,
+    });
+    if (!confirmed || !token) return;
+    try {
+      await deleteCategory(token, category.id);
+      onDeleted();
+    } catch (error) {
+      feedback.error({
+        title: "Couldn't delete the category",
+        description:
+          error instanceof ApiError ? error.message : "Could not reach the server. Try again.",
+      });
+    }
+  }
+
+  return (
+    <li className="flex items-center gap-2 px-3 py-2">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-slate-800">{category.name}</p>
+        <p className="text-xs text-muted-foreground">
+          {category.procedureCount === 1 ? "1 procedure" : `${category.procedureCount} procedures`}
+        </p>
+      </div>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Rename ${category.name}`}
+        onClick={onRename}
+      >
+        <PencilIcon />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Delete ${category.name}`}
+        className="text-destructive hover:text-destructive"
+        onClick={() => void remove()}
+      >
+        <Trash2Icon />
+      </Button>
+    </li>
+  );
+}
+
+function RenameCategoryRow({
+  category,
+  onDone,
+  onCancel,
+}: {
+  category: ProcedureCategory;
+  onDone(): void;
+  onCancel(): void;
+}) {
+  const { token } = useAuth();
+  const { values, submitting, field, submit } = useFormState({ name: category.name });
+
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token) return;
+    await submit(
+      categoryRequestSchema.safeParse(values),
+      async ({ name }) => {
+        await renameCategory(token, category.id, name);
+        onDone();
+      },
+      { title: "Couldn't rename the category", fieldByCode },
+    );
+  }
+
+  return (
+    <li className="p-3">
+      <form onSubmit={handleSubmit} className="flex items-start gap-2" noValidate>
+        <TextInputField
+          label={`New name for ${category.name}`}
+          hideLabel
+          size="sm"
+          autoFocus
+          className="min-w-0 flex-1"
+          {...field("name")}
+        />
+        <Button type="submit" size="sm" loading={submitting}>
+          Save
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+      </form>
+    </li>
+  );
+}
+
+function AddCategoryForm({ onAdded }: { onAdded(): void }) {
+  const { token } = useAuth();
+  const { values, submitting, setValues, field, submit } = useFormState({ name: "" });
+
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token) return;
+    await submit(
+      categoryRequestSchema.safeParse(values),
+      async ({ name }) => {
+        await createCategory(token, name);
+        setValues({ name: "" });
+        onAdded();
+      },
+      { title: "Couldn't add the category", fieldByCode },
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex items-start gap-2" noValidate>
+      <TextInputField
+        label="New category"
+        hideLabel
+        placeholder="New category name"
+        className="min-w-0 flex-1"
+        {...field("name")}
+      />
+      <Button type="submit" variant="outline" loading={submitting}>
+        Add category
+      </Button>
+    </form>
   );
 }

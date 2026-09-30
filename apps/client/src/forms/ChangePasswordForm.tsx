@@ -1,19 +1,15 @@
 import { changePasswordFormSchema, type SessionUser } from "@homelabconnect/shared";
-import { type FormEvent, useState } from "react";
+import type { SubmitEvent } from "react";
 import { TextInputField } from "@/components/form/TextInputField";
 import { Button } from "@/components/ui/button";
 import { changePassword } from "../api/auth";
 import { useAuth } from "../auth/authContext";
-import { useFeedback } from "../feedback/feedbackContext";
-import { toFieldErrors } from "./fieldErrors";
-import { handleSubmitError } from "./submitErrors";
+import { useFormState } from "./useFormState";
 
 const emptyForm = { currentPassword: "", newPassword: "", confirmPassword: "" };
 
-type FormValues = typeof emptyForm;
-
 /** Errors the API reports about one specific field. */
-const fieldByCode: Record<string, keyof FormValues> = {
+const fieldByCode: Record<string, keyof typeof emptyForm> = {
   incorrect_current_password: "currentPassword",
   password_unchanged: "newPassword",
   weak_password: "newPassword",
@@ -31,47 +27,21 @@ export function ChangePasswordForm({
   onChanged,
 }: ChangePasswordFormProps) {
   const { token, updateUser } = useAuth();
-  const feedback = useFeedback();
-  const [values, setValues] = useState<FormValues>(emptyForm);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
+  const { values, submitting, setValues, field, submit } = useFormState(emptyForm);
 
-  const field = (name: keyof FormValues) => ({
-    name,
-    value: values[name],
-    onChange: (e: { target: { value: string } }) =>
-      setValues((current) => ({ ...current, [name]: e.target.value })),
-    error: fieldErrors[name],
-  });
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    const parsed = changePasswordFormSchema.safeParse(values);
-    if (!parsed.success) {
-      setFieldErrors(toFieldErrors(parsed.error.issues));
-      return;
-    }
-    setFieldErrors({});
     if (!token) return;
-
-    setSubmitting(true);
-    try {
-      const { currentPassword, newPassword } = parsed.data;
-      const user = await changePassword(token, { currentPassword, newPassword });
-      setValues(emptyForm);
-      updateUser(user);
-      onChanged?.(user);
-    } catch (error) {
-      handleSubmitError(error, {
-        title: "Couldn't change your password",
-        feedback,
-        setFieldErrors,
-        fieldByCode,
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    await submit(
+      changePasswordFormSchema.safeParse(values),
+      async ({ currentPassword, newPassword }) => {
+        const user = await changePassword(token, { currentPassword, newPassword });
+        setValues(emptyForm);
+        updateUser(user);
+        onChanged?.(user);
+      },
+      { title: "Couldn't change your password", fieldByCode },
+    );
   }
 
   return (

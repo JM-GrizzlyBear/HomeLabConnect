@@ -1,9 +1,4 @@
-import type {
-  CatalogStatus,
-  LabProcedure,
-  LabProcedureList,
-  ProcedureCategory,
-} from "@homelabconnect/shared";
+import type { CatalogStatus, LabProcedure } from "@homelabconnect/shared";
 import {
   CircleAlertIcon,
   EyeIcon,
@@ -14,7 +9,7 @@ import {
   SearchIcon,
   TagsIcon,
 } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ActionsMenu } from "@/components/ActionsMenu";
 import { ManageCategoriesDialog } from "@/components/catalog/ManageCategoriesDialog";
@@ -37,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { ApiError } from "../api/apiClient";
 import { fetchCategories, fetchProcedures, setProcedureStatus } from "../api/catalog";
+import { useApiData } from "../api/useApiData";
 import { useAuth } from "../auth/authContext";
 import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
@@ -70,54 +66,30 @@ export function ProceduresPage() {
   const canManage = can("procedures.manage");
   const [filters, setFilters] = useState<Filters>({ q: "", categoryId: ALL, status: ALL, page: 1 });
   const [search, setSearch] = useState("");
-  const [list, setList] = useState<LabProcedureList | null>(null);
-  const [categories, setCategories] = useState<ProcedureCategory[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [reload, setReload] = useState(0);
+  const procedures = useApiData(
+    (authToken, signal) =>
+      fetchProcedures(
+        authToken,
+        {
+          q: filters.q || undefined,
+          categoryId: filters.categoryId === ALL ? undefined : filters.categoryId,
+          status: filters.status === ALL ? undefined : filters.status,
+          page: filters.page,
+          pageSize: PAGE_SIZE,
+        },
+        signal,
+      ),
+    [filters],
+    { errorMessage: "Could not load procedures. Try again." },
+  );
+  // If this fails the category filter just stays empty; the list itself still loads.
+  const categoryData = useApiData(fetchCategories, []);
   const [viewing, setViewing] = useState<LabProcedure | null>(null);
   const [managingCategories, setManagingCategories] = useState(false);
+  const { data: list, error: loadError } = procedures;
+  const categories = categoryData.data ?? [];
 
-  useEffect(() => {
-    if (!token) return;
-    const controller = new AbortController();
-    async function load(authToken: string) {
-      try {
-        const result = await fetchProcedures(
-          authToken,
-          {
-            q: filters.q || undefined,
-            categoryId: filters.categoryId === ALL ? undefined : filters.categoryId,
-            status: filters.status === ALL ? undefined : filters.status,
-            page: filters.page,
-            pageSize: PAGE_SIZE,
-          },
-          controller.signal,
-        );
-        setList(result);
-        setLoadError(null);
-      } catch {
-        if (!controller.signal.aborted) setLoadError("Could not load procedures. Try again.");
-      }
-    }
-    void load(token);
-    return () => controller.abort();
-  }, [token, filters, reload]);
-
-  useEffect(() => {
-    if (!token) return;
-    const controller = new AbortController();
-    async function load(authToken: string) {
-      try {
-        setCategories(await fetchCategories(authToken, controller.signal));
-      } catch {
-        // The category filter just stays empty; the list itself still loads.
-      }
-    }
-    void load(token);
-    return () => controller.abort();
-  }, [token, reload]);
-
-  function applySearch(event: FormEvent<HTMLFormElement>) {
+  function applySearch(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setFilters((current) => ({ ...current, q: search.trim(), page: 1 }));
   }
@@ -147,7 +119,7 @@ export function ProceduresPage() {
           ? `${procedure.name} is back in the catalogue.`
           : `${procedure.name} is hidden from patients.`,
       });
-      setReload((n) => n + 1);
+      procedures.reload();
     } catch (error) {
       feedback.error({
         title: isActive ? "Couldn't reactivate the procedure" : "Couldn't deactivate the procedure",
@@ -343,7 +315,11 @@ export function ProceduresPage() {
           open={managingCategories}
           categories={categories}
           onClose={() => setManagingCategories(false)}
-          onChanged={() => setReload((n) => n + 1)}
+          onChanged={() => {
+            // A rename shows up in the list's category column too.
+            categoryData.reload();
+            procedures.reload();
+          }}
         />
       )}
     </>

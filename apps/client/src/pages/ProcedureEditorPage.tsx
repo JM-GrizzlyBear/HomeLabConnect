@@ -4,7 +4,7 @@ import {
   type Specimen,
 } from "@homelabconnect/shared";
 import { CircleAlertIcon } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import type { SubmitEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { FormField } from "@/components/form/FormField";
 import { SelectInputField } from "@/components/form/SelectInputField";
@@ -14,13 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { createProcedure, fetchCategories, fetchProcedure, updateProcedure } from "../api/catalog";
+import { useApiData } from "../api/useApiData";
 import { useAuth } from "../auth/authContext";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { useFeedback } from "../feedback/feedbackContext";
 import { centavosToPesos, pesosToCentavos, specimenLabels } from "../format/catalog";
-import { toFieldErrors } from "../forms/fieldErrors";
-import { handleSubmitError } from "../forms/submitErrors";
+import { useFormState } from "../forms/useFormState";
 
 /** Every field as typed; numbers are converted on submit. Keys match the request schema. */
 interface FormValues {
@@ -65,28 +65,15 @@ const toNumber = (text: string) => (text.trim() === "" ? Number.NaN : Number(tex
 /** /app/catalog/procedures/new adds a procedure; /app/catalog/procedures/:id edits one. */
 export function ProcedureEditorPage() {
   const { id } = useParams();
-  const isNew = id === undefined;
-  const { token } = useAuth();
-  const feedback = useFeedback();
-  const navigate = useNavigate();
-  const [categories, setCategories] = useState<ProcedureCategory[] | null>(null);
-  const [values, setValues] = useState<FormValues | null>(isNew ? emptyForm : null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!token) return;
-    const controller = new AbortController();
-    async function load(authToken: string) {
-      try {
-        const [categoryList, procedure] = await Promise.all([
-          fetchCategories(authToken, controller.signal),
-          id ? fetchProcedure(authToken, id, controller.signal) : null,
-        ]);
-        setCategories(categoryList);
-        if (procedure) {
-          setValues({
+  const title = id ? "Edit Procedure" : "New Procedure";
+  const { data, error: loadError } = useApiData(
+    async (token, signal) => {
+      const [categories, procedure] = await Promise.all([
+        fetchCategories(token, signal),
+        id ? fetchProcedure(token, id, signal) : null,
+      ]);
+      const initialValues: FormValues = procedure
+        ? {
             code: procedure.code,
             name: procedure.name,
             categoryId: procedure.category.id,
@@ -96,17 +83,13 @@ export function ProcedureEditorPage() {
             fastingHours: String(procedure.fastingHours),
             preparation: procedure.preparation ?? "",
             description: procedure.description ?? "",
-          });
-        }
-      } catch {
-        if (!controller.signal.aborted) setLoadError("Could not load the procedure. Try again.");
-      }
-    }
-    void load(token);
-    return () => controller.abort();
-  }, [token, id]);
-
-  const title = isNew ? "New Procedure" : "Edit Procedure";
+          }
+        : emptyForm;
+      return { id, categories, initialValues };
+    },
+    [id],
+    { errorMessage: "Could not load the procedure. Try again." },
+  );
 
   if (loadError) {
     return (
@@ -119,7 +102,8 @@ export function ProcedureEditorPage() {
       </>
     );
   }
-  if (!values || !categories) {
+  // `data` still holds the previous procedure for a moment after moving to another one.
+  if (!data || data.id !== id) {
     return (
       <>
         <PageHeader title={title} />
@@ -128,22 +112,47 @@ export function ProcedureEditorPage() {
     );
   }
 
-  const set = (name: keyof FormValues) => (value: string) =>
-    setValues((current) => (current ? { ...current, [name]: value } : current));
-  const field = (name: keyof FormValues) => ({
-    name,
-    value: values[name],
-    onChange: (e: { target: { value: string } }) => set(name)(e.target.value),
-    error: fieldErrors[name],
-  });
+  return (
+    <>
+      <PageHeader title={title} />
+      <ProcedureForm
+        key={id}
+        id={id}
+        categories={data.categories}
+        initialValues={data.initialValues}
+      />
+    </>
+  );
+}
+
+interface ProcedureFormProps {
+  /** The procedure being edited; undefined when adding one. */
+  id: string | undefined;
+  categories: ProcedureCategory[];
+  initialValues: FormValues;
+}
+
+function ProcedureForm({ id, categories, initialValues }: ProcedureFormProps) {
+  const isNew = id === undefined;
+  const { token } = useAuth();
+  const feedback = useFeedback();
+  const navigate = useNavigate();
+  const {
+    values,
+    errors: fieldErrors,
+    submitting,
+    set,
+    field,
+    submit,
+  } = useFormState(initialValues);
   const categoryOptions = categories.map((category) => ({
     value: category.id,
     label: category.name,
   }));
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!values || !token) return;
+    if (!token) return;
 
     const parsed = labProcedureRequestSchema.safeParse({
       code: values.code,
@@ -156,36 +165,24 @@ export function ProcedureEditorPage() {
       preparation: values.preparation.trim() || null,
       description: values.description.trim() || null,
     });
-    if (!parsed.success) {
-      setFieldErrors(toFieldErrors(parsed.error.issues));
-      return;
-    }
-    setFieldErrors({});
-
-    setSubmitting(true);
-    try {
-      const saved = id
-        ? await updateProcedure(token, id, parsed.data)
-        : await createProcedure(token, parsed.data);
-      feedback.success({
-        title: id ? "Procedure saved" : "Procedure added",
-        description: `${saved.name} (${saved.code}) is in the catalogue.`,
-      });
-      navigate("/app/catalog/procedures");
-    } catch (error) {
-      setSubmitting(false);
-      handleSubmitError(error, {
-        title: "Couldn't save the procedure",
-        feedback,
-        setFieldErrors,
-        fieldByCode,
-      });
-    }
+    await submit(
+      parsed,
+      async (request) => {
+        const saved = id
+          ? await updateProcedure(token, id, request)
+          : await createProcedure(token, request);
+        feedback.success({
+          title: id ? "Procedure saved" : "Procedure added",
+          description: `${saved.name} (${saved.code}) is in the catalogue.`,
+        });
+        navigate("/app/catalog/procedures");
+      },
+      { title: "Couldn't save the procedure", fieldByCode },
+    );
   }
 
   return (
     <>
-      <PageHeader title={title} />
       <ContentCard title="Procedure details" className="max-w-3xl">
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit} noValidate>
           <TextInputField

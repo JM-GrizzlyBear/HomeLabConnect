@@ -1,5 +1,4 @@
-import type { CustomRole, UserSummary } from "@homelabconnect/shared";
-import { useEffect, useState } from "react";
+import type { UserSummary } from "@homelabconnect/shared";
 import { SelectInputField } from "@/components/form/SelectInputField";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,11 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ApiError } from "../../api/apiClient";
 import { assignRole, fetchRoles } from "../../api/roles";
+import { useApiData } from "../../api/useApiData";
 import { useAuth } from "../../auth/authContext";
 import { roleLabels } from "../../auth/roleLabels";
 import { useFeedback } from "../../feedback/feedbackContext";
+import { useFormState } from "../../forms/useFormState";
 
 /** Radix Select can't use "" as a value, so this stands for "no custom role". */
 const NONE = "none";
@@ -28,57 +28,6 @@ interface ChangeRoleDialogProps {
 
 /** Puts a user on a custom role built on their base role, or back on the base role. */
 export function ChangeRoleDialog({ user, onClose, onChanged }: ChangeRoleDialogProps) {
-  const { token } = useAuth();
-  const feedback = useFeedback();
-  const [customRoles, setCustomRoles] = useState<CustomRole[] | null>(null);
-  const [choice, setChoice] = useState(NONE);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!user || !token) return;
-    const controller = new AbortController();
-    async function load(target: UserSummary, authToken: string) {
-      try {
-        const list = await fetchRoles(authToken, controller.signal);
-        setCustomRoles(list.customRoles.filter((role) => role.baseRole === target.role));
-        setChoice(target.customRole?.id ?? NONE);
-      } catch {
-        if (!controller.signal.aborted) setCustomRoles([]);
-      }
-    }
-    void load(user, token);
-    return () => controller.abort();
-  }, [user, token]);
-
-  async function save() {
-    if (!user || !token) return;
-    setSaving(true);
-    try {
-      const updated = await assignRole(token, user.id, choice === NONE ? null : choice);
-      onClose();
-      onChanged();
-      feedback.success({
-        title: "Role changed",
-        description: `${updated.firstName} ${updated.lastName} is now ${
-          updated.customRole?.name ?? `a plain ${roleLabels[updated.role]}`
-        }. It applies on their next click.`,
-      });
-    } catch (error) {
-      feedback.error({
-        title: "Couldn't change the role",
-        description:
-          error instanceof ApiError ? error.message : "Could not reach the server. Try again.",
-      });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const options = [
-    { value: NONE, label: user ? `None: ${roleLabels[user.role]} only` : "None" },
-    ...(customRoles ?? []).map((role) => ({ value: role.id, label: role.name })),
-  ];
-
   return (
     <Dialog open={user !== null} onOpenChange={(open) => !open && onClose()}>
       {user && (
@@ -92,32 +41,80 @@ export function ChangeRoleDialog({ user, onClose, onChanged }: ChangeRoleDialogP
               can't be changed.
             </DialogDescription>
           </DialogHeader>
-          <SelectInputField
-            label="Custom role"
-            options={options}
-            value={choice}
-            onValueChange={setChoice}
-            disabled={customRoles === null}
-            hint={
-              customRoles?.length === 0
-                ? `No custom roles are built on ${roleLabels[user.role]} yet.`
-                : undefined
-            }
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => void save()}
-              loading={saving}
-              disabled={choice === (user.customRole?.id ?? NONE)}
-            >
-              Save role
-            </Button>
-          </DialogFooter>
+          {/* Keyed so the choice starts from each user's current role. */}
+          <ChangeRoleForm key={user.id} user={user} onClose={onClose} onChanged={onChanged} />
         </DialogContent>
       )}
     </Dialog>
+  );
+}
+
+function ChangeRoleForm({
+  user,
+  onClose,
+  onChanged,
+}: ChangeRoleDialogProps & { user: UserSummary }) {
+  const { token } = useAuth();
+  const feedback = useFeedback();
+  const roles = useApiData(fetchRoles, []);
+  const { values, submitting, setValues, submit } = useFormState({
+    choice: user.customRole?.id ?? NONE,
+  });
+
+  // A failed load leaves just "None", so the user can still be put back on the base role.
+  const customRoles = roles.error
+    ? []
+    : roles.data?.customRoles.filter((role) => role.baseRole === user.role);
+  const options = [
+    { value: NONE, label: `None: ${roleLabels[user.role]} only` },
+    ...(customRoles ?? []).map((role) => ({ value: role.id, label: role.name })),
+  ];
+
+  async function save() {
+    if (!token) return;
+    await submit(
+      { success: true, data: values.choice === NONE ? null : values.choice },
+      async (customRoleId) => {
+        const updated = await assignRole(token, user.id, customRoleId);
+        onClose();
+        onChanged();
+        feedback.success({
+          title: "Role changed",
+          description: `${updated.firstName} ${updated.lastName} is now ${
+            updated.customRole?.name ?? `a plain ${roleLabels[updated.role]}`
+          }. It applies on their next click.`,
+        });
+      },
+      { title: "Couldn't change the role" },
+    );
+  }
+
+  return (
+    <>
+      <SelectInputField
+        label="Custom role"
+        options={options}
+        value={values.choice}
+        onValueChange={(choice) => setValues({ choice })}
+        disabled={customRoles === undefined}
+        hint={
+          customRoles?.length === 0
+            ? `No custom roles are built on ${roleLabels[user.role]} yet.`
+            : undefined
+        }
+      />
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          onClick={() => void save()}
+          loading={submitting}
+          disabled={values.choice === (user.customRole?.id ?? NONE)}
+        >
+          Save role
+        </Button>
+      </DialogFooter>
+    </>
   );
 }

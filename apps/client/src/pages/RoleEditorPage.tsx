@@ -5,7 +5,7 @@ import {
   type RoleList,
 } from "@homelabconnect/shared";
 import { CircleAlertIcon } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import type { SubmitEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { PermissionMatrix } from "@/components/access/PermissionMatrix";
 import { FormField } from "@/components/form/FormField";
@@ -17,13 +17,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { entrySummary } from "../access/rolePermissions";
 import { createRole, fetchRole, fetchRoles, updateRole } from "../api/roles";
+import { useApiData } from "../api/useApiData";
 import { useAuth } from "../auth/authContext";
 import { roleLabels } from "../auth/roleLabels";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { useFeedback } from "../feedback/feedbackContext";
-import { toFieldErrors } from "../forms/fieldErrors";
-import { handleSubmitError } from "../forms/submitErrors";
+import { useFormState } from "../forms/useFormState";
 
 interface FormValues {
   name: string;
@@ -42,43 +42,26 @@ const baseRoleOptions = (Object.keys(roleLabels) as BaseRole[]).map((role) => ({
 /** /app/users/roles/new creates a custom role; /app/users/roles/:id edits one. */
 export function RoleEditorPage() {
   const { id } = useParams();
-  const isNew = id === undefined;
-  const { token } = useAuth();
-  const feedback = useFeedback();
-  const navigate = useNavigate();
-  const [roles, setRoles] = useState<RoleList | null>(null);
-  const [values, setValues] = useState<FormValues | null>(isNew ? emptyForm : null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!token) return;
-    const controller = new AbortController();
-    async function load(authToken: string) {
-      try {
-        const [list, role] = await Promise.all([
-          fetchRoles(authToken, controller.signal),
-          id ? fetchRole(authToken, id, controller.signal) : null,
-        ]);
-        setRoles(list);
-        if (role) {
-          setValues({
+  const title = id ? "Edit Role" : "New Role";
+  const { data, error: loadError } = useApiData(
+    async (token, signal) => {
+      const [roles, role] = await Promise.all([
+        fetchRoles(token, signal),
+        id ? fetchRole(token, id, signal) : null,
+      ]);
+      const initialValues: FormValues = role
+        ? {
             name: role.name,
             baseRole: role.baseRole,
             description: role.description ?? "",
             entries: role.entries,
-          });
-        }
-      } catch {
-        if (!controller.signal.aborted) setLoadError("Could not load the role. Try again.");
-      }
-    }
-    void load(token);
-    return () => controller.abort();
-  }, [token, id]);
-
-  const title = isNew ? "New Role" : "Edit Role";
+          }
+        : emptyForm;
+      return { id, roles, initialValues };
+    },
+    [id],
+    { errorMessage: "Could not load the role. Try again." },
+  );
 
   if (loadError) {
     return (
@@ -91,7 +74,8 @@ export function RoleEditorPage() {
       </>
     );
   }
-  if (!values || !roles) {
+  // `data` still holds the previous role for a moment after moving to another one.
+  if (!data || data.id !== id) {
     return (
       <>
         <PageHeader title={title} />
@@ -103,16 +87,42 @@ export function RoleEditorPage() {
     );
   }
 
-  const set = (changes: Partial<FormValues>) =>
-    setValues((current) => (current ? { ...current, ...changes } : current));
+  return (
+    <>
+      <PageHeader title={title} />
+      <RoleForm key={id} id={id} roles={data.roles} initialValues={data.initialValues} />
+    </>
+  );
+}
+
+interface RoleFormProps {
+  /** The role being edited; undefined when creating one. */
+  id: string | undefined;
+  roles: RoleList;
+  initialValues: FormValues;
+}
+
+function RoleForm({ id, roles, initialValues }: RoleFormProps) {
+  const isNew = id === undefined;
+  const { token } = useAuth();
+  const feedback = useFeedback();
+  const navigate = useNavigate();
+  const {
+    values,
+    errors: fieldErrors,
+    submitting,
+    setValues: set,
+    submit,
+  } = useFormState(initialValues);
+
   const baseGrants = values.baseRole
     ? (roles.baseRoles.find((role) => role.id === values.baseRole)?.grants ?? [])
     : [];
   const { granted, denied } = entrySummary(values.entries);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!values || !token) return;
+    if (!token) return;
 
     const parsed = createCustomRoleRequestSchema.safeParse({
       name: values.name,
@@ -120,37 +130,25 @@ export function RoleEditorPage() {
       description: values.description.trim() || null,
       entries: values.entries,
     });
-    if (!parsed.success) {
-      setFieldErrors(toFieldErrors(parsed.error.issues));
-      return;
-    }
-    setFieldErrors({});
-
-    setSubmitting(true);
-    try {
-      const { name, description, entries } = parsed.data;
-      const saved = id
-        ? await updateRole(token, id, { name, description, entries })
-        : await createRole(token, parsed.data);
-      feedback.success({
-        title: id ? "Role saved" : "Role created",
-        description: `${saved.name} is ready. People holding it get the changes on their next click.`,
-      });
-      navigate("/app/users/roles");
-    } catch (error) {
-      setSubmitting(false);
-      handleSubmitError(error, {
-        title: "Couldn't save the role",
-        feedback,
-        setFieldErrors,
-        fieldByCode: { role_name_taken: "name" },
-      });
-    }
+    await submit(
+      parsed,
+      async (request) => {
+        const { name, description, entries } = request;
+        const saved = id
+          ? await updateRole(token, id, { name, description, entries })
+          : await createRole(token, request);
+        feedback.success({
+          title: id ? "Role saved" : "Role created",
+          description: `${saved.name} is ready. People holding it get the changes on their next click.`,
+        });
+        navigate("/app/users/roles");
+      },
+      { title: "Couldn't save the role", fieldByCode: { role_name_taken: "name" } },
+    );
   }
 
   return (
     <>
-      <PageHeader title={title} />
       <form className="grid gap-6" onSubmit={handleSubmit} noValidate>
         <ContentCard title="Role details" className="max-w-3xl">
           <div className="grid gap-4 sm:grid-cols-2">

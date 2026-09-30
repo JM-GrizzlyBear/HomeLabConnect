@@ -1,6 +1,6 @@
-import type { BaseRole, CustomRole, RoleList } from "@homelabconnect/shared";
+import type { BaseRole, CustomRole } from "@homelabconnect/shared";
 import { CircleAlertIcon, EyeIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ActionsMenu } from "@/components/ActionsMenu";
 import { RolePermissionsSheet } from "@/components/access/RolePermissionsSheet";
@@ -20,6 +20,7 @@ import {
 import { entrySummary } from "../access/rolePermissions";
 import { ApiError } from "../api/apiClient";
 import { deleteRole, fetchRoles } from "../api/roles";
+import { useApiData } from "../api/useApiData";
 import { useAuth } from "../auth/authContext";
 import { roleLabels } from "../auth/roleLabels";
 import { useCan } from "../auth/useCan";
@@ -34,25 +35,12 @@ export function RolesPage() {
   const can = useCan();
   const feedback = useFeedback();
   const navigate = useNavigate();
-  const [roles, setRoles] = useState<RoleList | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [reload, setReload] = useState(0);
+  const {
+    data: roles,
+    error: loadError,
+    reload,
+  } = useApiData(fetchRoles, [], { errorMessage: "Could not load roles. Try again." });
   const [viewing, setViewing] = useState<Viewing>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    const controller = new AbortController();
-    async function load(authToken: string) {
-      try {
-        setRoles(await fetchRoles(authToken, controller.signal));
-        setLoadError(null);
-      } catch {
-        if (!controller.signal.aborted) setLoadError("Could not load roles. Try again.");
-      }
-    }
-    void load(token);
-    return () => controller.abort();
-  }, [token, reload]);
 
   const grantsOf = (baseRole: BaseRole) =>
     roles?.baseRoles.find((role) => role.id === baseRole)?.grants ?? [];
@@ -68,7 +56,7 @@ export function RolesPage() {
     try {
       await deleteRole(token, role.id);
       feedback.success({ title: "Role deleted", description: `${role.name} has been deleted.` });
-      setReload((n) => n + 1);
+      reload();
     } catch (error) {
       feedback.error({
         title: "Couldn't delete the role",

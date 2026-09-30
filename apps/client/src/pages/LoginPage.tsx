@@ -1,14 +1,12 @@
 import { loginRequestSchema } from "@homelabconnect/shared";
-import { type FormEvent, useState } from "react";
+import type { SubmitEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { TextInputField } from "@/components/form/TextInputField";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "../auth/authContext";
 import { AuthLayout } from "../components/AuthLayout";
 import { LockIcon, MailIcon } from "../components/icons";
-import { useFeedback } from "../feedback/feedbackContext";
-import { toFieldErrors } from "../forms/fieldErrors";
-import { handleSubmitError } from "../forms/submitErrors";
+import { useFormState } from "../forms/useFormState";
 
 interface LoginLocationState {
   from?: string;
@@ -17,33 +15,23 @@ interface LoginLocationState {
 
 export function LoginPage() {
   const { signIn } = useAuth();
-  const feedback = useFeedback();
   const navigate = useNavigate();
   const state = (useLocation().state ?? {}) as LoginLocationState;
+  const { values, submitting, field, submit } = useFormState({
+    email: state.registeredEmail ?? "",
+    password: "",
+  });
 
-  const [email, setEmail] = useState(state.registeredEmail ?? "");
-  const [password, setPassword] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    const parsed = loginRequestSchema.safeParse({ email, password });
-    if (!parsed.success) {
-      setFieldErrors(toFieldErrors(parsed.error.issues));
-      return;
-    }
-    setFieldErrors({});
-
-    setSubmitting(true);
-    try {
-      await signIn(parsed.data.email, parsed.data.password);
-      navigate(state.from ?? "/app", { replace: true });
-    } catch (error) {
-      setSubmitting(false);
-      handleSubmitError(error, { title: "Couldn't sign you in", feedback, setFieldErrors });
-    }
+    await submit(
+      loginRequestSchema.safeParse(values),
+      async ({ email, password }) => {
+        await signIn(email, password);
+        navigate(state.from ?? "/app", { replace: true });
+      },
+      { title: "Couldn't sign you in" },
+    );
   }
 
   return (
@@ -68,9 +56,7 @@ export function LoginPage() {
           placeholder="Email address"
           type="email"
           autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          error={fieldErrors.email}
+          {...field("email")}
         />
         <TextInputField
           label="Password"
@@ -80,9 +66,7 @@ export function LoginPage() {
           placeholder="Password"
           type="password"
           autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          error={fieldErrors.password}
+          {...field("password")}
         />
         <div className="flex justify-center pt-2">
           <Button type="submit" size="lg" loading={submitting} className="min-w-40">

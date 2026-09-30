@@ -20,20 +20,20 @@ function StatusBadge({ label, status }: { label: string; status: Status }) {
 }
 
 export function HomePage() {
-  const [api, setApi] = useState<Status>("checking");
-  const [db, setDb] = useState<Status>("checking");
+  // Both come from the same request, so they change together.
+  const [{ api, db }, setStatus] = useState<{ api: Status; db: Status }>({
+    api: "checking",
+    db: "checking",
+  });
 
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
       try {
         const health = await fetchHealth(controller.signal);
-        setApi(health.status);
-        setDb(health.db);
+        setStatus({ api: health.status, db: health.db });
       } catch {
-        if (controller.signal.aborted) return;
-        setApi("unreachable");
-        setDb("unreachable");
+        if (!controller.signal.aborted) setStatus({ api: "unreachable", db: "unreachable" });
       }
     }
     void load();

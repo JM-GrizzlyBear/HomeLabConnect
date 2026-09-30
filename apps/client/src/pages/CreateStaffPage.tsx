@@ -1,11 +1,12 @@
-import { type CustomRole, createStaffRequestSchema, type StaffRole } from "@homelabconnect/shared";
-import { type FormEvent, useEffect, useState } from "react";
+import { createStaffRequestSchema, type StaffRole } from "@homelabconnect/shared";
+import type { SubmitEvent } from "react";
 import { Link } from "react-router";
 import { DatePickerField } from "@/components/form/DatePicker";
 import { SelectInputField } from "@/components/form/SelectInputField";
 import { TextInputField } from "@/components/form/TextInputField";
 import { Button } from "@/components/ui/button";
 import { fetchRoles } from "../api/roles";
+import { useApiData } from "../api/useApiData";
 import { createStaff } from "../api/users";
 import { useAuth } from "../auth/authContext";
 import { roleLabels } from "../auth/roleLabels";
@@ -14,8 +15,7 @@ import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { useFeedback } from "../feedback/feedbackContext";
 import { temporaryPasswordMessage } from "../feedback/temporaryPasswordMessage";
-import { toFieldErrors } from "../forms/fieldErrors";
-import { handleSubmitError } from "../forms/submitErrors";
+import { useFormState } from "../forms/useFormState";
 
 interface FormValues {
   email: string;
@@ -59,43 +59,20 @@ export function CreateStaffPage() {
   const can = useCan();
   // Picking a custom role is role assignment: it needs roles.assign, and roles.view to list them.
   const canPickRole = can("roles.assign") && can("roles.view");
-  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
-  const [values, setValues] = useState<FormValues>(emptyForm);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-
-  const set = (name: keyof FormValues) => (value: string) =>
-    setValues((current) => ({ ...current, [name]: value }));
-  const field = (name: keyof FormValues) => ({
-    name,
-    value: values[name],
-    onChange: (e: { target: { value: string } }) => set(name)(e.target.value),
-    error: fieldErrors[name],
-  });
-
-  useEffect(() => {
-    if (!token || !canPickRole) return;
-    const controller = new AbortController();
-    async function load(authToken: string) {
-      try {
-        setCustomRoles((await fetchRoles(authToken, controller.signal)).customRoles);
-      } catch {
-        // Without the list the form still works; the account just gets its base role.
-      }
-    }
-    void load(token);
-    return () => controller.abort();
-  }, [token, canPickRole]);
+  // Without the list the form still works; the account just gets its base role.
+  const { data: roleList } = useApiData(fetchRoles, [], { enabled: canPickRole });
+  const { values, errors, submitting, set, setValues, field, submit } = useFormState(emptyForm);
 
   const customRoleOptions = [
     { value: NONE, label: values.role ? `None: ${roleLabels[values.role]} only` : "None" },
-    ...customRoles
+    ...(roleList?.customRoles ?? [])
       .filter((role) => role.baseRole === values.role)
       .map((role) => ({ value: role.id, label: role.name })),
   ];
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!token) return;
 
     const parsed = createStaffRequestSchema.safeParse({
       email: values.email.trim(),
@@ -106,28 +83,15 @@ export function CreateStaffPage() {
       hiredOn: values.hiredOn || null,
       customRoleId: values.customRoleId === NONE ? null : values.customRoleId,
     });
-    if (!parsed.success) {
-      setFieldErrors(toFieldErrors(parsed.error.issues));
-      return;
-    }
-    setFieldErrors({});
-    if (!token) return;
-
-    setSubmitting(true);
-    try {
-      const result = await createStaff(token, parsed.data);
-      setValues(emptyForm);
-      feedback.success(temporaryPasswordMessage(result, "Staff account created"));
-    } catch (error) {
-      handleSubmitError(error, {
-        title: "Couldn't create the account",
-        feedback,
-        setFieldErrors,
-        fieldByCode,
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    await submit(
+      parsed,
+      async (request) => {
+        const result = await createStaff(token, request);
+        setValues(emptyForm);
+        feedback.success(temporaryPasswordMessage(result, "Staff account created"));
+      },
+      { title: "Couldn't create the account", fieldByCode },
+    );
   }
 
   return (
@@ -161,9 +125,9 @@ export function CreateStaffPage() {
             value={values.role}
             onValueChange={(role) =>
               // A custom role only fits its own base role, so start over when that changes.
-              setValues((current) => ({ ...current, role: role as StaffRole, customRoleId: NONE }))
+              setValues({ role: role as StaffRole, customRoleId: NONE })
             }
-            error={fieldErrors.role}
+            error={errors.role}
           />
           <TextInputField label="Mobile number" type="tel" required={false} {...field("phone")} />
           <DatePickerField
@@ -171,7 +135,7 @@ export function CreateStaffPage() {
             required={false}
             value={values.hiredOn}
             onChange={set("hiredOn")}
-            error={fieldErrors.hiredOn}
+            error={errors.hiredOn}
           />
           {canPickRole && (
             <SelectInputField
@@ -183,7 +147,7 @@ export function CreateStaffPage() {
               onValueChange={set("customRoleId")}
               disabled={!values.role}
               hint={values.role ? undefined : "Choose the role first."}
-              error={fieldErrors.customRoleId}
+              error={errors.customRoleId}
             />
           )}
           <div className="sm:col-span-2">

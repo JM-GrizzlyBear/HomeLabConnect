@@ -1,21 +1,21 @@
 import { type Profile, updateProfileRequestSchema } from "@homelabconnect/shared";
 import { format } from "date-fns";
 import { CircleAlertIcon } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import type { SubmitEvent } from "react";
 import { DatePickerField } from "@/components/form/DatePicker";
 import { TextInputField } from "@/components/form/TextInputField";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchProfile, updateProfile } from "../api/profile";
+import { useApiData } from "../api/useApiData";
 import { useAuth } from "../auth/authContext";
 import { roleLabels } from "../auth/roleLabels";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { useFeedback } from "../feedback/feedbackContext";
 import { ChangePasswordForm } from "../forms/ChangePasswordForm";
-import { toFieldErrors } from "../forms/fieldErrors";
-import { handleSubmitError } from "../forms/submitErrors";
+import { useFormState } from "../forms/useFormState";
 
 interface FormValues {
   firstName: string;
@@ -46,24 +46,11 @@ const errorKeys: Record<keyof FormValues, string> = {
 const fieldByCode: Record<string, string> = { phone_required: "phone" };
 
 export function ProfilePage() {
-  const { token, user, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const feedback = useFeedback();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!token) return;
-    const controller = new AbortController();
-    async function load(authToken: string) {
-      try {
-        setProfile(await fetchProfile(authToken, controller.signal));
-      } catch {
-        if (!controller.signal.aborted) setLoadError("Could not load your profile. Try again.");
-      }
-    }
-    void load(token);
-    return () => controller.abort();
-  }, [token]);
+  const { data: profile, error: loadError } = useApiData(fetchProfile, [], {
+    errorMessage: "Could not load your profile. Try again.",
+  });
 
   if (!user) return null;
 
@@ -80,10 +67,9 @@ export function ProfilePage() {
           ) : profile ? (
             <ProfileForm
               profile={profile}
-              onSaved={(saved) => {
-                setProfile(saved);
-                updateUser({ ...user, firstName: saved.firstName, lastName: saved.lastName });
-              }}
+              onSaved={(saved) =>
+                updateUser({ ...user, firstName: saved.firstName, lastName: saved.lastName })
+              }
             />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2" aria-label="Loading your profile">
@@ -118,21 +104,13 @@ function ProfileForm({
   const { token } = useAuth();
   const feedback = useFeedback();
   const isPatient = profile.role === "patient";
-  const [values, setValues] = useState<FormValues>(() => toFormValues(profile));
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
+  const form = useFormState(() => toFormValues(profile));
+  const { values, errors, submitting, set, submit } = form;
+  const field = (name: keyof FormValues) => form.field(name, errorKeys[name]);
 
-  const set = (name: keyof FormValues) => (value: string) =>
-    setValues((current) => ({ ...current, [name]: value }));
-  const field = (name: keyof FormValues) => ({
-    name,
-    value: values[name],
-    onChange: (e: { target: { value: string } }) => set(name)(e.target.value),
-    error: fieldErrors[errorKeys[name]],
-  });
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!token) return;
 
     const parsed = updateProfileRequestSchema.safeParse({
       firstName: values.firstName,
@@ -143,29 +121,16 @@ function ProfileForm({
         ? { birthDate: values.birthDate || null, address: values.address.trim() || null }
         : undefined,
     });
-    if (!parsed.success) {
-      setFieldErrors(toFieldErrors(parsed.error.issues));
-      return;
-    }
-    setFieldErrors({});
-    if (!token) return;
-
-    setSubmitting(true);
-    try {
-      const updated = await updateProfile(token, parsed.data);
-      setValues(toFormValues(updated));
-      onSaved(updated);
-      feedback.success({ title: "Profile saved", description: "Your details are up to date." });
-    } catch (error) {
-      handleSubmitError(error, {
-        title: "Couldn't save your profile",
-        feedback,
-        setFieldErrors,
-        fieldByCode,
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    await submit(
+      parsed,
+      async (request) => {
+        const updated = await updateProfile(token, request);
+        form.setValues(toFormValues(updated));
+        onSaved(updated);
+        feedback.success({ title: "Profile saved", description: "Your details are up to date." });
+      },
+      { title: "Couldn't save your profile", fieldByCode },
+    );
   }
 
   return (
@@ -195,7 +160,7 @@ function ProfileForm({
             value={values.birthDate}
             onChange={set("birthDate")}
             max={format(new Date(), "yyyy-MM-dd")}
-            error={fieldErrors[errorKeys.birthDate]}
+            error={errors[errorKeys.birthDate]}
           />
           <TextInputField
             label="Home address"

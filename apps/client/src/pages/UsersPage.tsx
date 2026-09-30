@@ -1,4 +1,4 @@
-import type { BaseRole, UserList, UserStatus, UserSummary } from "@homelabconnect/shared";
+import type { BaseRole, UserStatus, UserSummary } from "@homelabconnect/shared";
 import {
   CircleAlertIcon,
   KeyRoundIcon,
@@ -7,7 +7,7 @@ import {
   UserCheckIcon,
   UserXIcon,
 } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { Link } from "react-router";
 import { ActionsMenu } from "@/components/ActionsMenu";
 import { ChangeRoleDialog } from "@/components/access/ChangeRoleDialog";
@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ApiError } from "../api/apiClient";
+import { useApiData } from "../api/useApiData";
 import { fetchUsers, reissueTemporaryPassword, setUserStatus } from "../api/users";
 import { useAuth } from "../auth/authContext";
 import { useCan } from "../auth/useCan";
@@ -68,38 +69,29 @@ export function UsersPage() {
   const can = useCan();
   const [filters, setFilters] = useState<Filters>({ q: "", role: ALL, status: ALL, page: 1 });
   const [search, setSearch] = useState("");
-  const [list, setList] = useState<UserList | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [reload, setReload] = useState(0);
+  const {
+    data: list,
+    error: loadError,
+    reload,
+  } = useApiData(
+    (authToken, signal) =>
+      fetchUsers(
+        authToken,
+        {
+          q: filters.q || undefined,
+          role: filters.role === ALL ? undefined : filters.role,
+          status: filters.status === ALL ? undefined : filters.status,
+          page: filters.page,
+          pageSize: PAGE_SIZE,
+        },
+        signal,
+      ),
+    [filters],
+    { errorMessage: "Could not load users. Try again." },
+  );
   const [changingRole, setChangingRole] = useState<UserSummary | null>(null);
 
-  useEffect(() => {
-    if (!token) return;
-    const controller = new AbortController();
-    async function load(authToken: string) {
-      try {
-        const result = await fetchUsers(
-          authToken,
-          {
-            q: filters.q || undefined,
-            role: filters.role === ALL ? undefined : filters.role,
-            status: filters.status === ALL ? undefined : filters.status,
-            page: filters.page,
-            pageSize: PAGE_SIZE,
-          },
-          controller.signal,
-        );
-        setList(result);
-        setLoadError(null);
-      } catch {
-        if (!controller.signal.aborted) setLoadError("Could not load users. Try again.");
-      }
-    }
-    void load(token);
-    return () => controller.abort();
-  }, [token, filters, reload]);
-
-  function applySearch(event: FormEvent<HTMLFormElement>) {
+  function applySearch(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setFilters((current) => ({ ...current, q: search.trim(), page: 1 }));
   }
@@ -107,7 +99,7 @@ export function UsersPage() {
   async function run(action: () => Promise<void>, failureTitle: string) {
     try {
       await action();
-      setReload((n) => n + 1);
+      reload();
     } catch (error) {
       feedback.error({
         title: failureTitle,
@@ -324,7 +316,7 @@ export function UsersPage() {
       <ChangeRoleDialog
         user={changingRole}
         onClose={() => setChangingRole(null)}
-        onChanged={() => setReload((n) => n + 1)}
+        onChanged={reload}
       />
     </>
   );
