@@ -13,7 +13,7 @@ apps/client/src/
 │   ├── layout/        PageHeader, ContentCard, PageMessage, Sidebar, DashboardLayout
 │   ├── ActionsMenu.tsx      "⋯" row-actions dropdown
 │   └── CopyableSecret.tsx   one-time value with a Copy button
-├── feedback/          FeedbackProvider + useFeedback(): success / error / confirm dialogs
+├── feedback/          FeedbackProvider + useFeedback(): success toasts, error / confirm dialogs
 ├── forms/             form helpers (toFieldErrors, handleSubmitError) and shared forms
 └── lib/utils.ts       cn() for merging Tailwind classes
 ```
@@ -56,14 +56,15 @@ Use the field wrappers. They wire the label, hint and error to the control for s
 
 `required={false}` adds "(optional)" to the label. `DatePicker` values are ISO strings (`"2026-01-15"`, `""` for none), which is what the shared Zod schemas expect.
 
-## Feedback: dialog or inline?
+## Feedback: toast, dialog or inline?
 
-| What happened                                                                          | Where it shows                                                    |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| A single field is wrong (invalid email, email taken, wrong current password)           | **Inline**, red under that field                                  |
-| The action succeeded (profile saved, staff created, password changed)                  | **Success dialog**, via `feedback.success()`                      |
-| The action failed for a non-field reason (wrong credentials, server down, deactivated) | **Error dialog**, via `feedback.error()`                          |
-| A risky action is about to happen (deactivate, reissue password)                       | **Confirm dialog**, via `await feedback.confirm()`                |
-| A page couldn't load its data                                                          | **Inline** `Alert` on the page (it's not the result of an action) |
+| What happened                                                                          | Where it shows                                                                                  |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| A single field is wrong (invalid email, email taken, wrong current password)           | **Inline**, red under that field                                                                |
+| The action succeeded (profile saved, staff created, password changed)                  | **Toast** in the top-right corner for 1 second (paused on hover), via `feedback.success()`     |
+| It succeeded but there's something to copy or act on (a temporary password to hand over) | **Success dialog** the user closes: `feedback.success()` with `content`                       |
+| The action failed for a non-field reason (wrong credentials, server down, deactivated) | **Error dialog**, via `feedback.error()`                                                        |
+| A risky action is about to happen (deactivate, reissue password)                       | **Confirm dialog**, via `await feedback.confirm()`                                              |
+| A page couldn't load its data                                                          | **Inline** `Alert` on the page (it's not the result of an action)                               |
 
-In a form's `catch`, call `handleSubmitError(error, { title, feedback, setFieldErrors, fieldByCode })`. It applies the first three rows of this table for you.
+Forms use `useFormState()`: its `submit(parsed, send, { title, fieldByCode })` shows validation issues inline and routes a failed request inline or to the error dialog for you. Pages load data with `useApiData()`.
