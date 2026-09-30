@@ -44,7 +44,7 @@ user override → custom role grant → base role grant → deny.
 
 ## 4. System Modules
 
-1. **Authentication & Accounts:** login, patient self-registration, staff accounts created with an emailed temporary password (must be changed on first login), session revocation, profile editing, password change, account deactivation.
+1. **Authentication & Accounts:** login, patient self-registration, staff accounts created with an emailed temporary password (valid for 7 days, must be changed on first login, reissued by an admin once expired), session revocation, profile editing, password change, account deactivation.
 2. **Roles & Permissions:** base and custom roles, 21 modules and 67 permissions, per-user temporary overrides.
 3. **Lab Procedure Catalog:** procedures, categories, prices and promotions/discounts.
 4. **Scheduling & Teams:** employee shifts, shift overrides, holidays, leave requests with approval chains, med teams and bi-weekly rosters.
