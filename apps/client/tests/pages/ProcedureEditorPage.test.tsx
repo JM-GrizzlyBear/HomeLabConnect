@@ -1,7 +1,7 @@
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { adminUser, mockApi, renderApp } from "../support/renderApp";
+import { adminUser, mockApi, renderApp, toasts } from "../support/renderApp";
 
 const hematology = { id: "5a0e2c1b-3d4f-4a6b-8c9d-0e1f2a3b4c5d", name: "Hematology" };
 
@@ -79,9 +79,7 @@ describe("ProcedureEditorPage", () => {
     await fillForm();
     await userEvent.click(screen.getByRole("button", { name: "Add procedure" }));
 
-    expect(
-      within(await screen.findByRole("dialog")).getByText("Procedure added"),
-    ).toBeInTheDocument();
+    expect(await toasts().findByText("Procedure added")).toBeInTheDocument();
     expect(sent).toMatchObject({
       code: "VIT-D",
       categoryId: hematology.id,

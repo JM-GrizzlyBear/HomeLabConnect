@@ -26,24 +26,52 @@ import {
   FeedbackContext,
   type MessageOptions,
 } from "./feedbackContext";
+import { SuccessToasts, type ToastMessage } from "./SuccessToast";
 
 type Message = MessageOptions & { tone: "success" | "error" };
 type Question = ConfirmOptions & { resolve(confirmed: boolean): void };
 
-/** Renders the app's one message dialog and one confirm dialog, driven by useFeedback(). */
-export function FeedbackProvider({ children }: { children: ReactNode }) {
+/** How long a success toast stays before it goes away on its own. */
+const TOAST_DURATION_MS = 5_000;
+
+interface FeedbackProviderProps {
+  children: ReactNode;
+  /** Tests pass a longer time so a toast doesn't vanish before it's checked. */
+  toastDurationMs?: number;
+}
+
+/**
+ * Renders what useFeedback() asks for: success toasts in the top-right corner,
+ * one message dialog (errors, and successes the user must act on) and one
+ * confirm dialog.
+ */
+export function FeedbackProvider({
+  children,
+  toastDurationMs = TOAST_DURATION_MS,
+}: FeedbackProviderProps) {
   const [message, setMessage] = useState<Message | null>(null);
   const [messageOpen, setMessageOpen] = useState(false);
   const [question, setQuestion] = useState<Question | null>(null);
   const [questionOpen, setQuestionOpen] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   // Resolves a confirm() still waiting when a newer one replaces it.
   const pending = useRef<Question | null>(null);
+  const nextToastId = useRef(0);
 
   const feedback = useMemo<Feedback>(
     () => ({
       success: (options) => {
-        setMessage({ ...options, tone: "success" });
-        setMessageOpen(true);
+        // Something to act on (e.g. a password to copy) needs a dialog that waits for the user.
+        if (options.content) {
+          setMessage({ ...options, tone: "success" });
+          setMessageOpen(true);
+          return;
+        }
+        const id = nextToastId.current++;
+        setToasts((current) => [
+          ...current,
+          { id, title: options.title, description: options.description },
+        ]);
       },
       error: (options) => {
         setMessage({ ...options, tone: "error" });
@@ -67,9 +95,16 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     setQuestionOpen(false);
   }, []);
 
+  const dismissToast = useCallback(
+    (id: number) => setToasts((current) => current.filter((toast) => toast.id !== id)),
+    [],
+  );
+
   return (
     <FeedbackContext.Provider value={feedback}>
       {children}
+
+      <SuccessToasts toasts={toasts} durationMs={toastDurationMs} onDismiss={dismissToast} />
 
       <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
         {message && (

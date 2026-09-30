@@ -2,7 +2,7 @@ import { defaultBaseGrants, PERMISSION_KEYS } from "@homelabconnect/shared";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { adminUser, mockApi, renderApp, sampleUser } from "../support/renderApp";
+import { adminUser, mockApi, renderApp, sampleUser, toasts } from "../support/renderApp";
 
 const frontDesk = {
   id: "7f1c2e3d-4b5a-4c6d-8e9f-0a1b2c3d4e5f",
@@ -84,7 +84,7 @@ describe("RolesPage", () => {
       within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete role" }),
     );
 
-    expect(within(await screen.findByRole("dialog")).getByText("Role deleted")).toBeInTheDocument();
+    expect(await toasts().findByText("Role deleted")).toBeInTheDocument();
     expect(await screen.findByText("No custom roles yet.")).toBeInTheDocument();
   });
 

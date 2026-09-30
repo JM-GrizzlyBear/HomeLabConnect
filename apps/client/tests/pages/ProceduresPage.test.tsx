@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { adminUser, mockApi, renderApp, sampleUser } from "../support/renderApp";
+import { adminUser, mockApi, renderApp, sampleUser, toasts } from "../support/renderApp";
 
 const hematology = { id: "5a0e2c1b-3d4f-4a6b-8c9d-0e1f2a3b4c5d", name: "Hematology" };
 const chemistry = { id: "6b1f3d2c-4e5a-4b7c-9d0e-1f2a3b4c5d6e", name: "Clinical Chemistry" };
@@ -113,9 +113,7 @@ describe("ProceduresPage", () => {
       within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Deactivate" }),
     );
 
-    expect(
-      within(await screen.findByRole("dialog")).getByText("Procedure deactivated"),
-    ).toBeInTheDocument();
+    expect(await toasts().findByText("Procedure deactivated")).toBeInTheDocument();
     expect(await screen.findByText("Inactive")).toBeInTheDocument();
   });
 

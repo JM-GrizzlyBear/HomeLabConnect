@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { adminUser, mockApi, renderApp, sampleUser } from "../support/renderApp";
+import { adminUser, mockApi, renderApp, sampleUser, toasts } from "../support/renderApp";
 
 const admin = adminUser;
 
@@ -49,9 +49,10 @@ describe("CreateStaffPage", () => {
     await fillForm();
     await userEvent.click(screen.getByRole("button", { name: "Create account" }));
 
-    const dialog = within(await screen.findByRole("dialog"));
-    expect(dialog.getByText("Staff account created")).toBeInTheDocument();
-    expect(dialog.getByText(/temporary password was emailed/)).toHaveTextContent("ana@example.com");
+    expect(await toasts().findByText("Staff account created")).toBeInTheDocument();
+    expect(toasts().getByText(/temporary password was emailed/)).toHaveTextContent(
+      "ana@example.com",
+    );
     expect(sent).toEqual({
       email: "ana@example.com",
       firstName: "Ana",

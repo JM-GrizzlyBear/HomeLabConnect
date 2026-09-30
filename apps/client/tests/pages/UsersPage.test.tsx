@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { adminUser, mockApi, renderApp, sampleUser } from "../support/renderApp";
+import { adminUser, mockApi, renderApp, sampleUser, toasts } from "../support/renderApp";
 
 const admin = adminUser;
 
@@ -116,10 +116,8 @@ describe("UsersPage", () => {
     expect(confirm.getByText("Deactivate Ana Reyes?")).toBeInTheDocument();
     await userEvent.click(confirm.getByRole("button", { name: "Deactivate" }));
 
-    const result = within(await screen.findByRole("dialog"));
-    expect(result.getByText("Account deactivated")).toBeInTheDocument();
+    expect(await toasts().findByText("Account deactivated")).toBeInTheDocument();
     expect(deactivated).toBe(true);
-    await userEvent.click(result.getByRole("button", { name: "OK" }));
     const anaRow = (await screen.findByText("Inactive")).closest("tr")!;
     expect(within(anaRow).getByText("ana@example.com")).toBeInTheDocument();
   });
@@ -154,9 +152,10 @@ describe("UsersPage", () => {
       }),
     );
 
-    const result = within(await screen.findByRole("dialog"));
-    expect(result.getByText("New temporary password sent")).toBeInTheDocument();
-    expect(result.getByText(/temporary password was emailed/)).toHaveTextContent("ben@example.com");
+    expect(await toasts().findByText("New temporary password sent")).toBeInTheDocument();
+    expect(toasts().getByText(/temporary password was emailed/)).toHaveTextContent(
+      "ben@example.com",
+    );
   });
 
   it("does nothing when the confirmation is cancelled", async () => {

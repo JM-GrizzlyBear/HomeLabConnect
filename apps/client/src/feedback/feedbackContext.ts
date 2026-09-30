@@ -19,12 +19,16 @@ export interface ConfirmOptions {
 }
 
 /**
- * Dialogs for the result of an action. Field-level validation errors stay
- * inline under their field; everything else (success, a failed request, a
- * question before a risky action) goes through here.
+ * The result of an action. Field-level validation errors stay inline under
+ * their field; everything else goes through here.
  */
 export interface Feedback {
+  /**
+   * A small toast in the top-right corner that goes away on its own. With
+   * `content` (something to copy or act on) it's a dialog the user closes instead.
+   */
   success(options: MessageOptions): void;
+  /** A dialog the user closes. */
   error(options: MessageOptions): void;
   /** Resolves true when the user confirms, false when they cancel or dismiss. */
   confirm(options: ConfirmOptions): Promise<boolean>;

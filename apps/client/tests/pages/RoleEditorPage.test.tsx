@@ -2,7 +2,7 @@ import { defaultBaseGrants, PERMISSION_KEYS } from "@homelabconnect/shared";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { adminUser, mockApi, renderApp } from "../support/renderApp";
+import { adminUser, mockApi, renderApp, toasts } from "../support/renderApp";
 
 const roleList = {
   status: 200,
@@ -25,9 +25,12 @@ const seniorMedTech = {
 };
 
 /** The Inherit / Allow / Deny radio group for one permission. */
-const permission = (label: string) => within(screen.getByRole("radiogroup", { name: label }));
+// By label, not by role: a role query works out the name of all 67 radio groups on every call.
+const permission = (label: string) => within(screen.getByLabelText(label));
 
-describe("RoleEditorPage", () => {
+// The matrix is 67 permissions × 3 radios, re-rendered on every click: ~3s alone in jsdom,
+// several times that when the whole suite shares the CPU.
+describe("RoleEditorPage", { timeout: 40_000 }, () => {
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem("homelabconnect.token", "tkn");
@@ -55,7 +58,7 @@ describe("RoleEditorPage", () => {
     await userEvent.click(permission("Record cash payments").getByRole("radio", { name: "Deny" }));
     await userEvent.click(screen.getByRole("button", { name: "Create role" }));
 
-    expect(within(await screen.findByRole("dialog")).getByText("Role created")).toBeInTheDocument();
+    expect(await toasts().findByText("Role created")).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/app/users/roles");
     expect(sent).toEqual({
       name: "Senior Med Tech",
@@ -88,7 +91,7 @@ describe("RoleEditorPage", () => {
     await userEvent.click(permission("Plan daily routes").getByRole("radio", { name: "Inherit" }));
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(within(await screen.findByRole("dialog")).getByText("Role saved")).toBeInTheDocument();
+    expect(await toasts().findByText("Role saved")).toBeInTheDocument();
     expect(sent).toEqual({ name: "Senior Med Tech", description: null, entries: [] });
   });
 

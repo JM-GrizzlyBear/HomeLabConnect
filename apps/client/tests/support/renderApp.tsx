@@ -1,5 +1,5 @@
 import { defaultBaseGrants, PERMISSION_KEYS } from "@homelabconnect/shared";
-import { render } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { vi } from "vitest";
 import { AuthProvider } from "../../src/auth/AuthProvider";
@@ -30,7 +30,8 @@ export function renderApp(path: string) {
   render(
     <AuthProvider>
       <TooltipProvider>
-        <FeedbackProvider>
+        {/* Toasts stay put in tests, so a slow run can't miss them. */}
+        <FeedbackProvider toastDurationMs={60_000}>
           <RouterProvider router={router} />
         </FeedbackProvider>
       </TooltipProvider>
@@ -38,6 +39,9 @@ export function renderApp(path: string) {
   );
   return router;
 }
+
+/** The success toasts in the top-right corner. */
+export const toasts = () => within(screen.getByRole("status"));
 
 export const sampleUser = {
   id: "8d6f3a52-5b7e-4c1a-9d57-1f7a3c2b9e10",
