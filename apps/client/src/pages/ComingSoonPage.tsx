@@ -1,7 +1,7 @@
 import { useLocation } from "react-router";
 import { useAuth } from "../auth/authContext";
 import { noAccessMessage, PageMessage } from "../components/layout/PageMessage";
-import { findMenuLink } from "../navigation/menu";
+import { canSee, findMenuLink } from "../navigation/menu";
 
 /** Placeholder for menu pages whose module isn't built yet. */
 export function ComingSoonPage() {
@@ -14,7 +14,7 @@ export function ComingSoonPage() {
   if (!entry) {
     return <PageMessage title="Page not found" body="This page doesn't exist." />;
   }
-  if (!entry.roles.includes(user.role)) {
+  if (!canSee(entry, user.permissions)) {
     return <PageMessage title={entry.label} body={noAccessMessage} />;
   }
   return (

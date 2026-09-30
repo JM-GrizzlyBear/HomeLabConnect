@@ -22,6 +22,7 @@ import {
 import { ApiError } from "../api/apiClient";
 import { fetchUsers, reissueTemporaryPassword, setUserStatus } from "../api/users";
 import { useAuth } from "../auth/authContext";
+import { useCan } from "../auth/useCan";
 import { roleLabels } from "../auth/roleLabels";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -56,6 +57,7 @@ const statusOptions = [
 export function UsersPage() {
   const { token, user: me } = useAuth();
   const feedback = useFeedback();
+  const can = useCan();
   const [filters, setFilters] = useState<Filters>({ q: "", role: ALL, status: ALL, page: 1 });
   const [search, setSearch] = useState("");
   const [list, setList] = useState<UserList | null>(null);
@@ -153,9 +155,11 @@ export function UsersPage() {
       <PageHeader
         title="All Users"
         action={
-          <Button asChild>
-            <Link to="/app/users/new">Create staff</Link>
-          </Button>
+          can("users.create") && (
+            <Button asChild>
+              <Link to="/app/users/new">Create staff</Link>
+            </Button>
+          )
         }
       />
 
@@ -252,20 +256,20 @@ export function UsersPage() {
                                 {
                                   label: "Send new temporary password",
                                   icon: <KeyRoundIcon />,
-                                  hidden: !row.isActive,
+                                  hidden: !row.isActive || !can("users.reset_password"),
                                   onSelect: () => void reissue(row),
                                 },
                                 {
                                   label: "Reactivate",
                                   icon: <UserCheckIcon />,
-                                  hidden: row.isActive,
+                                  hidden: row.isActive || !can("users.deactivate"),
                                   onSelect: () => void changeStatus(row, true),
                                 },
                                 {
                                   label: "Deactivate",
                                   icon: <UserXIcon />,
                                   destructive: true,
-                                  hidden: !row.isActive,
+                                  hidden: !row.isActive || !can("users.deactivate"),
                                   onSelect: () => void changeStatus(row, false),
                                 },
                               ]}

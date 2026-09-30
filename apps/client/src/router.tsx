@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
 import { GuestOnly } from "./auth/GuestOnly";
 import { RequireAuth } from "./auth/RequireAuth";
-import { RequireRole } from "./auth/RequireRole";
+import { RequirePermission } from "./auth/RequirePermission";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { ComingSoonPage } from "./pages/ComingSoonPage";
@@ -52,17 +52,17 @@ export const routes: RouteObject[] = [
       {
         path: "users/all",
         element: (
-          <RequireRole roles={["admin"]}>
+          <RequirePermission permission="users.view">
             <UsersPage />
-          </RequireRole>
+          </RequirePermission>
         ),
       },
       {
         path: "users/new",
         element: (
-          <RequireRole roles={["admin"]}>
+          <RequirePermission permission="users.create">
             <CreateStaffPage />
-          </RequireRole>
+          </RequirePermission>
         ),
       },
       { path: "*", element: <ComingSoonPage /> },

@@ -1,4 +1,4 @@
-import type { CurrentUser } from "@homelabconnect/shared";
+import type { SessionUser } from "@homelabconnect/shared";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError } from "../api/apiClient";
 import * as authApi from "../api/auth";
@@ -7,7 +7,7 @@ import { tokenStorage } from "./tokenStorage";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => tokenStorage.get());
-  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>(() => (token ? "loading" : "signedOut"));
 
   // Restore the session after a reload by asking the API who the stored token belongs to.
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token]);
 
-  const updateUser = useCallback((updated: CurrentUser) => setUser(updated), []);
+  const updateUser = useCallback((updated: SessionUser) => setUser(updated), []);
 
   const value = useMemo<AuthState>(
     () => ({ status, user, token, signIn, signOut, updateUser }),

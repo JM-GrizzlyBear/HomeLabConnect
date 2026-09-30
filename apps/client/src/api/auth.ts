@@ -6,6 +6,8 @@ import {
   type LoginResponse,
   loginResponseSchema,
   type RegisterPatientRequest,
+  type SessionUser,
+  sessionUserSchema,
 } from "@homelabconnect/shared";
 import { apiRequest } from "./apiClient";
 
@@ -21,15 +23,15 @@ export async function register(request: RegisterPatientRequest): Promise<Current
   );
 }
 
-export async function fetchCurrentUser(token: string, signal?: AbortSignal): Promise<CurrentUser> {
-  return currentUserSchema.parse(await apiRequest("/auth/me", { token, signal }));
+export async function fetchCurrentUser(token: string, signal?: AbortSignal): Promise<SessionUser> {
+  return sessionUserSchema.parse(await apiRequest("/auth/me", { token, signal }));
 }
 
 export async function changePassword(
   token: string,
   request: ChangePasswordRequest,
-): Promise<CurrentUser> {
-  return currentUserSchema.parse(
+): Promise<SessionUser> {
+  return sessionUserSchema.parse(
     await apiRequest("/auth/password", { method: "PUT", body: request, token }),
   );
 }

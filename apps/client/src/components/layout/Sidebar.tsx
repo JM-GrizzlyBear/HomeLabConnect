@@ -150,7 +150,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <ScrollArea className="-mx-1 min-h-0 flex-1 px-1">
         <nav aria-label="Main">
           <ul className="space-y-1">
-            {visibleMenu(user.role).map((entry) =>
+            {visibleMenu(user.permissions).map((entry) =>
               entry.kind === "group" ? (
                 <Group key={entry.label} entry={entry} onNavigate={onNavigate} />
               ) : (

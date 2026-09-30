@@ -1,4 +1,4 @@
-import { changePasswordFormSchema, type CurrentUser } from "@homelabconnect/shared";
+import { changePasswordFormSchema, type SessionUser } from "@homelabconnect/shared";
 import { type FormEvent, useState } from "react";
 import { TextInputField } from "@/components/form/TextInputField";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ const fieldByCode: Record<string, keyof FormValues> = {
 interface ChangePasswordFormProps {
   submitLabel?: string;
   /** Called with the updated user once the API accepts the new password. */
-  onChanged?: (user: CurrentUser) => void;
+  onChanged?: (user: SessionUser) => void;
 }
 
 /** Current, new and confirm fields. Used on the forced change page and the profile page. */

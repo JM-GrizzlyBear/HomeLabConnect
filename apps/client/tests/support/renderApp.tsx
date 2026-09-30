@@ -1,3 +1,4 @@
+import { defaultBaseGrants, PERMISSION_KEYS } from "@homelabconnect/shared";
 import { render } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { vi } from "vitest";
@@ -45,6 +46,16 @@ export const sampleUser = {
   firstName: "Juan",
   lastName: "Dela Cruz",
   mustChangePassword: false,
+  permissions: [...defaultBaseGrants.patient] as string[],
+};
+
+/** An admin: every permission. */
+export const adminUser = {
+  ...sampleUser,
+  role: "admin" as const,
+  firstName: "System",
+  lastName: "Admin",
+  permissions: [...PERMISSION_KEYS] as string[],
 };
 
 export const health = () => ({ status: 200, body: { status: "ok", db: "ok" } });

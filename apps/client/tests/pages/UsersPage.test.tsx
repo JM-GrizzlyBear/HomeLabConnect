@@ -1,9 +1,9 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { mockApi, renderApp, sampleUser } from "../support/renderApp";
+import { adminUser, mockApi, renderApp, sampleUser } from "../support/renderApp";
 
-const admin = { ...sampleUser, role: "admin" as const, firstName: "System", lastName: "Admin" };
+const admin = adminUser;
 
 function summary(overrides: Record<string, unknown>) {
   return {
@@ -197,7 +197,24 @@ describe("UsersPage", () => {
     expect(result.getByText("User not found.")).toBeInTheDocument();
   });
 
-  it("tells non-admins they don't have access", async () => {
+  it("shows support the list but none of the actions they lack permission for", async () => {
+    const support = {
+      ...sampleUser,
+      role: "support" as const,
+      permissions: ["dashboard.view", "users.view"],
+    };
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: support }),
+      [LIST]: () => page([ana, expired]),
+    });
+    renderApp("/app/users/all");
+
+    expect(await screen.findByText("ana@example.com")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Create staff" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Actions for/ })).not.toBeInTheDocument();
+  });
+
+  it("tells users without users.view they don't have access", async () => {
     mockApi({ "GET /api/auth/me": () => ({ status: 200, body: sampleUser }) });
     renderApp("/app/users/all");
 

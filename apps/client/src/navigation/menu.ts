@@ -1,4 +1,4 @@
-import type { BaseRole } from "@homelabconnect/shared";
+import type { PermissionKey } from "@homelabconnect/shared";
 
 export type NavIconName =
   | "dashboard"
@@ -17,11 +17,10 @@ export interface NavLink {
   label: string;
   path: string;
   /**
-   * Who sees this entry. Module 2 replaces roles with permission keys
-   * (e.g. "users.view"); the sidebar itself won't change.
+   * The permission needed to see this entry; null means every signed-in user.
    * Hiding an entry is a convenience only: the API enforces access.
    */
-  roles: readonly BaseRole[];
+  permission: PermissionKey | null;
   /** Where the page gets built, shown on the Coming soon page until then. */
   module: string;
   icon?: NavIconName;
@@ -36,15 +35,13 @@ export interface NavGroup {
 
 export type NavEntry = NavLink | NavGroup;
 
-const ALL: readonly BaseRole[] = ["patient", "med_team", "doctor", "support", "admin"];
-
 const link = (
   label: string,
   path: string,
-  roles: readonly BaseRole[],
+  permission: PermissionKey | null,
   module: string,
   icon?: NavIconName,
-): NavLink => ({ kind: "link", label, path, roles, module, icon });
+): NavLink => ({ kind: "link", label, path, permission, module, icon });
 
 const group = (label: string, icon: NavIconName, children: NavLink[]): NavGroup => ({
   kind: "group",
@@ -54,60 +51,88 @@ const group = (label: string, icon: NavIconName, children: NavLink[]): NavGroup 
 });
 
 export const menu: NavEntry[] = [
-  link("Dashboard", "/app", ALL, "Module 11 · Reports & Dashboard", "dashboard"),
+  link("Dashboard", "/app", "dashboard.view", "Module 11 · Reports & Dashboard", "dashboard"),
   group("Appointments", "calendar", [
-    link("Book a Visit", "/app/appointments/book", ["patient"], "Module 5 · Appointments"),
-    link("My Appointments", "/app/appointments/mine", ["patient"], "Module 5 · Appointments"),
-    link("My Visits", "/app/appointments/visits", ["med_team"], "Module 5 · Appointments"),
-    link("Daily Route", "/app/appointments/route", ["med_team"], "Module 5 · Appointments"),
+    link("Book a Visit", "/app/appointments/book", "appointments.book", "Module 5 · Appointments"),
+    link(
+      "My Appointments",
+      "/app/appointments/mine",
+      "appointments.view_own",
+      "Module 5 · Appointments",
+    ),
+    link(
+      "My Visits",
+      "/app/appointments/visits",
+      "visits.view_assigned",
+      "Module 5 · Appointments",
+    ),
+    link("Daily Route", "/app/appointments/route", "routes.view", "Module 5 · Appointments"),
     link(
       "All Appointments",
       "/app/appointments/all",
-      ["admin", "support"],
+      "appointments.view_all",
       "Module 5 · Appointments",
     ),
   ]),
   group("Results", "flask", [
-    link("My Results", "/app/results/mine", ["patient"], "Module 6 · Results"),
-    link("Review Queue", "/app/results/review", ["doctor"], "Module 6 · Results"),
+    link("My Results", "/app/results/mine", "results.view_own", "Module 6 · Results"),
+    link("Review Queue", "/app/results/review", "results.review", "Module 6 · Results"),
   ]),
   group("Payments", "wallet", [
-    link("My Payments", "/app/payments/mine", ["patient"], "Module 7 · Payments"),
-    link("All Payments", "/app/payments/all", ["admin"], "Module 7 · Payments"),
-    link("Refunds", "/app/payments/refunds", ["admin"], "Module 7 · Payments"),
+    link("My Payments", "/app/payments/mine", "payments.view_own", "Module 7 · Payments"),
+    link("All Payments", "/app/payments/all", "payments.view_all", "Module 7 · Payments"),
+    link("Refunds", "/app/payments/refunds", "payments.refund", "Module 7 · Payments"),
   ]),
   group("Support", "lifebuoy", [
-    link("My Tickets", "/app/support/tickets", ["patient"], "Module 8 · Support Desk"),
-    link("Ticket Queue", "/app/support/queue", ["support", "admin"], "Module 8 · Support Desk"),
+    link("My Tickets", "/app/support/tickets", "support.view_own", "Module 8 · Support Desk"),
+    link("Ticket Queue", "/app/support/queue", "support.view_queue", "Module 8 · Support Desk"),
   ]),
   group("Users", "users", [
-    link("All Users", "/app/users/all", ["admin"], "Module 1 · Accounts"),
-    link("Create Staff", "/app/users/new", ["admin"], "Module 1 · Accounts"),
-    link("Reports", "/app/users/reports", ["admin"], "Module 11 · Reports & Dashboard"),
+    link("All Users", "/app/users/all", "users.view", "Module 1 · Accounts"),
+    link("Create Staff", "/app/users/new", "users.create", "Module 1 · Accounts"),
+    link("Reports", "/app/users/reports", "reports.view", "Module 11 · Reports & Dashboard"),
   ]),
   group("Scheduling", "clock", [
-    link("Shifts", "/app/scheduling/shifts", ["admin"], "Module 4 · Scheduling & Teams"),
-    link("Leave Requests", "/app/scheduling/leave", ["admin"], "Module 4 · Scheduling & Teams"),
-    link("Teams", "/app/scheduling/teams", ["admin"], "Module 4 · Scheduling & Teams"),
+    link("Shifts", "/app/scheduling/shifts", "shifts.view", "Module 4 · Scheduling & Teams"),
+    link("Leave Requests", "/app/scheduling/leave", "leave.view", "Module 4 · Scheduling & Teams"),
+    link("Teams", "/app/scheduling/teams", "teams.view", "Module 4 · Scheduling & Teams"),
   ]),
   group("Catalog", "tag", [
-    link("Procedures", "/app/catalog/procedures", ["admin"], "Module 3 · Lab Procedure Catalog"),
-    link("Promotions", "/app/catalog/promotions", ["admin"], "Module 3 · Lab Procedure Catalog"),
+    link(
+      "Procedures",
+      "/app/catalog/procedures",
+      "procedures.manage",
+      "Module 3 · Lab Procedure Catalog",
+    ),
+    link(
+      "Promotions",
+      "/app/catalog/promotions",
+      "promotions.manage",
+      "Module 3 · Lab Procedure Catalog",
+    ),
   ]),
-  link("Account Profile", "/app/profile", ALL, "Module 1 · Accounts", "user"),
-  link("Settings", "/app/settings", ["admin"], "Module 12 · System Settings", "settings"),
+  link("Account Profile", "/app/profile", null, "Module 1 · Accounts", "user"),
+  link("Settings", "/app/settings", "settings.view", "Module 12 · System Settings", "settings"),
 ];
 
-/** The menu as a given role sees it. Groups with nothing visible are dropped. */
-export function visibleMenu(role: BaseRole, entries: NavEntry[] = menu): NavEntry[] {
+/** True when `permissions` include what the link needs. */
+export function canSee(link: NavLink, permissions: readonly string[]): boolean {
+  return link.permission === null || permissions.includes(link.permission);
+}
+
+/** The menu for a user with these permissions. Groups with nothing visible are dropped. */
+export function visibleMenu(
+  permissions: readonly string[],
+  entries: NavEntry[] = menu,
+): NavEntry[] {
   return entries.flatMap((entry): NavEntry[] => {
-    if (entry.kind === "link") return entry.roles.includes(role) ? [entry] : [];
-    const children = entry.children.filter((child) => child.roles.includes(role));
+    if (entry.kind === "link") return canSee(entry, permissions) ? [entry] : [];
+    const children = entry.children.filter((child) => canSee(child, permissions));
     return children.length > 0 ? [{ ...entry, children }] : [];
   });
 }
 
-/** Finds the link for a path anywhere in the full menu (not filtered by role). */
+/** Finds the link for a path anywhere in the full menu (not filtered by permission). */
 export function findMenuLink(path: string, entries: NavEntry[] = menu): NavLink | undefined {
   for (const entry of entries) {
     if (entry.kind === "link" && entry.path === path) return entry;
