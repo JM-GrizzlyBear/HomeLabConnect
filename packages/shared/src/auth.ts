@@ -10,7 +10,7 @@ export const passwordSchema = z
   .regex(/[A-Za-z]/, "Password must contain a letter.")
   .regex(/[0-9]/, "Password must contain a number.");
 
-const emailSchema = z.email("Enter a valid email address.");
+export const emailSchema = z.email("Enter a valid email address.");
 
 export const loginRequestSchema = z.object({
   email: emailSchema,
