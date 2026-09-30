@@ -54,11 +54,14 @@ export function ProfilePage() {
   useEffect(() => {
     if (!token) return;
     const controller = new AbortController();
-    fetchProfile(token, controller.signal)
-      .then(setProfile)
-      .catch(() => {
+    async function load(authToken: string) {
+      try {
+        setProfile(await fetchProfile(authToken, controller.signal));
+      } catch {
         if (!controller.signal.aborted) setLoadError("Could not load your profile. Try again.");
-      });
+      }
+    }
+    void load(token);
     return () => controller.abort();
   }, [token]);
 

@@ -25,16 +25,18 @@ export function HomePage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchHealth(controller.signal)
-      .then((health) => {
+    async function load() {
+      try {
+        const health = await fetchHealth(controller.signal);
         setApi(health.status);
         setDb(health.db);
-      })
-      .catch(() => {
+      } catch {
         if (controller.signal.aborted) return;
         setApi("unreachable");
         setDb("unreachable");
-      });
+      }
+    }
+    void load();
     return () => controller.abort();
   }, []);
 

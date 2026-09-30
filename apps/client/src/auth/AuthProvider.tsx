@@ -14,13 +14,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!token || user) return;
     const controller = new AbortController();
-    authApi
-      .fetchCurrentUser(token, controller.signal)
-      .then((current) => {
-        setUser(current);
+    async function restore(storedToken: string) {
+      try {
+        setUser(await authApi.fetchCurrentUser(storedToken, controller.signal));
         setStatus("signedIn");
-      })
-      .catch((error: unknown) => {
+      } catch (error) {
         if (controller.signal.aborted) return;
         // 401/403 means the token is dead (logged out, expired, deactivated).
         if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
@@ -28,7 +26,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setToken(null);
         }
         setStatus("signedOut");
-      });
+      }
+    }
+    void restore(token);
     return () => controller.abort();
   }, [token, user]);
 

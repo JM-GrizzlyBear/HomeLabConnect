@@ -37,7 +37,7 @@ export async function apiRequest(path: string, options: RequestOptions = {}): Pr
   });
 
   if (res.status === 204) return undefined;
-  const data: unknown = await res.json().catch(() => null);
+  const data = await readJson(res);
   if (res.ok) return data;
 
   const error = (data as { error?: { code?: string; message?: string; issues?: ApiIssue[] } })
@@ -48,4 +48,13 @@ export async function apiRequest(path: string, options: RequestOptions = {}): Pr
     error?.message ?? "Something went wrong. Please try again.",
     error?.issues ?? [],
   );
+}
+
+/** The response body as JSON, or null when it isn't JSON (e.g. a proxy's HTML error page). */
+async function readJson(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
 }

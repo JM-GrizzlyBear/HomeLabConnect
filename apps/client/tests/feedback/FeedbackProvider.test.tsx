@@ -15,11 +15,14 @@ function Demo({ onAnswer }: { onAnswer?(confirmed: boolean): void }) {
         fail
       </button>
       <button
-        onClick={() =>
-          void feedback
-            .confirm({ title: "Delete it?", confirmLabel: "Delete", destructive: true })
-            .then(onAnswer)
-        }
+        onClick={async () => {
+          const confirmed = await feedback.confirm({
+            title: "Delete it?",
+            confirmLabel: "Delete",
+            destructive: true,
+          });
+          onAnswer?.(confirmed);
+        }}
       >
         ask
       </button>
