@@ -9,6 +9,8 @@ import { CreateStaffPage } from "./pages/CreateStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
+import { ProcedureEditorPage } from "./pages/ProcedureEditorPage";
+import { ProceduresPage } from "./pages/ProceduresPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { RoleEditorPage } from "./pages/RoleEditorPage";
@@ -88,6 +90,30 @@ export const routes: RouteObject[] = [
         element: (
           <RequirePermission permission="users.create">
             <CreateStaffPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "catalog/procedures",
+        element: (
+          <RequirePermission permission="procedures.view">
+            <ProceduresPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "catalog/procedures/new",
+        element: (
+          <RequirePermission permission="procedures.manage">
+            <ProcedureEditorPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "catalog/procedures/:id",
+        element: (
+          <RequirePermission permission="procedures.manage">
+            <ProcedureEditorPage />
           </RequirePermission>
         ),
       },

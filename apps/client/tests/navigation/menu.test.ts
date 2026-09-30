@@ -23,15 +23,17 @@ describe("visibleMenu", () => {
       "Results: My Results",
       "Payments: My Payments",
       "Support: My Tickets",
+      "Catalog: Procedures",
       "Account Profile",
     ]);
   });
 
-  it("gives doctors all appointments and the review queue", () => {
+  it("gives doctors all appointments, the review queue and the catalogue", () => {
     expect(labels(visibleMenu(defaultBaseGrants.doctor))).toEqual([
       "Dashboard",
       "Appointments: All Appointments",
       "Results: Review Queue",
+      "Catalog: Procedures",
       "Account Profile",
     ]);
   });

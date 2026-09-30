@@ -102,7 +102,7 @@ export const menu: NavEntry[] = [
     link(
       "Procedures",
       "/app/catalog/procedures",
-      "procedures.manage",
+      "procedures.view",
       "Module 3 · Lab Procedure Catalog",
     ),
     link(
