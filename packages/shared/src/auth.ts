@@ -17,18 +17,38 @@ export const loginRequestSchema = z.object({
   password: z.string().min(1, "Enter your password.").max(72),
 });
 
+// Profile fields, shared by registration and profile editing.
+export const firstNameSchema = z.string().trim().min(1, "Enter your first name.").max(100);
+export const lastNameSchema = z.string().trim().min(1, "Enter your last name.").max(100);
+export const phoneSchema = z
+  .string()
+  .trim()
+  .regex(/^\+?[0-9][0-9 -]{6,19}$/, "Enter a valid mobile number, e.g. 09171234567.");
+export const birthDateSchema = z.iso.date("Enter a valid date.");
+export const addressSchema = z.string().trim().min(1).max(500, "Address is too long.");
+
 export const registerPatientRequestSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
-  firstName: z.string().trim().min(1, "Enter your first name.").max(100),
-  lastName: z.string().trim().min(1, "Enter your last name.").max(100),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^\+?[0-9][0-9 -]{6,19}$/, "Enter a valid mobile number, e.g. 09171234567."),
-  birthDate: z.iso.date("Enter a valid date.").optional(),
-  address: z.string().trim().min(1).max(500, "Address is too long.").optional(),
+  firstName: firstNameSchema,
+  lastName: lastNameSchema,
+  phone: phoneSchema,
+  birthDate: birthDateSchema.optional(),
+  address: addressSchema.optional(),
 });
+
+export const changePasswordRequestSchema = z.object({
+  currentPassword: z.string().min(1, "Enter your current password.").max(72),
+  newPassword: passwordSchema,
+});
+
+/** The change-password form: the request plus a confirmation that never leaves the browser. */
+export const changePasswordFormSchema = changePasswordRequestSchema
+  .extend({ confirmPassword: z.string() })
+  .refine((form) => form.confirmPassword === form.newPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
 
 export const currentUserSchema = z.object({
   id: z.uuid(),
@@ -48,5 +68,6 @@ export const loginResponseSchema = z.object({
 export type BaseRole = z.infer<typeof baseRoleSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type RegisterPatientRequest = z.infer<typeof registerPatientRequestSchema>;
+export type ChangePasswordRequest = z.infer<typeof changePasswordRequestSchema>;
 export type CurrentUser = z.infer<typeof currentUserSchema>;
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
