@@ -90,6 +90,7 @@ export const menu: NavEntry[] = [
   group("Users", "users", [
     link("All Users", "/app/users/all", "users.view", "Module 1 · Accounts"),
     link("Create Staff", "/app/users/new", "users.create", "Module 1 · Accounts"),
+    link("Roles & Permissions", "/app/users/roles", "roles.view", "Module 2 · Roles & Permissions"),
     link("Reports", "/app/users/reports", "reports.view", "Module 11 · Reports & Dashboard"),
   ]),
   group("Scheduling", "clock", [

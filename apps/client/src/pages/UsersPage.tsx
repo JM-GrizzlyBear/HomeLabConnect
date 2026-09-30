@@ -1,8 +1,16 @@
 import type { BaseRole, UserList, UserStatus, UserSummary } from "@homelabconnect/shared";
-import { CircleAlertIcon, KeyRoundIcon, SearchIcon, UserCheckIcon, UserXIcon } from "lucide-react";
+import {
+  CircleAlertIcon,
+  KeyRoundIcon,
+  SearchIcon,
+  ShieldIcon,
+  UserCheckIcon,
+  UserXIcon,
+} from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { ActionsMenu } from "@/components/ActionsMenu";
+import { ChangeRoleDialog } from "@/components/access/ChangeRoleDialog";
 import { EmptyState } from "@/components/data/EmptyState";
 import { TablePagination } from "@/components/data/TablePagination";
 import { SelectInputField } from "@/components/form/SelectInputField";
@@ -63,28 +71,31 @@ export function UsersPage() {
   const [list, setList] = useState<UserList | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
+  const [changingRole, setChangingRole] = useState<UserSummary | null>(null);
 
   useEffect(() => {
     if (!token) return;
     const controller = new AbortController();
-    fetchUsers(
-      token,
-      {
-        q: filters.q || undefined,
-        role: filters.role === ALL ? undefined : filters.role,
-        status: filters.status === ALL ? undefined : filters.status,
-        page: filters.page,
-        pageSize: PAGE_SIZE,
-      },
-      controller.signal,
-    )
-      .then((result) => {
+    async function load(authToken: string) {
+      try {
+        const result = await fetchUsers(
+          authToken,
+          {
+            q: filters.q || undefined,
+            role: filters.role === ALL ? undefined : filters.role,
+            status: filters.status === ALL ? undefined : filters.status,
+            page: filters.page,
+            pageSize: PAGE_SIZE,
+          },
+          controller.signal,
+        );
         setList(result);
         setLoadError(null);
-      })
-      .catch(() => {
+      } catch {
         if (!controller.signal.aborted) setLoadError("Could not load users. Try again.");
-      });
+      }
+    }
+    void load(token);
     return () => controller.abort();
   }, [token, filters, reload]);
 
@@ -238,7 +249,12 @@ export function UsersPage() {
                           </p>
                           <p className="text-muted-foreground">{row.email}</p>
                         </TableCell>
-                        <TableCell>{roleLabels[row.role]}</TableCell>
+                        <TableCell>
+                          <p>{roleLabels[row.role]}</p>
+                          {row.customRole && (
+                            <p className="text-xs text-muted-foreground">{row.customRole.name}</p>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <StatusBadge user={row} />
                         </TableCell>
@@ -253,6 +269,12 @@ export function UsersPage() {
                             <ActionsMenu
                               label={`Actions for ${row.firstName} ${row.lastName}`}
                               items={[
+                                {
+                                  label: "Change role",
+                                  icon: <ShieldIcon />,
+                                  hidden: !can("roles.assign") || !can("roles.view"),
+                                  onSelect: () => setChangingRole(row),
+                                },
                                 {
                                   label: "Send new temporary password",
                                   icon: <KeyRoundIcon />,
@@ -298,6 +320,12 @@ export function UsersPage() {
           </div>
         )}
       </ContentCard>
+
+      <ChangeRoleDialog
+        user={changingRole}
+        onClose={() => setChangingRole(null)}
+        onChanged={() => setReload((n) => n + 1)}
+      />
     </>
   );
 }

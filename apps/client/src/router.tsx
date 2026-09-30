@@ -11,6 +11,8 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { RoleEditorPage } from "./pages/RoleEditorPage";
+import { RolesPage } from "./pages/RolesPage";
 import { UsersPage } from "./pages/UsersPage";
 
 export const routes: RouteObject[] = [
@@ -54,6 +56,30 @@ export const routes: RouteObject[] = [
         element: (
           <RequirePermission permission="users.view">
             <UsersPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "users/roles",
+        element: (
+          <RequirePermission permission="roles.view">
+            <RolesPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "users/roles/new",
+        element: (
+          <RequirePermission permission="roles.manage">
+            <RoleEditorPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "users/roles/:id",
+        element: (
+          <RequirePermission permission="roles.manage">
+            <RoleEditorPage />
           </RequirePermission>
         ),
       },

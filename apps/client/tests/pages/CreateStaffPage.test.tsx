@@ -59,6 +59,7 @@ describe("CreateStaffPage", () => {
       phone: null,
       role: "support",
       hiredOn: null,
+      customRoleId: null,
     });
     // The form is cleared for the next account.
     expect(screen.getByLabelText("Email")).toHaveValue("");
@@ -135,7 +136,7 @@ describe("CreateStaffPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(screen.getByText("Choose a staff role.")).toBeInTheDocument();
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).not.toHaveBeenCalledWith("/api/users/staff", expect.anything());
   });
 
   it("tells non-admins they don't have access", async () => {

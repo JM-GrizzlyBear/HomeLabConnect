@@ -13,6 +13,7 @@ function summary(overrides: Record<string, unknown>) {
     firstName: "Ana",
     lastName: "Reyes",
     phone: null,
+    customRole: null,
     isActive: true,
     mustChangePassword: false,
     temporaryPasswordExpiresAt: null,
@@ -195,6 +196,52 @@ describe("UsersPage", () => {
     const result = within(await screen.findByRole("dialog"));
     expect(result.getByText("Couldn't deactivate the account")).toBeInTheDocument();
     expect(result.getByText("User not found.")).toBeInTheDocument();
+  });
+
+  it("changes a user's custom role from the actions menu", async () => {
+    let sent: unknown;
+    const frontDesk = {
+      id: "7f1c2e3d-4b5a-4c6d-8e9f-0a1b2c3d4e5f",
+      name: "Front Desk",
+      baseRole: "support",
+      description: null,
+      userCount: 0,
+      entries: [],
+    };
+    const medTech = {
+      ...frontDesk,
+      id: "3a2b1c0d-9e8f-4a7b-8c6d-5e4f3a2b1c0d",
+      name: "Senior Med Tech",
+      baseRole: "med_team",
+    };
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: admin }),
+      [LIST]: () => page([ana]),
+      "GET /api/roles": () => ({
+        status: 200,
+        body: { baseRoles: [], customRoles: [frontDesk, medTech] },
+      }),
+      [`PUT /api/users/${ana.id}/role`]: (body) => {
+        sent = body;
+        return {
+          status: 200,
+          body: { ...ana, customRole: { id: frontDesk.id, name: "Front Desk" } },
+        };
+      },
+    });
+    renderApp("/app/users/all");
+
+    await openActions("Ana Reyes");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Change role" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    await userEvent.click(dialog.getByRole("combobox", { name: "Custom role" }));
+    // Only roles built on Ana's base role (support) are offered.
+    expect(screen.queryByRole("option", { name: "Senior Med Tech" })).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("option", { name: "Front Desk" }));
+    await userEvent.click(dialog.getByRole("button", { name: "Save role" }));
+
+    expect(await screen.findByText("Role changed")).toBeInTheDocument();
+    expect(sent).toEqual({ customRoleId: frontDesk.id });
   });
 
   it("shows support the list but none of the actions they lack permission for", async () => {

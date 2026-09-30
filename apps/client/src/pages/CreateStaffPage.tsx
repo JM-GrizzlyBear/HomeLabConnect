@@ -1,13 +1,15 @@
-import { createStaffRequestSchema, type StaffRole } from "@homelabconnect/shared";
-import { type FormEvent, useState } from "react";
+import { type CustomRole, createStaffRequestSchema, type StaffRole } from "@homelabconnect/shared";
+import { type FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { DatePickerField } from "@/components/form/DatePicker";
 import { SelectInputField } from "@/components/form/SelectInputField";
 import { TextInputField } from "@/components/form/TextInputField";
 import { Button } from "@/components/ui/button";
+import { fetchRoles } from "../api/roles";
 import { createStaff } from "../api/users";
 import { useAuth } from "../auth/authContext";
 import { roleLabels } from "../auth/roleLabels";
+import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { useFeedback } from "../feedback/feedbackContext";
@@ -22,7 +24,12 @@ interface FormValues {
   phone: string;
   role: StaffRole | "";
   hiredOn: string;
+  /** NONE, or a custom role id. */
+  customRoleId: string;
 }
+
+/** Radix Select can't use "" as a value, so this stands for "no custom role". */
+const NONE = "none";
 
 const emptyForm: FormValues = {
   email: "",
@@ -31,6 +38,7 @@ const emptyForm: FormValues = {
   phone: "",
   role: "",
   hiredOn: "",
+  customRoleId: NONE,
 };
 
 const staffRoles: StaffRole[] = ["med_team", "doctor", "support", "admin"];
@@ -41,11 +49,17 @@ const fieldByCode: Record<string, keyof FormValues> = {
   email_taken: "email",
   invalid_email: "email",
   not_a_staff_role: "role",
+  role_mismatch: "customRoleId",
+  role_not_found: "customRoleId",
 };
 
 export function CreateStaffPage() {
   const { token } = useAuth();
   const feedback = useFeedback();
+  const can = useCan();
+  // Picking a custom role is role assignment: it needs roles.assign, and roles.view to list them.
+  const canPickRole = can("roles.assign") && can("roles.view");
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [values, setValues] = useState<FormValues>(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -59,6 +73,27 @@ export function CreateStaffPage() {
     error: fieldErrors[name],
   });
 
+  useEffect(() => {
+    if (!token || !canPickRole) return;
+    const controller = new AbortController();
+    async function load(authToken: string) {
+      try {
+        setCustomRoles((await fetchRoles(authToken, controller.signal)).customRoles);
+      } catch {
+        // Without the list the form still works; the account just gets its base role.
+      }
+    }
+    void load(token);
+    return () => controller.abort();
+  }, [token, canPickRole]);
+
+  const customRoleOptions = [
+    { value: NONE, label: values.role ? `None: ${roleLabels[values.role]} only` : "None" },
+    ...customRoles
+      .filter((role) => role.baseRole === values.role)
+      .map((role) => ({ value: role.id, label: role.name })),
+  ];
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -69,6 +104,7 @@ export function CreateStaffPage() {
       phone: values.phone.trim() || null,
       role: values.role || undefined,
       hiredOn: values.hiredOn || null,
+      customRoleId: values.customRoleId === NONE ? null : values.customRoleId,
     });
     if (!parsed.success) {
       setFieldErrors(toFieldErrors(parsed.error.issues));
@@ -123,7 +159,10 @@ export function CreateStaffPage() {
             placeholder="Choose a role"
             options={roleOptions}
             value={values.role}
-            onValueChange={set("role")}
+            onValueChange={(role) =>
+              // A custom role only fits its own base role, so start over when that changes.
+              setValues((current) => ({ ...current, role: role as StaffRole, customRoleId: NONE }))
+            }
             error={fieldErrors.role}
           />
           <TextInputField label="Mobile number" type="tel" required={false} {...field("phone")} />
@@ -134,6 +173,19 @@ export function CreateStaffPage() {
             onChange={set("hiredOn")}
             error={fieldErrors.hiredOn}
           />
+          {canPickRole && (
+            <SelectInputField
+              label="Custom role"
+              name="customRoleId"
+              required={false}
+              options={customRoleOptions}
+              value={values.customRoleId}
+              onValueChange={set("customRoleId")}
+              disabled={!values.role}
+              hint={values.role ? undefined : "Choose the role first."}
+              error={fieldErrors.customRoleId}
+            />
+          )}
           <div className="sm:col-span-2">
             <Button type="submit" loading={submitting} className="mt-2">
               Create account

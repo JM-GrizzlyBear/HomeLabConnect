@@ -12,7 +12,7 @@ const labels = (entries: NavEntry[]) =>
 describe("visibleMenu", () => {
   it("shows admins (every permission) the whole Users group", () => {
     expect(labels(visibleMenu(PERMISSION_KEYS))).toContain(
-      "Users: All Users, Create Staff, Reports",
+      "Users: All Users, Create Staff, Roles & Permissions, Reports",
     );
   });
 
