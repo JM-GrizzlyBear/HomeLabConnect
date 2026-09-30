@@ -1,6 +1,5 @@
 import { Link } from "react-router";
 import { useAuth } from "../auth/authContext";
-import { Alert } from "../components/Alert";
 import { Card } from "../components/Card";
 import { BarChart } from "../components/charts/BarChart";
 import { DonutChart, DonutLegend, ProgressRing } from "../components/charts/DonutChart";
@@ -26,15 +25,6 @@ export function DashboardPage() {
           ) : undefined
         }
       />
-
-      {user.mustChangePassword && (
-        <div className="mb-6">
-          <Alert tone="warning">
-            You are using a temporary password and must change it. The change-password form arrives
-            in the next update.
-          </Alert>
-        </div>
-      )}
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <Card title={data.stats.title} sample>

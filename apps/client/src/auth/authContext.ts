@@ -9,6 +9,8 @@ export interface AuthState {
   token: string | null;
   signIn(email: string, password: string): Promise<CurrentUser>;
   signOut(): Promise<void>;
+  /** Replaces the signed-in user after the API returns a newer copy (password or profile change). */
+  updateUser(user: CurrentUser): void;
 }
 
 export const AuthContext = createContext<AuthState | null>(null);

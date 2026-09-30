@@ -1,4 +1,5 @@
 import {
+  type ChangePasswordRequest,
   type CurrentUser,
   currentUserSchema,
   type LoginRequest,
@@ -22,6 +23,15 @@ export async function register(request: RegisterPatientRequest): Promise<Current
 
 export async function fetchCurrentUser(token: string, signal?: AbortSignal): Promise<CurrentUser> {
   return currentUserSchema.parse(await apiRequest("/auth/me", { token, signal }));
+}
+
+export async function changePassword(
+  token: string,
+  request: ChangePasswordRequest,
+): Promise<CurrentUser> {
+  return currentUserSchema.parse(
+    await apiRequest("/auth/password", { method: "PUT", body: request, token }),
+  );
 }
 
 export async function logout(token: string): Promise<void> {

@@ -52,7 +52,7 @@ describe("protected pages", () => {
     expect(fetchSpy).toHaveBeenCalledWith("/api/auth/logout", expect.anything());
   });
 
-  it("show the temporary-password warning", async () => {
+  it("send a user on a temporary password to change it first", async () => {
     localStorage.setItem("homelabconnect.token", "tkn");
     mockApi({
       "GET /api/auth/me": () => ({
@@ -60,8 +60,9 @@ describe("protected pages", () => {
         body: { ...sampleUser, mustChangePassword: true },
       }),
     });
-    renderApp("/app");
+    const router = renderApp("/app/profile");
 
-    expect(await screen.findByText(/temporary password/)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "New password" })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/change-password");
   });
 });
