@@ -1,3 +1,5 @@
+import { CustomRoleNotFound } from "../../domain/access/accessErrors.js";
+import { assertRoleFitsUser } from "../../domain/access/customRole.js";
 import { isStaffRole } from "../../domain/identity/baseRole.js";
 import { Email } from "../../domain/identity/email.js";
 import { EmailAlreadyTaken, NotAStaffRole } from "../../domain/identity/identityErrors.js";
@@ -6,6 +8,7 @@ import { temporaryPasswordExpiry } from "../../domain/identity/temporaryPassword
 import type { AccountEmails } from "../ports/accountEmails.js";
 import type { Clock } from "../ports/clock.js";
 import type { PasswordHasher } from "../ports/passwordHasher.js";
+import type { RoleRepository } from "../ports/roleRepository.js";
 import type { TemporaryPasswordGenerator } from "../ports/temporaryPasswordGenerator.js";
 import type { UserRepository } from "../ports/userRepository.js";
 import {
@@ -20,6 +23,8 @@ export interface CreateStaffAccountInput {
   phone: string | null;
   role: string;
   hiredOn: string | null;
+  /** Optional custom role, which must be built on the same base role. */
+  customRoleId: string | null;
 }
 
 /**
@@ -33,12 +38,18 @@ export class CreateStaffAccount {
     private readonly passwords: TemporaryPasswordGenerator,
     private readonly emails: AccountEmails,
     private readonly clock: Clock,
+    private readonly roles: RoleRepository,
   ) {}
 
   async execute(input: CreateStaffAccountInput): Promise<TemporaryPasswordOutput> {
     const email = Email.of(input.email);
     if (!isStaffRole(input.role)) throw new NotAStaffRole();
     if (await this.users.findByEmail(email.value)) throw new EmailAlreadyTaken();
+    if (input.customRoleId !== null) {
+      const role = await this.roles.findCustomRole(input.customRoleId);
+      if (!role) throw new CustomRoleNotFound();
+      assertRoleFitsUser(role, input.role);
+    }
 
     const temporaryPassword = this.passwords.generate();
     assertPasswordIsStrong(temporaryPassword);
@@ -53,6 +64,7 @@ export class CreateStaffAccount {
       phone: input.phone,
       hiredOn: input.hiredOn,
       temporaryPasswordExpiresAt: expiresAt,
+      customRoleId: input.customRoleId,
     });
 
     return deliverTemporaryPassword(user, temporaryPassword, expiresAt, () =>

@@ -3,6 +3,7 @@ import { BcryptPasswordHasher } from "../auth/bcryptPasswordHasher.js";
 import { loadConfig } from "../config.js";
 import { createDatabase } from "./client.js";
 import { employees, patients, roles, users } from "./schema/index.js";
+import { seedCustomRoles } from "./seedCustomRoles.js";
 import { syncPermissionCatalog } from "./seedPermissions.js";
 
 // Seed data is added module by module (admin account, roles, permissions, ...).
@@ -24,6 +25,8 @@ interface SeedAccount {
   firstName: string;
   lastName: string;
   phone: string;
+  /** Name of a seed custom role (see seedCustomRoles.ts). */
+  customRole?: string;
 }
 
 const staff: SeedAccount[] = [
@@ -37,6 +40,22 @@ const staff: SeedAccount[] = [
     phone: "09170000003",
   },
   { local: "support", role: "support", firstName: "Ana", lastName: "Reyes", phone: "09170000004" },
+  {
+    local: "president",
+    role: "admin",
+    firstName: "Carmen",
+    lastName: "Villanueva",
+    phone: "09170000005",
+    customRole: "President",
+  },
+  {
+    local: "seniormedtech",
+    role: "med_team",
+    firstName: "Paolo",
+    lastName: "Garcia",
+    phone: "09170000006",
+    customRole: "Senior Med Tech",
+  },
 ];
 
 const patientAccounts: SeedAccount[] = Array.from({ length: 20 }, (_, i) => {
@@ -56,6 +75,7 @@ const { db, pool } = createDatabase(config.databaseUrl);
 try {
   await db.insert(roles).values(baseRoles).onConflictDoNothing();
   const permissionCount = await syncPermissionCatalog(db);
+  const customRoleIds = await seedCustomRoles(db);
 
   const passwordHash = await new BcryptPasswordHasher().hash(SEED_PASSWORD);
   let created = 0;
@@ -71,6 +91,7 @@ try {
           firstName: account.firstName,
           lastName: account.lastName,
           phone: account.phone,
+          customRoleId: account.customRole ? customRoleIds.get(account.customRole) : null,
         })
         .onConflictDoNothing({ target: users.email })
         .returning({ id: users.id });
@@ -86,7 +107,7 @@ try {
   }
 
   console.log(
-    `Seeded ${baseRoles.length} roles, ${permissionCount} permissions and ${created} new accounts (password: ${SEED_PASSWORD}).`,
+    `Seeded ${baseRoles.length} base roles, ${customRoleIds.size} custom roles, ${permissionCount} permissions and ${created} new accounts (password: ${SEED_PASSWORD}).`,
   );
 } finally {
   await pool.end();

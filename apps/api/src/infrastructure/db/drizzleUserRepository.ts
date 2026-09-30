@@ -14,7 +14,7 @@ import type { ProfileChanges } from "../../domain/identity/profile.js";
 import { User } from "../../domain/identity/user.js";
 import type { Database } from "./client.js";
 import { isUniqueViolation } from "./errors.js";
-import { employees, patients, users } from "./schema/index.js";
+import { customRoles, employees, patients, users } from "./schema/index.js";
 
 type UserRow = typeof users.$inferSelect;
 
@@ -30,12 +30,23 @@ function toUser(row: UserRow): User {
     phone: row.phone,
     mustChangePassword: row.mustChangePassword,
     temporaryPasswordExpiresAt: row.temporaryPasswordExpiresAt,
+    customRoleId: row.customRoleId,
     isActive: row.isActive,
   });
 }
 
-function toListItem(row: UserRow): UserListItem {
-  return { user: toUser(row), lastLoginAt: row.lastLoginAt, createdAt: row.createdAt };
+interface ListRow {
+  user: UserRow;
+  customRole: { id: string; name: string } | null;
+}
+
+function toListItem({ user, customRole }: ListRow): UserListItem {
+  return {
+    user: toUser(user),
+    customRole,
+    lastLoginAt: user.lastLoginAt,
+    createdAt: user.createdAt,
+  };
 }
 
 /** Escapes LIKE wildcards so a search for "50%" matches the text literally. */
@@ -89,9 +100,7 @@ export class DrizzleUserRepository implements UserRepository {
   async list(query: UserListQuery): Promise<UserListPage> {
     const where = listFilter(query);
     const [rows, [totals]] = await Promise.all([
-      this.db
-        .select()
-        .from(users)
+      this.listSelect()
         .where(where)
         .orderBy(desc(users.createdAt), users.email)
         .limit(query.pageSize)
@@ -102,8 +111,16 @@ export class DrizzleUserRepository implements UserRepository {
   }
 
   async findListItem(id: string): Promise<UserListItem | null> {
-    const [row] = await this.db.select().from(users).where(eq(users.id, id));
+    const [row] = await this.listSelect().where(eq(users.id, id));
     return row ? toListItem(row) : null;
+  }
+
+  /** Users with their custom role's name, for the admin list. */
+  private listSelect() {
+    return this.db
+      .select({ user: users, customRole: { id: customRoles.id, name: customRoles.name } })
+      .from(users)
+      .leftJoin(customRoles, eq(customRoles.id, users.customRoleId));
   }
 
   async createPatientAccount(account: NewPatientAccount): Promise<User> {
@@ -146,6 +163,7 @@ export class DrizzleUserRepository implements UserRepository {
             phone: account.phone,
             mustChangePassword: true,
             temporaryPasswordExpiresAt: account.temporaryPasswordExpiresAt,
+            customRoleId: account.customRoleId,
           })
           .returning();
         if (!row) throw new Error("Insert into users returned no row.");
@@ -178,6 +196,10 @@ export class DrizzleUserRepository implements UserRepository {
 
   async setActive(userId: string, isActive: boolean): Promise<void> {
     await this.db.update(users).set({ isActive }).where(eq(users.id, userId));
+  }
+
+  async setCustomRole(userId: string, customRoleId: string | null): Promise<void> {
+    await this.db.update(users).set({ customRoleId }).where(eq(users.id, userId));
   }
 
   async updateProfile(userId: string, changes: ProfileChanges): Promise<void> {

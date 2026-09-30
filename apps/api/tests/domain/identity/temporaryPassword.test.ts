@@ -16,6 +16,7 @@ function user(overrides: Partial<UserProps>): User {
     phone: null,
     mustChangePassword: true,
     temporaryPasswordExpiresAt: null,
+    customRoleId: null,
     isActive: true,
     ...overrides,
   });

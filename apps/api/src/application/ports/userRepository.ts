@@ -22,6 +22,7 @@ export interface NewStaffAccount {
   phone: string | null;
   hiredOn: string | null;
   temporaryPasswordExpiresAt: Date;
+  customRoleId: string | null;
 }
 
 /** A user with their role-specific details. `patient` is null for staff. */
@@ -42,6 +43,7 @@ export interface UserListQuery {
 /** A user row for the admin list, with the sign-in dates the entity doesn't carry. */
 export interface UserListItem {
   user: User;
+  customRole: { id: string; name: string } | null;
   lastLoginAt: Date | null;
   createdAt: Date;
 }
@@ -69,6 +71,8 @@ export interface UserRepository {
   /** Stores a temporary password hash that must be changed before `expiresAt`. */
   setTemporaryPassword(userId: string, passwordHash: string, expiresAt: Date): Promise<void>;
   setActive(userId: string, isActive: boolean): Promise<void>;
+  /** Puts the user on a custom role, or back on the plain base role with null. */
+  setCustomRole(userId: string, customRoleId: string | null): Promise<void>;
   /** Saves the user's fields and, when `changes.patient` is set, their patient details. */
   updateProfile(userId: string, changes: ProfileChanges): Promise<void>;
 }

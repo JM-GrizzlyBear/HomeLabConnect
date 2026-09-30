@@ -3,6 +3,15 @@ import { randomUUID } from "node:crypto";
 import { defaultBaseGrants, PERMISSION_KEYS } from "@homelabconnect/shared";
 import type { AccessRepository } from "../../src/application/ports/accessRepository.js";
 import type {
+  BaseRoleRecord,
+  CustomRoleChanges,
+  CustomRoleRecord,
+  NewCustomRole,
+  RoleRepository,
+} from "../../src/application/ports/roleRepository.js";
+import { CustomRoleNameTaken } from "../../src/domain/access/accessErrors.js";
+import type { CustomRole } from "../../src/domain/access/customRole.js";
+import type {
   AccountEmails,
   TemporaryPasswordEmail,
 } from "../../src/application/ports/accountEmails.js";
@@ -108,6 +117,8 @@ export class InMemoryUserRepository implements UserRepository {
   /** Creation order stands in for created_at, so the newest-first sort is testable. */
   readonly createdAt = new Map<string, Date>();
   readonly hiredOn = new Map<string, string | null>();
+  /** Custom role names by id, kept up to date by InMemoryRoleRepository. */
+  readonly customRoleNames = new Map<string, string>();
   /** Patient details by user id. Patients added with add() get empty details. */
   readonly patients = new Map<string, PatientDetails>();
 
@@ -122,6 +133,7 @@ export class InMemoryUserRepository implements UserRepository {
       phone: null,
       mustChangePassword: false,
       temporaryPasswordExpiresAt: null,
+      customRoleId: null,
       isActive: true,
       ...overrides,
     };
@@ -173,8 +185,11 @@ export class InMemoryUserRepository implements UserRepository {
   }
 
   private toListItem(props: UserProps): UserListItem {
+    const roleName = props.customRoleId ? this.customRoleNames.get(props.customRoleId) : undefined;
     return {
       user: User.restore(props),
+      customRole:
+        props.customRoleId && roleName ? { id: props.customRoleId, name: roleName } : null,
       lastLoginAt: this.lastSignIn.get(props.id) ?? null,
       createdAt: this.createdAt.get(props.id) ?? new Date(0),
     };
@@ -220,6 +235,11 @@ export class InMemoryUserRepository implements UserRepository {
         temporaryPasswordExpiresAt: expiresAt,
       });
     }
+  }
+
+  async setCustomRole(userId: string, customRoleId: string | null): Promise<void> {
+    const props = this.users.get(userId);
+    if (props) this.users.set(userId, { ...props, customRoleId });
   }
 
   async setActive(userId: string, isActive: boolean): Promise<void> {
@@ -269,17 +289,92 @@ export class InMemorySessionRepository implements SessionRepository {
   }
 }
 
-/** The shared catalogue's default grants, plus custom-role entries and overrides set per user. */
+/** Custom roles in memory. Base roles come from the shared catalogue. */
+export class InMemoryRoleRepository implements RoleRepository {
+  readonly roles = new Map<string, CustomRole>();
+
+  constructor(private readonly users: InMemoryUserRepository) {}
+
+  /** Adds a role directly, for arranging tests. */
+  add(role: Partial<CustomRole> & { name: string; baseRole: CustomRole["baseRole"] }): CustomRole {
+    const created: CustomRole = { id: randomUUID(), description: null, entries: [], ...role };
+    this.roles.set(created.id, created);
+    this.users.customRoleNames.set(created.id, created.name);
+    return created;
+  }
+
+  async listBaseRoles(): Promise<BaseRoleRecord[]> {
+    const holders = [...this.users.users.values()];
+    return (["patient", "med_team", "doctor", "support", "admin"] as const).map((id) => ({
+      id,
+      name: id,
+      grants: [...(id === "admin" ? PERMISSION_KEYS : defaultBaseGrants[id])].sort(),
+      userCount: holders.filter((user) => user.role === id).length,
+    }));
+  }
+
+  async listCustomRoles(): Promise<CustomRoleRecord[]> {
+    return [...this.roles.values()]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((role) => this.record(role));
+  }
+
+  async findCustomRole(id: string): Promise<CustomRoleRecord | null> {
+    const role = this.roles.get(id);
+    return role ? this.record(role) : null;
+  }
+
+  async findCustomRoleByName(name: string): Promise<CustomRole | null> {
+    const wanted = name.trim().toLowerCase();
+    return [...this.roles.values()].find((role) => role.name.toLowerCase() === wanted) ?? null;
+  }
+
+  async createCustomRole(role: NewCustomRole): Promise<CustomRoleRecord> {
+    if (await this.findCustomRoleByName(role.name)) throw new CustomRoleNameTaken();
+    return this.record(this.add(role));
+  }
+
+  async updateCustomRole(id: string, changes: CustomRoleChanges): Promise<void> {
+    const role = this.roles.get(id);
+    if (!role) return;
+    this.roles.set(id, { ...role, ...changes });
+    this.users.customRoleNames.set(id, changes.name);
+  }
+
+  async deleteCustomRole(id: string): Promise<void> {
+    this.roles.delete(id);
+    this.users.customRoleNames.delete(id);
+  }
+
+  private record(role: CustomRole): CustomRoleRecord {
+    const userCount = [...this.users.users.values()].filter(
+      (user) => user.customRoleId === role.id,
+    ).length;
+    return { ...role, userCount };
+  }
+}
+
+/**
+ * The shared catalogue's default grants, the user's custom role (when users and
+ * roles are given), and custom-role entries or overrides set per user.
+ */
 export class InMemoryAccessRepository implements AccessRepository {
   readonly customRole = new Map<string, PermissionEntry[]>();
   readonly overrides = new Map<string, PermissionOverride[]>();
 
+  constructor(
+    private readonly users?: InMemoryUserRepository,
+    private readonly roles?: InMemoryRoleRepository,
+  ) {}
+
   async loadAccess(userId: string, baseRole: BaseRole): Promise<AccessData> {
+    const roleId = this.users?.users.get(userId)?.customRoleId;
+    const role = roleId ? this.roles?.roles.get(roleId) : undefined;
     return {
       baseRole,
       allPermissions: PERMISSION_KEYS,
       baseGrants: baseRole === "admin" ? [] : defaultBaseGrants[baseRole],
-      customRole: this.customRole.get(userId) ?? [],
+      customRole: role?.entries ?? this.customRole.get(userId) ?? [],
       overrides: this.overrides.get(userId) ?? [],
     };
   }

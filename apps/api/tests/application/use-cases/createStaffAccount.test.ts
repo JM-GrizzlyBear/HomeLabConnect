@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { CreateStaffAccount } from "../../../src/application/use-cases/createStaffAccount.js";
+import { CustomRoleMismatch, CustomRoleNotFound } from "../../../src/domain/access/accessErrors.js";
 import { EmailAlreadyTaken, NotAStaffRole } from "../../../src/domain/identity/identityErrors.js";
 import {
   FakeAccountEmails,
   FakePasswordHasher,
   FakeTemporaryPasswordGenerator,
   FixedClock,
+  InMemoryRoleRepository,
   InMemoryUserRepository,
 } from "../../support/fakes.js";
 
@@ -13,14 +15,16 @@ function setup() {
   const clock = new FixedClock();
   const users = new InMemoryUserRepository();
   const emails = new FakeAccountEmails();
+  const roles = new InMemoryRoleRepository(users);
   const createStaffAccount = new CreateStaffAccount(
     users,
     new FakePasswordHasher(),
     new FakeTemporaryPasswordGenerator(),
     emails,
     clock,
+    roles,
   );
-  return { clock, users, emails, createStaffAccount };
+  return { clock, users, roles, emails, createStaffAccount };
 }
 
 const input = {
@@ -30,6 +34,7 @@ const input = {
   phone: null,
   role: "support",
   hiredOn: "2026-01-10",
+  customRoleId: null,
 };
 
 describe("CreateStaffAccount", () => {
@@ -93,5 +98,30 @@ describe("CreateStaffAccount", () => {
     await expect(createStaffAccount.execute({ ...input, role: "patient" })).rejects.toThrow(
       NotAStaffRole,
     );
+  });
+
+  it("puts the new account on a custom role built on the same base role", async () => {
+    const { users, roles, createStaffAccount } = setup();
+    const role = roles.add({ name: "Front Desk", baseRole: "support" });
+
+    const output = await createStaffAccount.execute({ ...input, customRoleId: role.id });
+
+    expect(users.users.get(output.user.id)?.customRoleId).toBe(role.id);
+  });
+
+  it("rejects a custom role from another base role, or one that doesn't exist", async () => {
+    const { users, roles, createStaffAccount } = setup();
+    const medTechRole = roles.add({ name: "Senior Med Tech", baseRole: "med_team" });
+
+    await expect(
+      createStaffAccount.execute({ ...input, customRoleId: medTechRole.id }),
+    ).rejects.toThrow(CustomRoleMismatch);
+    await expect(
+      createStaffAccount.execute({
+        ...input,
+        customRoleId: "00000000-0000-4000-8000-000000000000",
+      }),
+    ).rejects.toThrow(CustomRoleNotFound);
+    expect(users.users.size).toBe(0);
   });
 });

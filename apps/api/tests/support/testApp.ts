@@ -1,4 +1,10 @@
 // Builds the real Express app on in-memory fakes, wired the same way as main.ts.
+import { AssignCustomRole } from "../../src/application/use-cases/assignCustomRole.js";
+import { CreateCustomRole } from "../../src/application/use-cases/createCustomRole.js";
+import { DeleteCustomRole } from "../../src/application/use-cases/deleteCustomRole.js";
+import { GetCustomRole } from "../../src/application/use-cases/getCustomRole.js";
+import { ListRoles } from "../../src/application/use-cases/listRoles.js";
+import { UpdateCustomRole } from "../../src/application/use-cases/updateCustomRole.js";
 import { AuthenticateRequest } from "../../src/application/use-cases/authenticateRequest.js";
 import { ChangePassword } from "../../src/application/use-cases/changePassword.js";
 import { CheckSystemHealth } from "../../src/application/use-cases/checkSystemHealth.js";
@@ -14,6 +20,12 @@ import { ReissueTemporaryPassword } from "../../src/application/use-cases/reissu
 import { SetUserActive } from "../../src/application/use-cases/setUserActive.js";
 import { UpdateProfile } from "../../src/application/use-cases/updateProfile.js";
 import { createApp } from "../../src/infrastructure/http/app.js";
+import { AssignCustomRoleController } from "../../src/interface/http/controllers/assignCustomRoleController.js";
+import { CreateCustomRoleController } from "../../src/interface/http/controllers/createCustomRoleController.js";
+import { DeleteCustomRoleController } from "../../src/interface/http/controllers/deleteCustomRoleController.js";
+import { GetCustomRoleController } from "../../src/interface/http/controllers/getCustomRoleController.js";
+import { ListRolesController } from "../../src/interface/http/controllers/listRolesController.js";
+import { UpdateCustomRoleController } from "../../src/interface/http/controllers/updateCustomRoleController.js";
 import { ChangePasswordController } from "../../src/interface/http/controllers/changePasswordController.js";
 import { CreateStaffAccountController } from "../../src/interface/http/controllers/createStaffAccountController.js";
 import { GetCurrentUserController } from "../../src/interface/http/controllers/getCurrentUserController.js";
@@ -32,6 +44,7 @@ import {
   FakePasswordHasher,
   FakeTemporaryPasswordGenerator,
   InMemoryAccessRepository,
+  InMemoryRoleRepository,
   FakeTokenService,
   FixedClock,
   InMemorySessionRepository,
@@ -44,7 +57,8 @@ export function buildTestApp({ databaseReachable = true } = {}) {
   const sessions = new InMemorySessionRepository(clock);
   const hasher = new FakePasswordHasher();
   const tokens = new FakeTokenService();
-  const access = new InMemoryAccessRepository();
+  const roles = new InMemoryRoleRepository(users);
+  const access = new InMemoryAccessRepository(users, roles);
   const resolvePermissions = new ResolvePermissions(access, clock);
   const emails = new FakeAccountEmails();
   const passwords = new FakeTemporaryPasswordGenerator();
@@ -77,12 +91,18 @@ export function buildTestApp({ databaseReachable = true } = {}) {
       updateProfile: new UpdateProfileController(new UpdateProfile(users)),
       listUsers: new ListUsersController(new ListUsers(users)),
       createStaffAccount: new CreateStaffAccountController(
-        new CreateStaffAccount(users, hasher, passwords, emails, clock),
+        new CreateStaffAccount(users, hasher, passwords, emails, clock, roles),
       ),
       setUserActive: new SetUserActiveController(new SetUserActive(users, sessions, clock)),
       reissueTemporaryPassword: new ReissueTemporaryPasswordController(
         new ReissueTemporaryPassword(users, sessions, hasher, passwords, emails, clock),
       ),
+      listRoles: new ListRolesController(new ListRoles(roles)),
+      getCustomRole: new GetCustomRoleController(new GetCustomRole(roles)),
+      createCustomRole: new CreateCustomRoleController(new CreateCustomRole(roles)),
+      updateCustomRole: new UpdateCustomRoleController(new UpdateCustomRole(roles)),
+      deleteCustomRole: new DeleteCustomRoleController(new DeleteCustomRole(roles)),
+      assignCustomRole: new AssignCustomRoleController(new AssignCustomRole(users, roles)),
     },
     middlewares: {
       authenticate: new Authenticate(authenticateRequest),
@@ -92,5 +112,5 @@ export function buildTestApp({ databaseReachable = true } = {}) {
     },
   });
 
-  return { app, clock, users, sessions, access, emails, passwords };
+  return { app, clock, users, sessions, roles, access, emails, passwords };
 }

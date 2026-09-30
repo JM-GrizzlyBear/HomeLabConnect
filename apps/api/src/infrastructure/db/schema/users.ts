@@ -1,5 +1,6 @@
 import { boolean, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { timestamps, timestamptz } from "./columns.js";
+import { customRoles } from "./access.js";
 import { roles } from "./roles.js";
 
 export const users = pgTable("users", {
@@ -16,6 +17,8 @@ export const users = pgTable("users", {
   mustChangePassword: boolean("must_change_password").notNull().default(false),
   /** When the temporary password stops working. Null once a permanent password is set. */
   temporaryPasswordExpiresAt: timestamptz("temporary_password_expires_at"),
+  /** Optional custom role on top of role_id. A role can't be deleted while users hold it. */
+  customRoleId: uuid("custom_role_id").references(() => customRoles.id, { onDelete: "restrict" }),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamptz("last_login_at"),
   ...timestamps,

@@ -1,5 +1,11 @@
 // Composition root: the only place that creates concrete classes and wires
 // them together. Everything else receives its dependencies via constructors.
+import { AssignCustomRole } from "./application/use-cases/assignCustomRole.js";
+import { CreateCustomRole } from "./application/use-cases/createCustomRole.js";
+import { DeleteCustomRole } from "./application/use-cases/deleteCustomRole.js";
+import { GetCustomRole } from "./application/use-cases/getCustomRole.js";
+import { ListRoles } from "./application/use-cases/listRoles.js";
+import { UpdateCustomRole } from "./application/use-cases/updateCustomRole.js";
 import { AuthenticateRequest } from "./application/use-cases/authenticateRequest.js";
 import { ChangePassword } from "./application/use-cases/changePassword.js";
 import { CheckSystemHealth } from "./application/use-cases/checkSystemHealth.js";
@@ -20,12 +26,19 @@ import { JwtTokenService } from "./infrastructure/auth/jwtTokenService.js";
 import { loadConfig } from "./infrastructure/config.js";
 import { createDatabase } from "./infrastructure/db/client.js";
 import { DrizzleAccessRepository } from "./infrastructure/db/drizzleAccessRepository.js";
+import { DrizzleRoleRepository } from "./infrastructure/db/drizzleRoleRepository.js";
 import { DrizzleDatabaseHealthProbe } from "./infrastructure/db/drizzleDatabaseHealthProbe.js";
 import { DrizzleSessionRepository } from "./infrastructure/db/drizzleSessionRepository.js";
 import { DrizzleUserRepository } from "./infrastructure/db/drizzleUserRepository.js";
 import { createApp } from "./infrastructure/http/app.js";
 import { NodemailerAccountEmails } from "./infrastructure/mail/nodemailerAccountEmails.js";
 import { SystemClock } from "./infrastructure/systemClock.js";
+import { AssignCustomRoleController } from "./interface/http/controllers/assignCustomRoleController.js";
+import { CreateCustomRoleController } from "./interface/http/controllers/createCustomRoleController.js";
+import { DeleteCustomRoleController } from "./interface/http/controllers/deleteCustomRoleController.js";
+import { GetCustomRoleController } from "./interface/http/controllers/getCustomRoleController.js";
+import { ListRolesController } from "./interface/http/controllers/listRolesController.js";
+import { UpdateCustomRoleController } from "./interface/http/controllers/updateCustomRoleController.js";
 import { ChangePasswordController } from "./interface/http/controllers/changePasswordController.js";
 import { CreateStaffAccountController } from "./interface/http/controllers/createStaffAccountController.js";
 import { GetCurrentUserController } from "./interface/http/controllers/getCurrentUserController.js";
@@ -50,6 +63,7 @@ const sessions = new DrizzleSessionRepository(db);
 const hasher = new BcryptPasswordHasher();
 const tokens = new JwtTokenService(config.jwtSecret);
 const access = new DrizzleAccessRepository(db);
+const roles = new DrizzleRoleRepository(db);
 const temporaryPasswords = new CryptoTemporaryPasswordGenerator();
 const accountEmails = new NodemailerAccountEmails({
   smtpHost: config.smtpHost,
@@ -84,6 +98,7 @@ const createStaffAccount = new CreateStaffAccount(
   temporaryPasswords,
   accountEmails,
   clock,
+  roles,
 );
 const setUserActive = new SetUserActive(users, sessions, clock);
 const reissueTemporaryPassword = new ReissueTemporaryPassword(
@@ -111,6 +126,12 @@ const app = createApp({
     createStaffAccount: new CreateStaffAccountController(createStaffAccount),
     setUserActive: new SetUserActiveController(setUserActive),
     reissueTemporaryPassword: new ReissueTemporaryPasswordController(reissueTemporaryPassword),
+    listRoles: new ListRolesController(new ListRoles(roles)),
+    getCustomRole: new GetCustomRoleController(new GetCustomRole(roles)),
+    createCustomRole: new CreateCustomRoleController(new CreateCustomRole(roles)),
+    updateCustomRole: new UpdateCustomRoleController(new UpdateCustomRole(roles)),
+    deleteCustomRole: new DeleteCustomRoleController(new DeleteCustomRole(roles)),
+    assignCustomRole: new AssignCustomRoleController(new AssignCustomRole(users, roles)),
   },
   middlewares: {
     authenticate: new Authenticate(authenticateRequest),
@@ -125,8 +146,9 @@ const server = app.listen(config.port, () => {
 });
 
 function shutdown() {
-  server.close(() => {
-    void pool.end().then(() => process.exit(0));
+  server.close(async () => {
+    await pool.end();
+    process.exit(0);
   });
 }
 process.on("SIGINT", shutdown);

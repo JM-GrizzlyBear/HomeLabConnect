@@ -13,6 +13,7 @@ function toUserSummary(output: UserSummaryOutput): UserSummary {
     firstName: output.firstName,
     lastName: output.lastName,
     phone: output.phone,
+    customRole: output.customRole,
     isActive: output.isActive,
     mustChangePassword: output.mustChangePassword,
     temporaryPasswordExpiresAt: output.temporaryPasswordExpiresAt?.toISOString() ?? null,

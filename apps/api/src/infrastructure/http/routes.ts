@@ -1,5 +1,11 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
+import type { AssignCustomRoleController } from "../../interface/http/controllers/assignCustomRoleController.js";
+import type { CreateCustomRoleController } from "../../interface/http/controllers/createCustomRoleController.js";
+import type { DeleteCustomRoleController } from "../../interface/http/controllers/deleteCustomRoleController.js";
+import type { GetCustomRoleController } from "../../interface/http/controllers/getCustomRoleController.js";
+import type { ListRolesController } from "../../interface/http/controllers/listRolesController.js";
+import type { UpdateCustomRoleController } from "../../interface/http/controllers/updateCustomRoleController.js";
 import type { ChangePasswordController } from "../../interface/http/controllers/changePasswordController.js";
 import type { CreateStaffAccountController } from "../../interface/http/controllers/createStaffAccountController.js";
 import type { GetCurrentUserController } from "../../interface/http/controllers/getCurrentUserController.js";
@@ -29,6 +35,12 @@ export interface Controllers {
   createStaffAccount: CreateStaffAccountController;
   setUserActive: SetUserActiveController;
   reissueTemporaryPassword: ReissueTemporaryPasswordController;
+  listRoles: ListRolesController;
+  getCustomRole: GetCustomRoleController;
+  createCustomRole: CreateCustomRoleController;
+  updateCustomRole: UpdateCustomRoleController;
+  deleteCustomRole: DeleteCustomRoleController;
+  assignCustomRole: AssignCustomRoleController;
 }
 
 export interface Middlewares {
@@ -88,6 +100,14 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
     "/users/:id/temporary-password",
     adapt(controllers.reissueTemporaryPassword, ...can("users.reset_password")),
   );
+
+  router.put("/users/:id/role", adapt(controllers.assignCustomRole, ...can("roles.assign")));
+
+  router.get("/roles", adapt(controllers.listRoles, ...can("roles.view")));
+  router.get("/roles/:id", adapt(controllers.getCustomRole, ...can("roles.view")));
+  router.post("/roles", adapt(controllers.createCustomRole, ...can("roles.manage")));
+  router.put("/roles/:id", adapt(controllers.updateCustomRole, ...can("roles.manage")));
+  router.delete("/roles/:id", adapt(controllers.deleteCustomRole, ...can("roles.manage")));
 
   return router;
 }

@@ -9,6 +9,7 @@ export interface UserSummaryOutput {
   firstName: string;
   lastName: string;
   phone: string | null;
+  customRole: { id: string; name: string } | null;
   isActive: boolean;
   mustChangePassword: boolean;
   temporaryPasswordExpiresAt: Date | null;
@@ -18,6 +19,7 @@ export interface UserSummaryOutput {
 
 export function toUserSummaryOutput({
   user,
+  customRole,
   lastLoginAt,
   createdAt,
 }: UserListItem): UserSummaryOutput {
@@ -28,6 +30,7 @@ export function toUserSummaryOutput({
     firstName: user.firstName,
     lastName: user.lastName,
     phone: user.phone,
+    customRole,
     isActive: user.isActive,
     mustChangePassword: user.mustChangePassword,
     temporaryPasswordExpiresAt: user.temporaryPasswordExpiresAt,

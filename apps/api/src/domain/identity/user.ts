@@ -12,6 +12,8 @@ export interface UserProps {
   mustChangePassword: boolean;
   /** When the temporary password stops working. Null once a permanent password is set. */
   temporaryPasswordExpiresAt: Date | null;
+  /** A custom role on top of the base role (Module 2), or null. */
+  customRoleId: string | null;
   isActive: boolean;
 }
 
@@ -49,6 +51,9 @@ export class User {
   }
   get temporaryPasswordExpiresAt() {
     return this.props.temporaryPasswordExpiresAt;
+  }
+  get customRoleId() {
+    return this.props.customRoleId;
   }
   get isActive() {
     return this.props.isActive;
