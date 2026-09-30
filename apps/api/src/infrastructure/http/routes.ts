@@ -1,12 +1,16 @@
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import type { ChangePasswordController } from "../../interface/http/controllers/changePasswordController.js";
+import type { CreateStaffAccountController } from "../../interface/http/controllers/createStaffAccountController.js";
 import type { GetCurrentUserController } from "../../interface/http/controllers/getCurrentUserController.js";
 import type { GetProfileController } from "../../interface/http/controllers/getProfileController.js";
 import type { HealthController } from "../../interface/http/controllers/healthController.js";
+import type { ListUsersController } from "../../interface/http/controllers/listUsersController.js";
 import type { LoginController } from "../../interface/http/controllers/loginController.js";
 import type { LogoutController } from "../../interface/http/controllers/logoutController.js";
 import type { RegisterPatientController } from "../../interface/http/controllers/registerPatientController.js";
+import type { ReissueTemporaryPasswordController } from "../../interface/http/controllers/reissueTemporaryPasswordController.js";
+import type { SetUserActiveController } from "../../interface/http/controllers/setUserActiveController.js";
 import type { UpdateProfileController } from "../../interface/http/controllers/updateProfileController.js";
 import type { Middleware } from "../../interface/http/httpTypes.js";
 import { adapt } from "./expressAdapter.js";
@@ -20,6 +24,10 @@ export interface Controllers {
   changePassword: ChangePasswordController;
   getProfile: GetProfileController;
   updateProfile: UpdateProfileController;
+  listUsers: ListUsersController;
+  createStaffAccount: CreateStaffAccountController;
+  setUserActive: SetUserActiveController;
+  reissueTemporaryPassword: ReissueTemporaryPasswordController;
 }
 
 export interface Middlewares {
@@ -27,6 +35,8 @@ export interface Middlewares {
   authenticate: Middleware;
   /** Signed in, possibly still on a temporary password. Only for /me, /password and /logout. */
   authenticateAllowingPasswordChange: Middleware;
+  /** Admins only. Place after authenticate. Module 2 swaps this for permission checks. */
+  requireAdmin: Middleware;
 }
 
 /** Slows down password guessing: 10 failed attempts per IP per 15 minutes. */
@@ -67,6 +77,15 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
 
   router.get("/users/me/profile", adapt(controllers.getProfile, middlewares.authenticate));
   router.patch("/users/me/profile", adapt(controllers.updateProfile, middlewares.authenticate));
+
+  const admin = [middlewares.authenticate, middlewares.requireAdmin];
+  router.get("/users", adapt(controllers.listUsers, ...admin));
+  router.post("/users/staff", adapt(controllers.createStaffAccount, ...admin));
+  router.patch("/users/:id/status", adapt(controllers.setUserActive, ...admin));
+  router.post(
+    "/users/:id/temporary-password",
+    adapt(controllers.reissueTemporaryPassword, ...admin),
+  );
 
   return router;
 }

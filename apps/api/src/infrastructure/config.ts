@@ -8,6 +8,9 @@ const envSchema = z.object({
   DATABASE_URL: z.url(),
   JWT_SECRET: z.string().min(32, "must be at least 32 characters"),
   SESSION_TTL_MINUTES: z.coerce.number().int().positive().default(720),
+  SMTP_HOST: z.string().min(1).default("localhost"),
+  SMTP_PORT: z.coerce.number().int().positive().default(1025),
+  MAIL_FROM: z.string().min(1).default("HomeLabConnect <no-reply@homelabconnect.local>"),
 });
 
 export interface Config {
@@ -17,6 +20,9 @@ export interface Config {
   databaseUrl: string;
   jwtSecret: string;
   sessionTtlMinutes: number;
+  smtpHost: string;
+  smtpPort: number;
+  mailFrom: string;
 }
 
 /** Reads the repo-root .env (if present) and validates every variable the API needs. */
@@ -39,5 +45,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     databaseUrl: parsed.data.DATABASE_URL,
     jwtSecret: parsed.data.JWT_SECRET,
     sessionTtlMinutes: parsed.data.SESSION_TTL_MINUTES,
+    smtpHost: parsed.data.SMTP_HOST,
+    smtpPort: parsed.data.SMTP_PORT,
+    mailFrom: parsed.data.MAIL_FROM,
   };
 }

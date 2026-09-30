@@ -14,6 +14,8 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   phone: text("phone"),
   mustChangePassword: boolean("must_change_password").notNull().default(false),
+  /** When the temporary password stops working. Null once a permanent password is set. */
+  temporaryPasswordExpiresAt: timestamptz("temporary_password_expires_at"),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamptz("last_login_at"),
   ...timestamps,

@@ -36,6 +36,7 @@ export class ChangePassword {
     if (!(await this.hasher.verify(input.currentPassword, user.passwordHash))) {
       throw new IncorrectCurrentPassword();
     }
+    user.assertTemporaryPasswordValid(this.clock.now());
     assertPasswordIsStrong(input.newPassword);
     if (input.newPassword === input.currentPassword) throw new PasswordUnchanged();
 

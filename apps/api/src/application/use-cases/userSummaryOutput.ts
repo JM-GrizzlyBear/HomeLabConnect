@@ -1,0 +1,37 @@
+import type { BaseRole } from "../../domain/identity/baseRole.js";
+import type { UserListItem } from "../ports/userRepository.js";
+
+/** A row in the admin user list: never the password hash. */
+export interface UserSummaryOutput {
+  id: string;
+  email: string;
+  role: BaseRole;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  temporaryPasswordExpiresAt: Date | null;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+}
+
+export function toUserSummaryOutput({
+  user,
+  lastLoginAt,
+  createdAt,
+}: UserListItem): UserSummaryOutput {
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    phone: user.phone,
+    isActive: user.isActive,
+    mustChangePassword: user.mustChangePassword,
+    temporaryPasswordExpiresAt: user.temporaryPasswordExpiresAt,
+    lastLoginAt,
+    createdAt,
+  };
+}

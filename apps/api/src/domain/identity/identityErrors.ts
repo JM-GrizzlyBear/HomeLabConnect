@@ -93,3 +93,29 @@ export class PatientDetailsNotAllowed extends DomainError {
     super("Only patients have a birth date and home address.", "patient_details_not_allowed");
   }
 }
+
+/** The temporary password is past its 7 days. Only an admin can issue a new one. */
+export class TemporaryPasswordExpired extends DomainError {
+  readonly kind = "unauthorized";
+  constructor() {
+    super(
+      "Your temporary password has expired. Ask an admin to send you a new one.",
+      "temporary_password_expired",
+    );
+  }
+}
+
+export class NotAStaffRole extends DomainError {
+  readonly kind = "validation";
+  constructor() {
+    super("Staff accounts need a staff role. Patients register themselves.", "not_a_staff_role");
+  }
+}
+
+/** An admin deactivating themselves would lock them out mid-task. */
+export class CannotDeactivateSelf extends DomainError {
+  readonly kind = "validation";
+  constructor() {
+    super("You can't deactivate your own account.", "cannot_deactivate_self");
+  }
+}

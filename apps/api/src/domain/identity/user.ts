@@ -1,5 +1,5 @@
 import type { BaseRole } from "./baseRole.js";
-import { AccountDeactivated } from "./identityErrors.js";
+import { AccountDeactivated, TemporaryPasswordExpired } from "./identityErrors.js";
 
 export interface UserProps {
   id: string;
@@ -10,6 +10,8 @@ export interface UserProps {
   lastName: string;
   phone: string | null;
   mustChangePassword: boolean;
+  /** When the temporary password stops working. Null once a permanent password is set. */
+  temporaryPasswordExpiresAt: Date | null;
   isActive: boolean;
 }
 
@@ -45,6 +47,9 @@ export class User {
   get mustChangePassword() {
     return this.props.mustChangePassword;
   }
+  get temporaryPasswordExpiresAt() {
+    return this.props.temporaryPasswordExpiresAt;
+  }
   get isActive() {
     return this.props.isActive;
   }
@@ -52,5 +57,13 @@ export class User {
   /** Business rule: deactivated accounts can't sign in or keep using a session. */
   assertCanSignIn(): void {
     if (!this.props.isActive) throw new AccountDeactivated();
+  }
+
+  /** Business rule: a temporary password stops working once it expires. */
+  assertTemporaryPasswordValid(now: Date): void {
+    const expiresAt = this.props.temporaryPasswordExpiresAt;
+    if (this.props.mustChangePassword && expiresAt && expiresAt <= now) {
+      throw new TemporaryPasswordExpired();
+    }
   }
 }

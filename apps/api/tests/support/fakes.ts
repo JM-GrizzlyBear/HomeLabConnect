@@ -1,14 +1,23 @@
 // In-memory stand-ins for the ports, for unit and route tests. Not part of the build.
 import { randomUUID } from "node:crypto";
+import type {
+  AccountEmails,
+  TemporaryPasswordEmail,
+} from "../../src/application/ports/accountEmails.js";
 import type { Clock } from "../../src/application/ports/clock.js";
 import type { PasswordHasher } from "../../src/application/ports/passwordHasher.js";
 import type {
   NewSession,
   SessionRepository,
 } from "../../src/application/ports/sessionRepository.js";
+import type { TemporaryPasswordGenerator } from "../../src/application/ports/temporaryPasswordGenerator.js";
 import type { AccessTokenClaims, TokenService } from "../../src/application/ports/tokenService.js";
 import type {
   NewPatientAccount,
+  NewStaffAccount,
+  UserListItem,
+  UserListPage,
+  UserListQuery,
   UserProfile,
   UserRepository,
 } from "../../src/application/ports/userRepository.js";
@@ -57,9 +66,41 @@ export class FakeTokenService implements TokenService {
   }
 }
 
+/** Records what would have been emailed. Set `failing` to simulate an SMTP outage. */
+export class FakeAccountEmails implements AccountEmails {
+  readonly sent: (TemporaryPasswordEmail & { kind: "welcome" | "reissued" })[] = [];
+  failing = false;
+
+  async sendStaffWelcome(email: TemporaryPasswordEmail): Promise<void> {
+    this.record("welcome", email);
+  }
+
+  async sendTemporaryPasswordReissued(email: TemporaryPasswordEmail): Promise<void> {
+    this.record("reissued", email);
+  }
+
+  private record(kind: "welcome" | "reissued", email: TemporaryPasswordEmail): void {
+    if (this.failing) throw new Error("SMTP unavailable");
+    this.sent.push({ kind, ...email });
+  }
+}
+
+/** Predictable passwords: Temp0001, Temp0002, ... */
+export class FakeTemporaryPasswordGenerator implements TemporaryPasswordGenerator {
+  private issued = 0;
+
+  generate(): string {
+    this.issued += 1;
+    return `Temp${String(this.issued).padStart(4, "0")}`;
+  }
+}
+
 export class InMemoryUserRepository implements UserRepository {
   readonly users = new Map<string, UserProps>();
   readonly lastSignIn = new Map<string, Date>();
+  /** Creation order stands in for created_at, so the newest-first sort is testable. */
+  readonly createdAt = new Map<string, Date>();
+  readonly hiredOn = new Map<string, string | null>();
   /** Patient details by user id. Patients added with add() get empty details. */
   readonly patients = new Map<string, PatientDetails>();
 
@@ -73,10 +114,12 @@ export class InMemoryUserRepository implements UserRepository {
       lastName: "User",
       phone: null,
       mustChangePassword: false,
+      temporaryPasswordExpiresAt: null,
       isActive: true,
       ...overrides,
     };
     this.users.set(props.id, props);
+    this.createdAt.set(props.id, new Date(Date.UTC(2026, 0, 1) + this.createdAt.size * 60_000));
     if (props.role === "patient") this.patients.set(props.id, { birthDate: null, address: null });
     return User.restore(props);
   }
@@ -97,6 +140,46 @@ export class InMemoryUserRepository implements UserRepository {
     return { user: User.restore(props), patient: this.patients.get(id) ?? null };
   }
 
+  async list({ search, role, isActive, page, pageSize }: UserListQuery): Promise<UserListPage> {
+    const needle = search?.toLowerCase();
+    const matches = [...this.users.values()]
+      .filter(
+        (user) =>
+          (!needle ||
+            [user.email, user.firstName, user.lastName].some((field) =>
+              field.toLowerCase().includes(needle),
+            )) &&
+          (!role || user.role === role) &&
+          (isActive === null || user.isActive === isActive),
+      )
+      .map((user) => this.toListItem(user))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return {
+      items: matches.slice((page - 1) * pageSize, page * pageSize),
+      total: matches.length,
+    };
+  }
+
+  async findListItem(id: string): Promise<UserListItem | null> {
+    const props = this.users.get(id);
+    return props ? this.toListItem(props) : null;
+  }
+
+  private toListItem(props: UserProps): UserListItem {
+    return {
+      user: User.restore(props),
+      lastLoginAt: this.lastSignIn.get(props.id) ?? null,
+      createdAt: this.createdAt.get(props.id) ?? new Date(0),
+    };
+  }
+
+  async createStaffAccount({ hiredOn, ...account }: NewStaffAccount): Promise<User> {
+    if (await this.findByEmail(account.email)) throw new EmailAlreadyTaken();
+    const user = this.add({ ...account, mustChangePassword: true });
+    this.hiredOn.set(user.id, hiredOn);
+    return user;
+  }
+
   async createPatientAccount({ birthDate, address, ...account }: NewPatientAccount): Promise<User> {
     if (await this.findByEmail(account.email)) throw new EmailAlreadyTaken();
     const user = this.add({ ...account, role: "patient" });
@@ -110,7 +193,31 @@ export class InMemoryUserRepository implements UserRepository {
 
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
     const props = this.users.get(userId);
-    if (props) this.users.set(userId, { ...props, passwordHash, mustChangePassword: false });
+    if (props) {
+      this.users.set(userId, {
+        ...props,
+        passwordHash,
+        mustChangePassword: false,
+        temporaryPasswordExpiresAt: null,
+      });
+    }
+  }
+
+  async setTemporaryPassword(userId: string, passwordHash: string, expiresAt: Date): Promise<void> {
+    const props = this.users.get(userId);
+    if (props) {
+      this.users.set(userId, {
+        ...props,
+        passwordHash,
+        mustChangePassword: true,
+        temporaryPasswordExpiresAt: expiresAt,
+      });
+    }
+  }
+
+  async setActive(userId: string, isActive: boolean): Promise<void> {
+    const props = this.users.get(userId);
+    if (props) this.users.set(userId, { ...props, isActive });
   }
 
   async updateProfile(userId: string, { patient, ...fields }: ProfileChanges): Promise<void> {

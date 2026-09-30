@@ -40,8 +40,10 @@ export class Login {
     const passwordMatches = await this.hasher.verify(input.password, user?.passwordHash ?? null);
     if (!user || !passwordMatches) throw new InvalidCredentials();
     user.assertCanSignIn();
-
+    // Checked only after the password matched, so it doesn't reveal which accounts exist.
     const now = this.clock.now();
+    user.assertTemporaryPasswordValid(now);
+
     const expiresAt = new Date(now.getTime() + this.options.sessionTtlMinutes * 60_000);
     const session = await this.sessions.create({
       userId: user.id,

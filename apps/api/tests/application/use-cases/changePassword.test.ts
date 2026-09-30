@@ -3,6 +3,7 @@ import { ChangePassword } from "../../../src/application/use-cases/changePasswor
 import {
   IncorrectCurrentPassword,
   PasswordUnchanged,
+  TemporaryPasswordExpired,
   WeakPassword,
 } from "../../../src/domain/identity/identityErrors.js";
 import {
@@ -44,6 +45,48 @@ describe("ChangePassword", () => {
 
     expect(output.mustChangePassword).toBe(false);
     expect(users.users.get(user.id)?.passwordHash).toBe("hashed:NewPassword456");
+  });
+
+  it("clears the temporary password expiry", async () => {
+    const { clock, users, sessions, changePassword } = setup();
+    const user = users.add({
+      email: "new@example.com",
+      role: "support",
+      mustChangePassword: true,
+      temporaryPasswordExpiresAt: new Date(clock.now().getTime() + 60_000),
+    });
+    const current = await openSession(sessions, user.id);
+
+    await changePassword.execute({
+      userId: user.id,
+      sessionId: current.id,
+      currentPassword: "Password123",
+      newPassword: "NewPassword456",
+    });
+
+    expect(users.users.get(user.id)?.temporaryPasswordExpiresAt).toBeNull();
+  });
+
+  it("rejects an expired temporary password and changes nothing", async () => {
+    const { clock, users, sessions, changePassword } = setup();
+    const user = users.add({
+      email: "new@example.com",
+      role: "support",
+      mustChangePassword: true,
+      temporaryPasswordExpiresAt: new Date(clock.now().getTime() + 60_000),
+    });
+    const current = await openSession(sessions, user.id);
+    clock.advanceMinutes(2);
+
+    await expect(
+      changePassword.execute({
+        userId: user.id,
+        sessionId: current.id,
+        currentPassword: "Password123",
+        newPassword: "NewPassword456",
+      }),
+    ).rejects.toThrow(TemporaryPasswordExpired);
+    expect(users.users.get(user.id)?.passwordHash).toBe("hashed:Password123");
   });
 
   it("signs out other sessions but keeps the current one", async () => {

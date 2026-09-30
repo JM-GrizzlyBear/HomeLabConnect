@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AccountDeactivated,
   InvalidCredentials,
+  TemporaryPasswordExpired,
 } from "../../../src/domain/identity/identityErrors.js";
 import {
   FakePasswordHasher,
@@ -69,6 +70,38 @@ describe("Login", () => {
       AccountDeactivated,
     );
     expect(sessions.sessions.size).toBe(0);
+  });
+
+  it("rejects an expired temporary password, but only once the password matches", async () => {
+    const { clock, users, sessions, login } = setup();
+    users.add({
+      email: "new@example.com",
+      role: "support",
+      mustChangePassword: true,
+      temporaryPasswordExpiresAt: clock.now(),
+    });
+
+    await expect(login.execute({ ...credentials, email: "new@example.com" })).rejects.toThrow(
+      TemporaryPasswordExpired,
+    );
+    await expect(
+      login.execute({ ...credentials, email: "new@example.com", password: "Wrong123" }),
+    ).rejects.toThrow(InvalidCredentials);
+    expect(sessions.sessions.size).toBe(0);
+  });
+
+  it("accepts a temporary password before it expires", async () => {
+    const { clock, users, login } = setup();
+    users.add({
+      email: "new@example.com",
+      role: "support",
+      mustChangePassword: true,
+      temporaryPasswordExpiresAt: new Date(clock.now().getTime() + 60_000),
+    });
+
+    const output = await login.execute({ ...credentials, email: "new@example.com" });
+
+    expect(output.user.mustChangePassword).toBe(true);
   });
 });
 

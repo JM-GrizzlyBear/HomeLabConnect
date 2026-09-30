@@ -1,6 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike, or, type SQL } from "drizzle-orm";
 import type {
   NewPatientAccount,
+  NewStaffAccount,
+  UserListItem,
+  UserListPage,
+  UserListQuery,
   UserProfile,
   UserRepository,
 } from "../../application/ports/userRepository.js";
@@ -10,7 +14,7 @@ import type { ProfileChanges } from "../../domain/identity/profile.js";
 import { User } from "../../domain/identity/user.js";
 import type { Database } from "./client.js";
 import { isUniqueViolation } from "./errors.js";
-import { patients, users } from "./schema/index.js";
+import { employees, patients, users } from "./schema/index.js";
 
 type UserRow = typeof users.$inferSelect;
 
@@ -25,8 +29,33 @@ function toUser(row: UserRow): User {
     lastName: row.lastName,
     phone: row.phone,
     mustChangePassword: row.mustChangePassword,
+    temporaryPasswordExpiresAt: row.temporaryPasswordExpiresAt,
     isActive: row.isActive,
   });
+}
+
+function toListItem(row: UserRow): UserListItem {
+  return { user: toUser(row), lastLoginAt: row.lastLoginAt, createdAt: row.createdAt };
+}
+
+/** Escapes LIKE wildcards so a search for "50%" matches the text literally. */
+function likePattern(search: string): string {
+  return `%${search.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+}
+
+function listFilter({ search, role, isActive }: UserListQuery): SQL | undefined {
+  const pattern = search ? likePattern(search) : null;
+  return and(
+    pattern
+      ? or(
+          ilike(users.email, pattern),
+          ilike(users.firstName, pattern),
+          ilike(users.lastName, pattern),
+        )
+      : undefined,
+    role ? eq(users.roleId, role) : undefined,
+    isActive === null ? undefined : eq(users.isActive, isActive),
+  );
 }
 
 export class DrizzleUserRepository implements UserRepository {
@@ -57,6 +86,26 @@ export class DrizzleUserRepository implements UserRepository {
     return { user, patient };
   }
 
+  async list(query: UserListQuery): Promise<UserListPage> {
+    const where = listFilter(query);
+    const [rows, [totals]] = await Promise.all([
+      this.db
+        .select()
+        .from(users)
+        .where(where)
+        .orderBy(desc(users.createdAt), users.email)
+        .limit(query.pageSize)
+        .offset((query.page - 1) * query.pageSize),
+      this.db.select({ total: count() }).from(users).where(where),
+    ]);
+    return { items: rows.map(toListItem), total: totals?.total ?? 0 };
+  }
+
+  async findListItem(id: string): Promise<UserListItem | null> {
+    const [row] = await this.db.select().from(users).where(eq(users.id, id));
+    return row ? toListItem(row) : null;
+  }
+
   async createPatientAccount(account: NewPatientAccount): Promise<User> {
     try {
       return await this.db.transaction(async (tx) => {
@@ -83,6 +132,32 @@ export class DrizzleUserRepository implements UserRepository {
     }
   }
 
+  async createStaffAccount(account: NewStaffAccount): Promise<User> {
+    try {
+      return await this.db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(users)
+          .values({
+            email: account.email,
+            passwordHash: account.passwordHash,
+            roleId: account.role,
+            firstName: account.firstName,
+            lastName: account.lastName,
+            phone: account.phone,
+            mustChangePassword: true,
+            temporaryPasswordExpiresAt: account.temporaryPasswordExpiresAt,
+          })
+          .returning();
+        if (!row) throw new Error("Insert into users returned no row.");
+        await tx.insert(employees).values({ userId: row.id, hiredOn: account.hiredOn });
+        return toUser(row);
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new EmailAlreadyTaken();
+      throw error;
+    }
+  }
+
   async recordSignIn(userId: string, at: Date): Promise<void> {
     await this.db.update(users).set({ lastLoginAt: at }).where(eq(users.id, userId));
   }
@@ -90,8 +165,19 @@ export class DrizzleUserRepository implements UserRepository {
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
     await this.db
       .update(users)
-      .set({ passwordHash, mustChangePassword: false })
+      .set({ passwordHash, mustChangePassword: false, temporaryPasswordExpiresAt: null })
       .where(eq(users.id, userId));
+  }
+
+  async setTemporaryPassword(userId: string, passwordHash: string, expiresAt: Date): Promise<void> {
+    await this.db
+      .update(users)
+      .set({ passwordHash, mustChangePassword: true, temporaryPasswordExpiresAt: expiresAt })
+      .where(eq(users.id, userId));
+  }
+
+  async setActive(userId: string, isActive: boolean): Promise<void> {
+    await this.db.update(users).set({ isActive }).where(eq(users.id, userId));
   }
 
   async updateProfile(userId: string, changes: ProfileChanges): Promise<void> {
