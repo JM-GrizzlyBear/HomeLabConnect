@@ -3,3 +3,4 @@ export * from "./health.js";
 export * from "./profile.js";
 export * from "./users.js";
 export * from "./permissions.js";
+export * from "./roles.js";

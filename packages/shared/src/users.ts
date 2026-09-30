@@ -20,6 +20,8 @@ export const createStaffRequestSchema = z.object({
   phone: phoneSchema.nullable(),
   role: staffRoleSchema,
   hiredOn: z.iso.date("Enter a valid date.").nullable(),
+  /** Optional custom role, built on the same base role. Needs roles.assign. */
+  customRoleId: z.uuid().nullable().default(null),
 });
 
 /**
@@ -51,6 +53,8 @@ export const userSummarySchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   phone: z.string().nullable(),
+  /** The custom role on top of the base role, if any. */
+  customRole: z.object({ id: z.uuid(), name: z.string() }).nullable(),
   isActive: z.boolean(),
   mustChangePassword: z.boolean(),
   temporaryPasswordExpiresAt: z.iso.datetime().nullable(),
@@ -75,7 +79,7 @@ export const userIdParamsSchema = z.object({
 });
 
 export type StaffRole = z.infer<typeof staffRoleSchema>;
-export type CreateStaffRequest = z.infer<typeof createStaffRequestSchema>;
+export type CreateStaffRequest = z.input<typeof createStaffRequestSchema>;
 export type TemporaryPasswordResponse = z.infer<typeof temporaryPasswordResponseSchema>;
 export type UserStatus = z.infer<typeof userStatusSchema>;
 export type ListUsersQuery = z.input<typeof listUsersQuerySchema>;
