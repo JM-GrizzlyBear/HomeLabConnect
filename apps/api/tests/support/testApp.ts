@@ -1,16 +1,22 @@
 // Builds the real Express app on in-memory fakes, wired the same way as main.ts.
 import { AuthenticateRequest } from "../../src/application/use-cases/authenticateRequest.js";
+import { ChangePassword } from "../../src/application/use-cases/changePassword.js";
 import { CheckSystemHealth } from "../../src/application/use-cases/checkSystemHealth.js";
 import { GetCurrentUser } from "../../src/application/use-cases/getCurrentUser.js";
+import { GetProfile } from "../../src/application/use-cases/getProfile.js";
 import { Login } from "../../src/application/use-cases/login.js";
 import { Logout } from "../../src/application/use-cases/logout.js";
 import { RegisterPatient } from "../../src/application/use-cases/registerPatient.js";
+import { UpdateProfile } from "../../src/application/use-cases/updateProfile.js";
 import { createApp } from "../../src/infrastructure/http/app.js";
+import { ChangePasswordController } from "../../src/interface/http/controllers/changePasswordController.js";
 import { GetCurrentUserController } from "../../src/interface/http/controllers/getCurrentUserController.js";
+import { GetProfileController } from "../../src/interface/http/controllers/getProfileController.js";
 import { HealthController } from "../../src/interface/http/controllers/healthController.js";
 import { LoginController } from "../../src/interface/http/controllers/loginController.js";
 import { LogoutController } from "../../src/interface/http/controllers/logoutController.js";
 import { RegisterPatientController } from "../../src/interface/http/controllers/registerPatientController.js";
+import { UpdateProfileController } from "../../src/interface/http/controllers/updateProfileController.js";
 import { Authenticate } from "../../src/interface/http/middleware/authenticate.js";
 import {
   FakePasswordHasher,
@@ -40,6 +46,11 @@ export function buildTestApp({ databaseReachable = true } = {}) {
       ),
       logout: new LogoutController(new Logout(sessions, clock)),
       getCurrentUser: new GetCurrentUserController(new GetCurrentUser(users)),
+      changePassword: new ChangePasswordController(
+        new ChangePassword(users, sessions, hasher, clock),
+      ),
+      getProfile: new GetProfileController(new GetProfile(users)),
+      updateProfile: new UpdateProfileController(new UpdateProfile(users)),
     },
     middlewares: {
       authenticate: new Authenticate(authenticateRequest),

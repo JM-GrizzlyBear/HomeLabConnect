@@ -12,4 +12,6 @@ export interface SessionRepository {
   create(session: NewSession): Promise<Session>;
   findById(id: string): Promise<Session | null>;
   revoke(id: string, at: Date): Promise<void>;
+  /** Revokes every open session of a user, except `exceptSessionId` if given. */
+  revokeAllForUser(userId: string, at: Date, exceptSessionId?: string): Promise<void>;
 }

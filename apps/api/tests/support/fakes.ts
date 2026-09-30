@@ -9,10 +9,12 @@ import type {
 import type { AccessTokenClaims, TokenService } from "../../src/application/ports/tokenService.js";
 import type {
   NewPatientAccount,
+  UserProfile,
   UserRepository,
 } from "../../src/application/ports/userRepository.js";
 import type { BaseRole } from "../../src/domain/identity/baseRole.js";
 import { EmailAlreadyTaken } from "../../src/domain/identity/identityErrors.js";
+import type { PatientDetails, ProfileChanges } from "../../src/domain/identity/profile.js";
 import type { Session } from "../../src/domain/identity/session.js";
 import { User, type UserProps } from "../../src/domain/identity/user.js";
 
@@ -58,6 +60,8 @@ export class FakeTokenService implements TokenService {
 export class InMemoryUserRepository implements UserRepository {
   readonly users = new Map<string, UserProps>();
   readonly lastSignIn = new Map<string, Date>();
+  /** Patient details by user id. Patients added with add() get empty details. */
+  readonly patients = new Map<string, PatientDetails>();
 
   /** Adds a user directly, for arranging tests. Password is "Password123" unless given. */
   add(overrides: Partial<UserProps> & { email: string; role?: BaseRole }): User {
@@ -73,6 +77,7 @@ export class InMemoryUserRepository implements UserRepository {
       ...overrides,
     };
     this.users.set(props.id, props);
+    if (props.role === "patient") this.patients.set(props.id, { birthDate: null, address: null });
     return User.restore(props);
   }
 
@@ -86,13 +91,32 @@ export class InMemoryUserRepository implements UserRepository {
     return props ? User.restore(props) : null;
   }
 
-  async createPatientAccount(account: NewPatientAccount): Promise<User> {
+  async findProfile(id: string): Promise<UserProfile | null> {
+    const props = this.users.get(id);
+    if (!props) return null;
+    return { user: User.restore(props), patient: this.patients.get(id) ?? null };
+  }
+
+  async createPatientAccount({ birthDate, address, ...account }: NewPatientAccount): Promise<User> {
     if (await this.findByEmail(account.email)) throw new EmailAlreadyTaken();
-    return this.add({ ...account, role: "patient" });
+    const user = this.add({ ...account, role: "patient" });
+    this.patients.set(user.id, { birthDate, address });
+    return user;
   }
 
   async recordSignIn(userId: string, at: Date): Promise<void> {
     this.lastSignIn.set(userId, at);
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    const props = this.users.get(userId);
+    if (props) this.users.set(userId, { ...props, passwordHash, mustChangePassword: false });
+  }
+
+  async updateProfile(userId: string, { patient, ...fields }: ProfileChanges): Promise<void> {
+    const props = this.users.get(userId);
+    if (props) this.users.set(userId, { ...props, ...fields });
+    if (patient) this.patients.set(userId, patient);
   }
 }
 
@@ -120,5 +144,13 @@ export class InMemorySessionRepository implements SessionRepository {
   async revoke(id: string, at: Date): Promise<void> {
     const session = this.sessions.get(id);
     if (session && !session.revokedAt) session.revokedAt = at;
+  }
+
+  async revokeAllForUser(userId: string, at: Date, exceptSessionId?: string): Promise<void> {
+    for (const session of this.sessions.values()) {
+      if (session.userId === userId && session.id !== exceptSessionId) {
+        session.revokedAt ??= at;
+      }
+    }
   }
 }

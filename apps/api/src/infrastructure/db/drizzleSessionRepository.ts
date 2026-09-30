@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import type { NewSession, SessionRepository } from "../../application/ports/sessionRepository.js";
 import type { Session } from "../../domain/identity/session.js";
 import type { Database } from "./client.js";
@@ -35,5 +35,18 @@ export class DrizzleSessionRepository implements SessionRepository {
       .update(sessions)
       .set({ revokedAt: at })
       .where(and(eq(sessions.id, id), isNull(sessions.revokedAt)));
+  }
+
+  async revokeAllForUser(userId: string, at: Date, exceptSessionId?: string): Promise<void> {
+    await this.db
+      .update(sessions)
+      .set({ revokedAt: at })
+      .where(
+        and(
+          eq(sessions.userId, userId),
+          isNull(sessions.revokedAt),
+          exceptSessionId ? ne(sessions.id, exceptSessionId) : undefined,
+        ),
+      );
   }
 }

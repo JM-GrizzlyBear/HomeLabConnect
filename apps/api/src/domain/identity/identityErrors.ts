@@ -64,3 +64,32 @@ export class UserNotFound extends DomainError {
     super("User not found.", "user_not_found");
   }
 }
+
+/** Changing a password needs the current one. Not "unauthorized": the session itself is fine. */
+export class IncorrectCurrentPassword extends DomainError {
+  readonly kind = "validation";
+  constructor() {
+    super("Current password is incorrect.", "incorrect_current_password");
+  }
+}
+
+export class PasswordUnchanged extends DomainError {
+  readonly kind = "validation";
+  constructor() {
+    super("New password must be different from the current one.", "password_unchanged");
+  }
+}
+
+export class PhoneRequired extends DomainError {
+  readonly kind = "validation";
+  constructor() {
+    super("Patients need a mobile number so the med team can reach them.", "phone_required");
+  }
+}
+
+export class PatientDetailsNotAllowed extends DomainError {
+  readonly kind = "validation";
+  constructor() {
+    super("Only patients have a birth date and home address.", "patient_details_not_allowed");
+  }
+}

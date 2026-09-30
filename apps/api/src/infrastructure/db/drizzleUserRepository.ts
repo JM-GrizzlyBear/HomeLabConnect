@@ -1,7 +1,12 @@
 import { eq } from "drizzle-orm";
-import type { NewPatientAccount, UserRepository } from "../../application/ports/userRepository.js";
+import type {
+  NewPatientAccount,
+  UserProfile,
+  UserRepository,
+} from "../../application/ports/userRepository.js";
 import { isBaseRole } from "../../domain/identity/baseRole.js";
 import { EmailAlreadyTaken } from "../../domain/identity/identityErrors.js";
+import type { ProfileChanges } from "../../domain/identity/profile.js";
 import { User } from "../../domain/identity/user.js";
 import type { Database } from "./client.js";
 import { isUniqueViolation } from "./errors.js";
@@ -37,6 +42,21 @@ export class DrizzleUserRepository implements UserRepository {
     return row ? toUser(row) : null;
   }
 
+  async findProfile(id: string): Promise<UserProfile | null> {
+    const [row] = await this.db
+      .select({ user: users, patient: patients })
+      .from(users)
+      .leftJoin(patients, eq(patients.userId, users.id))
+      .where(eq(users.id, id));
+    if (!row) return null;
+    const user = toUser(row.user);
+    const patient =
+      user.role === "patient"
+        ? { birthDate: row.patient?.birthDate ?? null, address: row.patient?.address ?? null }
+        : null;
+    return { user, patient };
+  }
+
   async createPatientAccount(account: NewPatientAccount): Promise<User> {
     try {
       return await this.db.transaction(async (tx) => {
@@ -65,5 +85,28 @@ export class DrizzleUserRepository implements UserRepository {
 
   async recordSignIn(userId: string, at: Date): Promise<void> {
     await this.db.update(users).set({ lastLoginAt: at }).where(eq(users.id, userId));
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await this.db
+      .update(users)
+      .set({ passwordHash, mustChangePassword: false })
+      .where(eq(users.id, userId));
+  }
+
+  async updateProfile(userId: string, changes: ProfileChanges): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ firstName: changes.firstName, lastName: changes.lastName, phone: changes.phone })
+        .where(eq(users.id, userId));
+      if (changes.patient) {
+        // Upsert, in case a patient row was never created (e.g. seeded data).
+        await tx
+          .insert(patients)
+          .values({ userId, ...changes.patient })
+          .onConflictDoUpdate({ target: patients.userId, set: changes.patient });
+      }
+    });
   }
 }
