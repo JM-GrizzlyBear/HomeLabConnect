@@ -54,4 +54,6 @@ erDiagram
 **Notes**
 
 - Every access token names its session. A request is only accepted while that session is neither expired nor revoked and the user is active, so logout and deactivation take effect immediately.
+- Every role (patient, med team, doctor, support, admin) edits their own profile: first name, last name and phone. Patients also edit `patients.birth_date` and `patients.address`, and must keep a phone; for staff the phone is optional. Email and role can't be changed from the profile.
+- Changing a password clears `must_change_password` and revokes every other session of that user. The session that made the change stays signed in.
 - Names and phone live on `users` because every role has them. `patients` and `employees` hold only role-specific fields.
