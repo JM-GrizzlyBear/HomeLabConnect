@@ -1,14 +1,17 @@
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
 import { GuestOnly } from "./auth/GuestOnly";
 import { RequireAuth } from "./auth/RequireAuth";
+import { RequireRole } from "./auth/RequireRole";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { ComingSoonPage } from "./pages/ComingSoonPage";
+import { CreateStaffPage } from "./pages/CreateStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { UsersPage } from "./pages/UsersPage";
 
 export const routes: RouteObject[] = [
   { path: "/", element: <HomePage /> },
@@ -46,6 +49,22 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "profile", element: <ProfilePage /> },
+      {
+        path: "users/all",
+        element: (
+          <RequireRole roles={["admin"]}>
+            <UsersPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "users/new",
+        element: (
+          <RequireRole roles={["admin"]}>
+            <CreateStaffPage />
+          </RequireRole>
+        ),
+      },
       { path: "*", element: <ComingSoonPage /> },
     ],
   },
