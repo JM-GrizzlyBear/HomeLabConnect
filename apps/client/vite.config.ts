@@ -19,5 +19,8 @@ export default defineConfig({
     environment: "jsdom",
     include: ["tests/**/*.test.{ts,tsx}"],
     setupFiles: ["./tests/support/setup.ts"],
+    // Form tests type into several fields; under a full `turbo run test` they can
+    // pass 5s, so allow 15s per test.
+    testTimeout: 15_000,
   },
 });

@@ -27,8 +27,7 @@ const seniorMedTech = {
 /** The Inherit / Allow / Deny radio group for one permission. */
 const permission = (label: string) => within(screen.getByRole("radiogroup", { name: label }));
 
-// The matrix renders all 67 permissions with three radios each, which is slow in jsdom.
-describe("RoleEditorPage", { timeout: 15_000 }, () => {
+describe("RoleEditorPage", () => {
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem("homelabconnect.token", "tkn");
