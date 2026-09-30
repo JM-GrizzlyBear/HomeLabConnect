@@ -27,21 +27,59 @@ const newStaff = {
   hiredOn: null,
 };
 
-describe("admin-only access", () => {
+describe("permission checks", () => {
   it.each([
     ["get", "/api/users"],
     ["post", "/api/users/staff"],
     ["patch", "/api/users/00000000-0000-4000-8000-000000000000/status"],
     ["post", "/api/users/00000000-0000-4000-8000-000000000000/temporary-password"],
-  ] as const)("%s %s returns 401 without a token and 403 for non-admins", async (method, path) => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "doc@example.com", role: "doctor" });
-    const token = await loginAs(app, "doc@example.com");
+  ] as const)(
+    "%s %s returns 401 without a token and 403 without the permission",
+    async (method, path) => {
+      const { app, users } = buildTestApp();
+      users.add({ email: "doc@example.com", role: "doctor" });
+      const token = await loginAs(app, "doc@example.com");
 
-    expect((await request(app)[method](path)).status).toBe(401);
-    const res = await request(app)[method](path).set("Authorization", `Bearer ${token}`);
-    expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe("forbidden");
+      expect((await request(app)[method](path)).status).toBe(401);
+      const res = await request(app)[method](path).set("Authorization", `Bearer ${token}`);
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe("forbidden");
+    },
+  );
+
+  it("lets support list users (users.view) but not create staff (users.create)", async () => {
+    const { app, users } = buildTestApp();
+    users.add({ email: "support@example.com", role: "support" });
+    const auth = { Authorization: `Bearer ${await loginAs(app, "support@example.com")}` };
+
+    expect((await request(app).get("/api/users").set(auth)).status).toBe(200);
+    expect((await request(app).post("/api/users/staff").set(auth).send(newStaff)).status).toBe(403);
+  });
+
+  it("applies an override on the user's next request, without signing in again", async () => {
+    const { app, users, access } = buildTestApp();
+    const support = users.add({ email: "support@example.com", role: "support" });
+    const auth = { Authorization: `Bearer ${await loginAs(app, "support@example.com")}` };
+    expect((await request(app).post("/api/users/staff").set(auth).send(newStaff)).status).toBe(403);
+
+    access.overrides.set(support.id, [{ key: "users.create", effect: "grant", expiresAt: null }]);
+
+    expect((await request(app).post("/api/users/staff").set(auth).send(newStaff)).status).toBe(201);
+  });
+
+  it("returns the user's permissions from login and /auth/me", async () => {
+    const { app, users } = buildTestApp();
+    users.add({ email: "support@example.com", role: "support" });
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "support@example.com", password: "Password123" });
+    const me = await request(app)
+      .get("/api/auth/me")
+      .set("Authorization", `Bearer ${login.body.token}`);
+
+    expect(login.body.user.permissions).toContain("users.view");
+    expect(login.body.user.permissions).not.toContain("users.create");
+    expect(me.body.permissions).toEqual(login.body.user.permissions);
   });
 });
 

@@ -44,13 +44,6 @@ export class PasswordChangeRequired extends DomainError {
   }
 }
 
-export class RoleNotAllowed extends DomainError {
-  readonly kind = "forbidden";
-  constructor() {
-    super("You do not have access to this resource.", "forbidden");
-  }
-}
-
 export class EmailAlreadyTaken extends DomainError {
   readonly kind = "conflict";
   constructor() {

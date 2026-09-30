@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ChangePassword } from "../../../src/application/use-cases/changePassword.js";
+import { ResolvePermissions } from "../../../src/application/use-cases/resolvePermissions.js";
 import {
   IncorrectCurrentPassword,
   PasswordUnchanged,
@@ -9,6 +10,7 @@ import {
 import {
   FakePasswordHasher,
   FixedClock,
+  InMemoryAccessRepository,
   InMemorySessionRepository,
   InMemoryUserRepository,
 } from "../../support/fakes.js";
@@ -17,7 +19,13 @@ function setup() {
   const clock = new FixedClock();
   const users = new InMemoryUserRepository();
   const sessions = new InMemorySessionRepository(clock);
-  const changePassword = new ChangePassword(users, sessions, new FakePasswordHasher(), clock);
+  const changePassword = new ChangePassword(
+    users,
+    sessions,
+    new FakePasswordHasher(),
+    clock,
+    new ResolvePermissions(new InMemoryAccessRepository(), clock),
+  );
   return { clock, users, sessions, changePassword };
 }
 

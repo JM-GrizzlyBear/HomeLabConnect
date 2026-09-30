@@ -3,6 +3,7 @@ import { BcryptPasswordHasher } from "../auth/bcryptPasswordHasher.js";
 import { loadConfig } from "../config.js";
 import { createDatabase } from "./client.js";
 import { employees, patients, roles, users } from "./schema/index.js";
+import { syncPermissionCatalog } from "./seedPermissions.js";
 
 // Seed data is added module by module (admin account, roles, permissions, ...).
 // Safe to run repeatedly: existing rows are left untouched.
@@ -54,6 +55,7 @@ const { db, pool } = createDatabase(config.databaseUrl);
 
 try {
   await db.insert(roles).values(baseRoles).onConflictDoNothing();
+  const permissionCount = await syncPermissionCatalog(db);
 
   const passwordHash = await new BcryptPasswordHasher().hash(SEED_PASSWORD);
   let created = 0;
@@ -84,7 +86,7 @@ try {
   }
 
   console.log(
-    `Seeded ${baseRoles.length} roles and ${created} new accounts (password: ${SEED_PASSWORD}).`,
+    `Seeded ${baseRoles.length} roles, ${permissionCount} permissions and ${created} new accounts (password: ${SEED_PASSWORD}).`,
   );
 } finally {
   await pool.end();

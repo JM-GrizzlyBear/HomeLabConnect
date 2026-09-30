@@ -5,7 +5,8 @@ import type { PasswordHasher } from "../ports/passwordHasher.js";
 import type { SessionRepository } from "../ports/sessionRepository.js";
 import type { TokenService } from "../ports/tokenService.js";
 import type { UserRepository } from "../ports/userRepository.js";
-import { toUserOutput, type UserOutput } from "./userOutput.js";
+import type { ResolvePermissions } from "./resolvePermissions.js";
+import { type SessionUserOutput, toUserOutput } from "./userOutput.js";
 
 export interface LoginInput {
   email: string;
@@ -17,7 +18,7 @@ export interface LoginInput {
 export interface LoginOutput {
   token: string;
   expiresAt: Date;
-  user: UserOutput;
+  user: SessionUserOutput;
 }
 
 export interface LoginOptions {
@@ -32,6 +33,7 @@ export class Login {
     private readonly hasher: PasswordHasher,
     private readonly tokens: TokenService,
     private readonly clock: Clock,
+    private readonly permissions: ResolvePermissions,
     private readonly options: LoginOptions,
   ) {}
 
@@ -56,7 +58,7 @@ export class Login {
     return {
       token: this.tokens.issue({ userId: user.id, sessionId: session.id }, expiresAt),
       expiresAt,
-      user: toUserOutput(user),
+      user: { ...toUserOutput(user), permissions: await this.permissions.execute(user) },
     };
   }
 

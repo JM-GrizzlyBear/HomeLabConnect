@@ -5,6 +5,7 @@ import type { Clock } from "../ports/clock.js";
 import type { SessionRepository } from "../ports/sessionRepository.js";
 import type { TokenService } from "../ports/tokenService.js";
 import type { UserRepository } from "../ports/userRepository.js";
+import type { ResolvePermissions } from "./resolvePermissions.js";
 
 export interface AuthenticateRequestInput {
   token: string;
@@ -16,6 +17,8 @@ export interface AuthContext {
   sessionId: string;
   role: BaseRole;
   mustChangePassword: boolean;
+  /** Effective permission keys, resolved fresh for this request. */
+  permissions: ReadonlySet<string>;
 }
 
 /**
@@ -29,6 +32,7 @@ export class AuthenticateRequest {
     private readonly sessions: SessionRepository,
     private readonly users: UserRepository,
     private readonly clock: Clock,
+    private readonly permissions: ResolvePermissions,
   ) {}
 
   async execute(input: AuthenticateRequestInput): Promise<AuthContext> {
@@ -53,6 +57,7 @@ export class AuthenticateRequest {
       sessionId: session.id,
       role: user.role,
       mustChangePassword: user.mustChangePassword,
+      permissions: new Set(await this.permissions.execute(user)),
     };
   }
 }

@@ -1,20 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { AuthContext } from "../../../../src/application/use-cases/authenticateRequest.js";
 import { AuthenticateRequest } from "../../../../src/application/use-cases/authenticateRequest.js";
+import { ResolvePermissions } from "../../../../src/application/use-cases/resolvePermissions.js";
+import { PermissionDenied } from "../../../../src/domain/access/accessErrors.js";
 import {
   PasswordChangeRequired,
-  RoleNotAllowed,
   Unauthenticated,
 } from "../../../../src/domain/identity/identityErrors.js";
 import {
   FakeTokenService,
   FixedClock,
+  InMemoryAccessRepository,
   InMemorySessionRepository,
   InMemoryUserRepository,
 } from "../../../support/fakes.js";
 import type { HttpRequest } from "../../../../src/interface/http/httpTypes.js";
 import { Authenticate } from "../../../../src/interface/http/middleware/authenticate.js";
-import { RequireBaseRole } from "../../../../src/interface/http/middleware/requireBaseRole.js";
+import { RequirePermission } from "../../../../src/interface/http/middleware/requirePermission.js";
 
 const request = (overrides: Partial<HttpRequest> = {}): HttpRequest => ({
   body: undefined,
@@ -38,7 +40,13 @@ async function signedIn({ mustChangePassword = false } = {}) {
     userAgent: null,
   });
   return {
-    authenticateRequest: new AuthenticateRequest(tokens, sessions, users, clock),
+    authenticateRequest: new AuthenticateRequest(
+      tokens,
+      sessions,
+      users,
+      clock,
+      new ResolvePermissions(new InMemoryAccessRepository(), clock),
+    ),
     authorization: `Bearer ${tokens.issue({ userId: user.id, sessionId: session.id })}`,
   };
 }
@@ -76,26 +84,29 @@ describe("Authenticate", () => {
   });
 });
 
-describe("RequireBaseRole", () => {
-  const auth = (role: AuthContext["role"]): AuthContext => ({
+describe("RequirePermission", () => {
+  const auth = (...permissions: string[]): AuthContext => ({
     userId: "u1",
     sessionId: "s1",
-    role,
+    role: "support",
     mustChangePassword: false,
+    permissions: new Set(permissions),
   });
 
-  it("lets listed roles through", async () => {
-    const req = request({ auth: auth("admin") });
-    await expect(new RequireBaseRole("admin", "support").handle(req)).resolves.toBe(req);
+  it("lets users with the permission through", async () => {
+    const req = request({ auth: auth("users.view", "users.create") });
+    await expect(new RequirePermission("users.create").handle(req)).resolves.toBe(req);
   });
 
-  it("rejects other roles", async () => {
+  it("rejects users without it", async () => {
     await expect(
-      new RequireBaseRole("admin").handle(request({ auth: auth("patient") })),
-    ).rejects.toThrow(RoleNotAllowed);
+      new RequirePermission("users.create").handle(request({ auth: auth("users.view") })),
+    ).rejects.toThrow(PermissionDenied);
   });
 
   it("rejects an unauthenticated request", async () => {
-    await expect(new RequireBaseRole("admin").handle(request())).rejects.toThrow(Unauthenticated);
+    await expect(new RequirePermission("users.view").handle(request())).rejects.toThrow(
+      Unauthenticated,
+    );
   });
 });

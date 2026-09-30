@@ -8,18 +8,21 @@ import {
   FakePasswordHasher,
   FakeTokenService,
   FixedClock,
+  InMemoryAccessRepository,
   InMemorySessionRepository,
   InMemoryUserRepository,
 } from "../../support/fakes.js";
 import { Login } from "../../../src/application/use-cases/login.js";
 import { Logout } from "../../../src/application/use-cases/logout.js";
+import { ResolvePermissions } from "../../../src/application/use-cases/resolvePermissions.js";
 
 function setup() {
   const clock = new FixedClock();
   const users = new InMemoryUserRepository();
   const sessions = new InMemorySessionRepository(clock);
   const tokens = new FakeTokenService();
-  const login = new Login(users, sessions, new FakePasswordHasher(), tokens, clock, {
+  const permissions = new ResolvePermissions(new InMemoryAccessRepository(), clock);
+  const login = new Login(users, sessions, new FakePasswordHasher(), tokens, clock, permissions, {
     sessionTtlMinutes: 60,
   });
   return { clock, users, sessions, tokens, login, logout: new Logout(sessions, clock) };

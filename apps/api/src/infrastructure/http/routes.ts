@@ -13,6 +13,7 @@ import type { ReissueTemporaryPasswordController } from "../../interface/http/co
 import type { SetUserActiveController } from "../../interface/http/controllers/setUserActiveController.js";
 import type { UpdateProfileController } from "../../interface/http/controllers/updateProfileController.js";
 import type { Middleware } from "../../interface/http/httpTypes.js";
+import { RequirePermission } from "../../interface/http/middleware/requirePermission.js";
 import { adapt } from "./expressAdapter.js";
 
 export interface Controllers {
@@ -35,8 +36,6 @@ export interface Middlewares {
   authenticate: Middleware;
   /** Signed in, possibly still on a temporary password. Only for /me, /password and /logout. */
   authenticateAllowingPasswordChange: Middleware;
-  /** Admins only. Place after authenticate. Module 2 swaps this for permission checks. */
-  requireAdmin: Middleware;
 }
 
 /** Slows down password guessing: 10 failed attempts per IP per 15 minutes. */
@@ -78,13 +77,16 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.get("/users/me/profile", adapt(controllers.getProfile, middlewares.authenticate));
   router.patch("/users/me/profile", adapt(controllers.updateProfile, middlewares.authenticate));
 
-  const admin = [middlewares.authenticate, middlewares.requireAdmin];
-  router.get("/users", adapt(controllers.listUsers, ...admin));
-  router.post("/users/staff", adapt(controllers.createStaffAccount, ...admin));
-  router.patch("/users/:id/status", adapt(controllers.setUserActive, ...admin));
+  const can = (permission: ConstructorParameters<typeof RequirePermission>[0]) => [
+    middlewares.authenticate,
+    new RequirePermission(permission),
+  ];
+  router.get("/users", adapt(controllers.listUsers, ...can("users.view")));
+  router.post("/users/staff", adapt(controllers.createStaffAccount, ...can("users.create")));
+  router.patch("/users/:id/status", adapt(controllers.setUserActive, ...can("users.deactivate")));
   router.post(
     "/users/:id/temporary-password",
-    adapt(controllers.reissueTemporaryPassword, ...admin),
+    adapt(controllers.reissueTemporaryPassword, ...can("users.reset_password")),
   );
 
   return router;

@@ -11,6 +11,11 @@ export interface UserOutput {
   mustChangePassword: boolean;
 }
 
+/** The signed-in user, with what they may do. */
+export interface SessionUserOutput extends UserOutput {
+  permissions: string[];
+}
+
 export function toUserOutput(user: User): UserOutput {
   return {
     id: user.id,

@@ -1,5 +1,7 @@
 // In-memory stand-ins for the ports, for unit and route tests. Not part of the build.
 import { randomUUID } from "node:crypto";
+import { defaultBaseGrants, PERMISSION_KEYS } from "@homelabconnect/shared";
+import type { AccessRepository } from "../../src/application/ports/accessRepository.js";
 import type {
   AccountEmails,
   TemporaryPasswordEmail,
@@ -21,6 +23,11 @@ import type {
   UserProfile,
   UserRepository,
 } from "../../src/application/ports/userRepository.js";
+import type {
+  AccessData,
+  PermissionEntry,
+  PermissionOverride,
+} from "../../src/domain/access/resolveAccess.js";
 import type { BaseRole } from "../../src/domain/identity/baseRole.js";
 import { EmailAlreadyTaken } from "../../src/domain/identity/identityErrors.js";
 import type { PatientDetails, ProfileChanges } from "../../src/domain/identity/profile.js";
@@ -259,5 +266,21 @@ export class InMemorySessionRepository implements SessionRepository {
         session.revokedAt ??= at;
       }
     }
+  }
+}
+
+/** The shared catalogue's default grants, plus custom-role entries and overrides set per user. */
+export class InMemoryAccessRepository implements AccessRepository {
+  readonly customRole = new Map<string, PermissionEntry[]>();
+  readonly overrides = new Map<string, PermissionOverride[]>();
+
+  async loadAccess(userId: string, baseRole: BaseRole): Promise<AccessData> {
+    return {
+      baseRole,
+      allPermissions: PERMISSION_KEYS,
+      baseGrants: baseRole === "admin" ? [] : defaultBaseGrants[baseRole],
+      customRole: this.customRole.get(userId) ?? [],
+      overrides: this.overrides.get(userId) ?? [],
+    };
   }
 }

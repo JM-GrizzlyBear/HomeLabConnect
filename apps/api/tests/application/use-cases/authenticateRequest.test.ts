@@ -1,3 +1,4 @@
+import { defaultBaseGrants } from "@homelabconnect/shared";
 import { describe, expect, it } from "vitest";
 import {
   AccountDeactivated,
@@ -7,11 +8,13 @@ import {
 import {
   FakeTokenService,
   FixedClock,
+  InMemoryAccessRepository,
   InMemorySessionRepository,
   InMemoryUserRepository,
 } from "../../support/fakes.js";
 import { AuthenticateRequest } from "../../../src/application/use-cases/authenticateRequest.js";
 import { GetCurrentUser } from "../../../src/application/use-cases/getCurrentUser.js";
+import { ResolvePermissions } from "../../../src/application/use-cases/resolvePermissions.js";
 
 async function setup() {
   const clock = new FixedClock();
@@ -26,8 +29,21 @@ async function setup() {
     userAgent: null,
   });
   const token = tokens.issue({ userId: user.id, sessionId: session.id });
-  const authenticate = new AuthenticateRequest(tokens, sessions, users, clock);
-  return { clock, users, sessions, tokens, user, session, token, authenticate };
+  const access = new InMemoryAccessRepository();
+  const permissions = new ResolvePermissions(access, clock);
+  const authenticate = new AuthenticateRequest(tokens, sessions, users, clock, permissions);
+  return {
+    clock,
+    users,
+    sessions,
+    tokens,
+    access,
+    permissions,
+    user,
+    session,
+    token,
+    authenticate,
+  };
 }
 
 describe("AuthenticateRequest", () => {
@@ -39,7 +55,19 @@ describe("AuthenticateRequest", () => {
       sessionId: session.id,
       role: "doctor",
       mustChangePassword: false,
+      permissions: new Set(defaultBaseGrants.doctor),
     });
+  });
+
+  it("resolves permissions fresh on every request", async () => {
+    const { access, user, token, authenticate } = await setup();
+    expect((await authenticate.execute({ token })).permissions.has("payments.view_all")).toBe(
+      false,
+    );
+
+    access.overrides.set(user.id, [{ key: "payments.view_all", effect: "grant", expiresAt: null }]);
+
+    expect((await authenticate.execute({ token })).permissions.has("payments.view_all")).toBe(true);
   });
 
   it("rejects a token that doesn't verify", async () => {
@@ -75,8 +103,8 @@ describe("AuthenticateRequest", () => {
 
 describe("GetCurrentUser", () => {
   it("returns the user without the password hash", async () => {
-    const { users, user } = await setup();
-    const output = await new GetCurrentUser(users).execute({ userId: user.id });
+    const { users, permissions, user } = await setup();
+    const output = await new GetCurrentUser(users, permissions).execute({ userId: user.id });
     expect(output).toEqual({
       id: user.id,
       email: "doc@example.com",
@@ -84,13 +112,14 @@ describe("GetCurrentUser", () => {
       firstName: "Test",
       lastName: "User",
       mustChangePassword: false,
+      permissions: [...defaultBaseGrants.doctor].sort(),
     });
   });
 
   it("fails for an unknown id", async () => {
-    const { users } = await setup();
-    await expect(new GetCurrentUser(users).execute({ userId: "nope" })).rejects.toThrow(
-      UserNotFound,
-    );
+    const { users, permissions } = await setup();
+    await expect(
+      new GetCurrentUser(users, permissions).execute({ userId: "nope" }),
+    ).rejects.toThrow(UserNotFound);
   });
 });

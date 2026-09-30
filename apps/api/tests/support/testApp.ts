@@ -9,6 +9,7 @@ import { ListUsers } from "../../src/application/use-cases/listUsers.js";
 import { Login } from "../../src/application/use-cases/login.js";
 import { Logout } from "../../src/application/use-cases/logout.js";
 import { RegisterPatient } from "../../src/application/use-cases/registerPatient.js";
+import { ResolvePermissions } from "../../src/application/use-cases/resolvePermissions.js";
 import { ReissueTemporaryPassword } from "../../src/application/use-cases/reissueTemporaryPassword.js";
 import { SetUserActive } from "../../src/application/use-cases/setUserActive.js";
 import { UpdateProfile } from "../../src/application/use-cases/updateProfile.js";
@@ -26,11 +27,11 @@ import { ReissueTemporaryPasswordController } from "../../src/interface/http/con
 import { SetUserActiveController } from "../../src/interface/http/controllers/setUserActiveController.js";
 import { UpdateProfileController } from "../../src/interface/http/controllers/updateProfileController.js";
 import { Authenticate } from "../../src/interface/http/middleware/authenticate.js";
-import { RequireBaseRole } from "../../src/interface/http/middleware/requireBaseRole.js";
 import {
   FakeAccountEmails,
   FakePasswordHasher,
   FakeTemporaryPasswordGenerator,
+  InMemoryAccessRepository,
   FakeTokenService,
   FixedClock,
   InMemorySessionRepository,
@@ -43,9 +44,17 @@ export function buildTestApp({ databaseReachable = true } = {}) {
   const sessions = new InMemorySessionRepository(clock);
   const hasher = new FakePasswordHasher();
   const tokens = new FakeTokenService();
+  const access = new InMemoryAccessRepository();
+  const resolvePermissions = new ResolvePermissions(access, clock);
   const emails = new FakeAccountEmails();
   const passwords = new FakeTemporaryPasswordGenerator();
-  const authenticateRequest = new AuthenticateRequest(tokens, sessions, users, clock);
+  const authenticateRequest = new AuthenticateRequest(
+    tokens,
+    sessions,
+    users,
+    clock,
+    resolvePermissions,
+  );
 
   const app = createApp({
     corsOrigin: "http://localhost:5173",
@@ -55,12 +64,14 @@ export function buildTestApp({ databaseReachable = true } = {}) {
       ),
       registerPatient: new RegisterPatientController(new RegisterPatient(users, hasher)),
       login: new LoginController(
-        new Login(users, sessions, hasher, tokens, clock, { sessionTtlMinutes: 60 }),
+        new Login(users, sessions, hasher, tokens, clock, resolvePermissions, {
+          sessionTtlMinutes: 60,
+        }),
       ),
       logout: new LogoutController(new Logout(sessions, clock)),
-      getCurrentUser: new GetCurrentUserController(new GetCurrentUser(users)),
+      getCurrentUser: new GetCurrentUserController(new GetCurrentUser(users, resolvePermissions)),
       changePassword: new ChangePasswordController(
-        new ChangePassword(users, sessions, hasher, clock),
+        new ChangePassword(users, sessions, hasher, clock, resolvePermissions),
       ),
       getProfile: new GetProfileController(new GetProfile(users)),
       updateProfile: new UpdateProfileController(new UpdateProfile(users)),
@@ -78,9 +89,8 @@ export function buildTestApp({ databaseReachable = true } = {}) {
       authenticateAllowingPasswordChange: new Authenticate(authenticateRequest, {
         allowPendingPasswordChange: true,
       }),
-      requireAdmin: new RequireBaseRole("admin"),
     },
   });
 
-  return { app, clock, users, sessions, emails, passwords };
+  return { app, clock, users, sessions, access, emails, passwords };
 }

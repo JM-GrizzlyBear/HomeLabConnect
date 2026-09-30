@@ -10,6 +10,7 @@ import { ListUsers } from "./application/use-cases/listUsers.js";
 import { Login } from "./application/use-cases/login.js";
 import { Logout } from "./application/use-cases/logout.js";
 import { RegisterPatient } from "./application/use-cases/registerPatient.js";
+import { ResolvePermissions } from "./application/use-cases/resolvePermissions.js";
 import { ReissueTemporaryPassword } from "./application/use-cases/reissueTemporaryPassword.js";
 import { SetUserActive } from "./application/use-cases/setUserActive.js";
 import { UpdateProfile } from "./application/use-cases/updateProfile.js";
@@ -18,6 +19,7 @@ import { CryptoTemporaryPasswordGenerator } from "./infrastructure/auth/cryptoTe
 import { JwtTokenService } from "./infrastructure/auth/jwtTokenService.js";
 import { loadConfig } from "./infrastructure/config.js";
 import { createDatabase } from "./infrastructure/db/client.js";
+import { DrizzleAccessRepository } from "./infrastructure/db/drizzleAccessRepository.js";
 import { DrizzleDatabaseHealthProbe } from "./infrastructure/db/drizzleDatabaseHealthProbe.js";
 import { DrizzleSessionRepository } from "./infrastructure/db/drizzleSessionRepository.js";
 import { DrizzleUserRepository } from "./infrastructure/db/drizzleUserRepository.js";
@@ -37,7 +39,6 @@ import { ReissueTemporaryPasswordController } from "./interface/http/controllers
 import { SetUserActiveController } from "./interface/http/controllers/setUserActiveController.js";
 import { UpdateProfileController } from "./interface/http/controllers/updateProfileController.js";
 import { Authenticate } from "./interface/http/middleware/authenticate.js";
-import { RequireBaseRole } from "./interface/http/middleware/requireBaseRole.js";
 
 const config = loadConfig();
 const { db, pool } = createDatabase(config.databaseUrl);
@@ -48,6 +49,7 @@ const users = new DrizzleUserRepository(db);
 const sessions = new DrizzleSessionRepository(db);
 const hasher = new BcryptPasswordHasher();
 const tokens = new JwtTokenService(config.jwtSecret);
+const access = new DrizzleAccessRepository(db);
 const temporaryPasswords = new CryptoTemporaryPasswordGenerator();
 const accountEmails = new NodemailerAccountEmails({
   smtpHost: config.smtpHost,
@@ -58,16 +60,23 @@ const accountEmails = new NodemailerAccountEmails({
 
 // Use cases
 const checkSystemHealth = new CheckSystemHealth(new DrizzleDatabaseHealthProbe(db));
+const resolvePermissions = new ResolvePermissions(access, clock);
 const registerPatient = new RegisterPatient(users, hasher);
-const login = new Login(users, sessions, hasher, tokens, clock, {
+const login = new Login(users, sessions, hasher, tokens, clock, resolvePermissions, {
   sessionTtlMinutes: config.sessionTtlMinutes,
 });
 const logout = new Logout(sessions, clock);
-const getCurrentUser = new GetCurrentUser(users);
-const changePassword = new ChangePassword(users, sessions, hasher, clock);
+const getCurrentUser = new GetCurrentUser(users, resolvePermissions);
+const changePassword = new ChangePassword(users, sessions, hasher, clock, resolvePermissions);
 const getProfile = new GetProfile(users);
 const updateProfile = new UpdateProfile(users);
-const authenticateRequest = new AuthenticateRequest(tokens, sessions, users, clock);
+const authenticateRequest = new AuthenticateRequest(
+  tokens,
+  sessions,
+  users,
+  clock,
+  resolvePermissions,
+);
 const listUsers = new ListUsers(users);
 const createStaffAccount = new CreateStaffAccount(
   users,
@@ -108,7 +117,6 @@ const app = createApp({
     authenticateAllowingPasswordChange: new Authenticate(authenticateRequest, {
       allowPendingPasswordChange: true,
     }),
-    requireAdmin: new RequireBaseRole("admin"),
   },
 });
 

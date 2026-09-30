@@ -8,7 +8,8 @@ import type { Clock } from "../ports/clock.js";
 import type { PasswordHasher } from "../ports/passwordHasher.js";
 import type { SessionRepository } from "../ports/sessionRepository.js";
 import type { UserRepository } from "../ports/userRepository.js";
-import { toUserOutput, type UserOutput } from "./userOutput.js";
+import type { ResolvePermissions } from "./resolvePermissions.js";
+import { type SessionUserOutput, toUserOutput } from "./userOutput.js";
 
 export interface ChangePasswordInput {
   userId: string;
@@ -28,9 +29,10 @@ export class ChangePassword {
     private readonly sessions: SessionRepository,
     private readonly hasher: PasswordHasher,
     private readonly clock: Clock,
+    private readonly permissions: ResolvePermissions,
   ) {}
 
-  async execute(input: ChangePasswordInput): Promise<UserOutput> {
+  async execute(input: ChangePasswordInput): Promise<SessionUserOutput> {
     const user = await this.users.findById(input.userId);
     if (!user) throw new UserNotFound();
     if (!(await this.hasher.verify(input.currentPassword, user.passwordHash))) {
@@ -45,6 +47,6 @@ export class ChangePassword {
 
     const updated = await this.users.findById(user.id);
     if (!updated) throw new UserNotFound();
-    return toUserOutput(updated);
+    return { ...toUserOutput(updated), permissions: await this.permissions.execute(updated) };
   }
 }
