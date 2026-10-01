@@ -70,6 +70,11 @@ Seeded examples:
 - Category changes (add, rename, delete) need `procedures.manage`.
 - `promotions.view` shows **running** promotions only; `promotions.manage` sees every status and can create, edit and switch them off. Sale prices in the procedure list are shown to everyone with `procedures.view`, even without `promotions.view`.
 
+### Settings and closed days
+
+- `settings.view` opens the Settings page read-only; `settings.manage` saves changes. The _President_ role can view but not change settings.
+- `holidays.view` (admin, med team, doctors, support) shows the Holidays & Closed Days page; `holidays.manage` (admin) adds, edits and removes them. Patients never see the list; closed days are simply not bookable.
+
 ## Adding a permission (for a new module)
 
 1. Add the action to its module in `packages/shared/src/permissions.ts` (and to `defaultBaseGrants` if a base role should have it). Update the counts in the catalogue test and the table above.

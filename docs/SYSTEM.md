@@ -55,7 +55,7 @@ user override → custom role grant → base role grant → deny. The full catal
 9. **Notifications:** in-app bell with real-time updates (SSE) and key emails (booking accepted/rejected, new time proposed, result released, payment received/refunded).
 10. **Audit Logs:** appointment and sign-in events.
 11. **Reports & Dashboard:** operations reports, saved report filters, today's counts on the staff dashboard.
-12. **System Settings:** booking windows, assignment rules, account and team settings.
+12. **System Settings:** visit days and hours, slot length, minimum notice, booking window, cancellation cut-off, daily team capacity, booking approval (staff or automatic) and team assignment (manual or auto); holidays and special days off that close dates for booking. See [erd/settings.md](erd/settings.md).
 
 ---
 
