@@ -68,6 +68,7 @@ Seeded examples:
 
 - `procedures.view` shows **active** procedures only. People with `procedures.manage` also see inactive ones and can filter by status; for everyone else an inactive procedure answers 404.
 - Category changes (add, rename, delete) need `procedures.manage`.
+- `promotions.view` shows **running** promotions only; `promotions.manage` sees every status and can create, edit and switch them off. Sale prices in the procedure list are shown to everyone with `procedures.view`, even without `promotions.view`.
 
 ## Adding a permission (for a new module)
 

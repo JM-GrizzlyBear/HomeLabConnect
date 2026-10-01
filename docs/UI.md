@@ -58,13 +58,13 @@ Use the field wrappers. They wire the label, hint and error to the control for s
 
 ## Feedback: toast, dialog or inline?
 
-| What happened                                                                          | Where it shows                                                                                  |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| A single field is wrong (invalid email, email taken, wrong current password)           | **Inline**, red under that field                                                                |
-| The action succeeded (profile saved, staff created, password changed)                  | **Toast** in the top-right corner for 1 second (paused on hover), via `feedback.success()`     |
-| It succeeded but there's something to copy or act on (a temporary password to hand over) | **Success dialog** the user closes: `feedback.success()` with `content`                       |
-| The action failed for a non-field reason (wrong credentials, server down, deactivated) | **Error dialog**, via `feedback.error()`                                                        |
-| A risky action is about to happen (deactivate, reissue password)                       | **Confirm dialog**, via `await feedback.confirm()`                                              |
-| A page couldn't load its data                                                          | **Inline** `Alert` on the page (it's not the result of an action)                               |
+| What happened                                                                            | Where it shows                                                                             |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| A single field is wrong (invalid email, email taken, wrong current password)             | **Inline**, red under that field                                                           |
+| The action succeeded (profile saved, staff created, password changed)                    | **Toast** in the top-right corner for 1 second (paused on hover), via `feedback.success()` |
+| It succeeded but there's something to copy or act on (a temporary password to hand over) | **Success dialog** the user closes: `feedback.success()` with `content`                    |
+| The action failed for a non-field reason (wrong credentials, server down, deactivated)   | **Error dialog**, via `feedback.error()`                                                   |
+| A risky action is about to happen (deactivate, reissue password)                         | **Confirm dialog**, via `await feedback.confirm()`                                         |
+| A page couldn't load its data                                                            | **Inline** `Alert` on the page (it's not the result of an action)                          |
 
 Forms use `useFormState()`: its `submit(parsed, send, { title, fieldByCode })` shows validation issues inline and routes a failed request inline or to the error dialog for you. Pages load data with `useApiData()`.
