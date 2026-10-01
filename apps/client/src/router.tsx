@@ -7,6 +7,7 @@ import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { ComingSoonPage } from "./pages/ComingSoonPage";
 import { CreateStaffPage } from "./pages/CreateStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { HolidaysPage } from "./pages/HolidaysPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { ProcedureEditorPage } from "./pages/ProcedureEditorPage";
@@ -17,6 +18,7 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { RoleEditorPage } from "./pages/RoleEditorPage";
 import { RolesPage } from "./pages/RolesPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { UsersPage } from "./pages/UsersPage";
 
 export const routes: RouteObject[] = [
@@ -140,6 +142,22 @@ export const routes: RouteObject[] = [
         element: (
           <RequirePermission permission="promotions.manage">
             <PromotionEditorPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "settings",
+        element: (
+          <RequirePermission permission="settings.view">
+            <SettingsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "scheduling/holidays",
+        element: (
+          <RequirePermission permission="holidays.view">
+            <HolidaysPage />
           </RequirePermission>
         ),
       },

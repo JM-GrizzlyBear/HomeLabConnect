@@ -97,6 +97,12 @@ export const menu: NavEntry[] = [
     link("Shifts", "/app/scheduling/shifts", "shifts.view", "Module 4 · Scheduling & Teams"),
     link("Leave Requests", "/app/scheduling/leave", "leave.view", "Module 4 · Scheduling & Teams"),
     link("Teams", "/app/scheduling/teams", "teams.view", "Module 4 · Scheduling & Teams"),
+    link(
+      "Holidays & Closed Days",
+      "/app/scheduling/holidays",
+      "holidays.view",
+      "Module 12 · System Settings",
+    ),
   ]),
   group("Catalog", "tag", [
     link(

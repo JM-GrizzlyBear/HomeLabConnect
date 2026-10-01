@@ -19,6 +19,7 @@ interface RadioGroupFieldProps {
   error?: string;
   /** Side by side instead of stacked. */
   inline?: boolean;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -30,6 +31,7 @@ export function RadioGroupField({
   onValueChange,
   error,
   inline = false,
+  disabled,
   className,
 }: RadioGroupFieldProps) {
   const id = useId();
@@ -39,6 +41,7 @@ export function RadioGroupField({
       <RadioGroup
         value={value}
         onValueChange={onValueChange}
+        disabled={disabled}
         aria-invalid={error ? true : undefined}
         className={cn(inline ? "flex flex-wrap gap-x-6 gap-y-2" : "grid gap-2")}
       >

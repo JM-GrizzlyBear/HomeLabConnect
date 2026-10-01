@@ -33,6 +33,7 @@ describe("visibleMenu", () => {
       "Dashboard",
       "Appointments: All Appointments",
       "Results: Review Queue",
+      "Scheduling: Holidays & Closed Days",
       "Catalog: Procedures",
       "Account Profile",
     ]);
