@@ -14,6 +14,7 @@ import { Link, useNavigate } from "react-router";
 import { ActionsMenu } from "@/components/ActionsMenu";
 import { ManageCategoriesDialog } from "@/components/catalog/ManageCategoriesDialog";
 import { ProcedureDetailsSheet } from "@/components/catalog/ProcedureDetailsSheet";
+import { ProcedurePrice } from "@/components/catalog/ProcedurePrice";
 import { EmptyState } from "@/components/data/EmptyState";
 import { TablePagination } from "@/components/data/TablePagination";
 import { SelectInputField } from "@/components/form/SelectInputField";
@@ -38,7 +39,7 @@ import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { useFeedback } from "../feedback/feedbackContext";
-import { formatPeso, formatTurnaround, specimenLabels } from "../format/catalog";
+import { formatTurnaround, specimenLabels } from "../format/catalog";
 
 const PAGE_SIZE = 20;
 /** Radix Select can't use "" as a value, so "all" stands for "no filter". */
@@ -243,8 +244,8 @@ export function ProceduresPage() {
                         <TableCell>{procedure.category.name}</TableCell>
                         <TableCell>{specimenLabels[procedure.specimen]}</TableCell>
                         <TableCell>{formatTurnaround(procedure.turnaroundHours)}</TableCell>
-                        <TableCell className="text-right font-medium text-slate-800 tabular-nums">
-                          {formatPeso(procedure.priceCentavos)}
+                        <TableCell className="text-right">
+                          <ProcedurePrice procedure={procedure} alignEnd />
                         </TableCell>
                         {canManage && (
                           <TableCell>

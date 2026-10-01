@@ -23,7 +23,7 @@ describe("visibleMenu", () => {
       "Results: My Results",
       "Payments: My Payments",
       "Support: My Tickets",
-      "Catalog: Procedures",
+      "Catalog: Procedures, Promotions",
       "Account Profile",
     ]);
   });

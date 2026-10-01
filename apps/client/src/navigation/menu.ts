@@ -108,7 +108,7 @@ export const menu: NavEntry[] = [
     link(
       "Promotions",
       "/app/catalog/promotions",
-      "promotions.manage",
+      "promotions.view",
       "Module 3 · Lab Procedure Catalog",
     ),
   ]),

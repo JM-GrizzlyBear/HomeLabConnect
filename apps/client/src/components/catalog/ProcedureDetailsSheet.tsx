@@ -6,7 +6,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { formatFasting, formatPeso, formatTurnaround, specimenLabels } from "../../format/catalog";
+import { formatFasting, formatTurnaround, specimenLabels } from "../../format/catalog";
+import { ProcedurePrice } from "./ProcedurePrice";
 
 interface ProcedureDetailsSheetProps {
   /** The procedure to show, or null when closed. */
@@ -29,8 +30,8 @@ export function ProcedureDetailsSheet({ procedure, onClose }: ProcedureDetailsSh
             </SheetHeader>
             <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 px-4 text-sm">
               <dt className="text-muted-foreground">Price</dt>
-              <dd className="font-semibold text-slate-800">
-                {formatPeso(procedure.priceCentavos)}
+              <dd>
+                <ProcedurePrice procedure={procedure} />
               </dd>
               <dt className="text-muted-foreground">Specimen</dt>
               <dd>{specimenLabels[procedure.specimen]}</dd>

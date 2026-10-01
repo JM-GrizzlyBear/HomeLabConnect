@@ -11,6 +11,8 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { ProcedureEditorPage } from "./pages/ProcedureEditorPage";
 import { ProceduresPage } from "./pages/ProceduresPage";
+import { PromotionEditorPage } from "./pages/PromotionEditorPage";
+import { PromotionsPage } from "./pages/PromotionsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { RoleEditorPage } from "./pages/RoleEditorPage";
@@ -114,6 +116,30 @@ export const routes: RouteObject[] = [
         element: (
           <RequirePermission permission="procedures.manage">
             <ProcedureEditorPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "catalog/promotions",
+        element: (
+          <RequirePermission permission="promotions.view">
+            <PromotionsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "catalog/promotions/new",
+        element: (
+          <RequirePermission permission="promotions.manage">
+            <PromotionEditorPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "catalog/promotions/:id",
+        element: (
+          <RequirePermission permission="promotions.manage">
+            <PromotionEditorPage />
           </RequirePermission>
         ),
       },

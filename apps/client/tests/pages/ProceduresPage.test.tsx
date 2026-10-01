@@ -18,6 +18,7 @@ const procedure = (overrides: Record<string, unknown> = {}) => ({
   preparation: null,
   description: "Red and white cells, hemoglobin and platelets.",
   isActive: true,
+  promotion: null,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
   ...overrides,
@@ -72,6 +73,29 @@ describe("ProceduresPage", () => {
     const sheet = within(await screen.findByRole("dialog"));
     expect(sheet.getByText("Fast 8 hours")).toBeInTheDocument();
     expect(sheet.getByText(/Water is allowed/)).toBeInTheDocument();
+  });
+
+  it("shows a sale price next to the struck-through list price", async () => {
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: sampleUser }),
+      "GET /api/catalog/categories": categories,
+      "GET /api/catalog/procedures?page=1&pageSize=20": () =>
+        page([
+          procedure({
+            promotion: {
+              id: "9e4c6a5f-7b8d-4e0f-8a3b-4c5d6e7f8091",
+              name: "Senior Week",
+              discountedPriceCentavos: 28_000,
+            },
+          }),
+        ]),
+    });
+    renderApp("/app/catalog/procedures");
+
+    const row = (await screen.findByText("Complete Blood Count")).closest("tr")!;
+    expect(within(row).getByText("₱350.00").tagName).toBe("S");
+    expect(within(row).getByText("₱280.00")).toBeInTheDocument();
+    expect(within(row).getByText("Senior Week")).toBeInTheDocument();
   });
 
   it("filters by category and search", async () => {
