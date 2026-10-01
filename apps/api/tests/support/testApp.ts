@@ -67,11 +67,25 @@ import { GetPromotionController } from "../../src/interface/http/controllers/get
 import { ListPromotionsController } from "../../src/interface/http/controllers/listPromotionsController.js";
 import { SetPromotionActiveController } from "../../src/interface/http/controllers/setPromotionActiveController.js";
 import { UpdatePromotionController } from "../../src/interface/http/controllers/updatePromotionController.js";
+import { AddClosedDay } from "../../src/application/use-cases/addClosedDay.js";
+import { GetSystemSettings } from "../../src/application/use-cases/getSystemSettings.js";
+import { ListClosedDays } from "../../src/application/use-cases/listClosedDays.js";
+import { RemoveClosedDay } from "../../src/application/use-cases/removeClosedDay.js";
+import { UpdateClosedDay } from "../../src/application/use-cases/updateClosedDay.js";
+import { UpdateSystemSettings } from "../../src/application/use-cases/updateSystemSettings.js";
+import { AddClosedDayController } from "../../src/interface/http/controllers/addClosedDayController.js";
+import { GetSystemSettingsController } from "../../src/interface/http/controllers/getSystemSettingsController.js";
+import { ListClosedDaysController } from "../../src/interface/http/controllers/listClosedDaysController.js";
+import { RemoveClosedDayController } from "../../src/interface/http/controllers/removeClosedDayController.js";
+import { UpdateClosedDayController } from "../../src/interface/http/controllers/updateClosedDayController.js";
+import { UpdateSystemSettingsController } from "../../src/interface/http/controllers/updateSystemSettingsController.js";
 import {
   FakeAccountEmails,
   FakePasswordHasher,
   FakeTemporaryPasswordGenerator,
   InMemoryAccessRepository,
+  InMemoryClosedDayRepository,
+  InMemorySettingsRepository,
   InMemoryLabProcedureRepository,
   InMemoryProcedureCategoryRepository,
   InMemoryPromotionRepository,
@@ -93,6 +107,8 @@ export function buildTestApp({ databaseReachable = true } = {}) {
   const categories = new InMemoryProcedureCategoryRepository();
   const procedures = new InMemoryLabProcedureRepository(categories);
   const promotions = new InMemoryPromotionRepository();
+  const settings = new InMemorySettingsRepository(users, clock);
+  const closedDays = new InMemoryClosedDayRepository();
   const resolvePermissions = new ResolvePermissions(access, clock);
   const emails = new FakeAccountEmails();
   const passwords = new FakeTemporaryPasswordGenerator();
@@ -175,6 +191,12 @@ export function buildTestApp({ databaseReachable = true } = {}) {
       setPromotionActive: new SetPromotionActiveController(
         new SetPromotionActive(promotions, clock),
       ),
+      getSystemSettings: new GetSystemSettingsController(new GetSystemSettings(settings)),
+      updateSystemSettings: new UpdateSystemSettingsController(new UpdateSystemSettings(settings)),
+      listClosedDays: new ListClosedDaysController(new ListClosedDays(closedDays)),
+      addClosedDay: new AddClosedDayController(new AddClosedDay(closedDays)),
+      updateClosedDay: new UpdateClosedDayController(new UpdateClosedDay(closedDays)),
+      removeClosedDay: new RemoveClosedDayController(new RemoveClosedDay(closedDays)),
     },
     middlewares: {
       authenticate: new Authenticate(authenticateRequest),
@@ -196,5 +218,7 @@ export function buildTestApp({ databaseReachable = true } = {}) {
     categories,
     procedures,
     promotions,
+    settings,
+    closedDays,
   };
 }

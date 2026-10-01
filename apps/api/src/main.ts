@@ -34,6 +34,12 @@ import { GetPromotion } from "./application/use-cases/getPromotion.js";
 import { ListPromotions } from "./application/use-cases/listPromotions.js";
 import { SetPromotionActive } from "./application/use-cases/setPromotionActive.js";
 import { UpdatePromotion } from "./application/use-cases/updatePromotion.js";
+import { AddClosedDay } from "./application/use-cases/addClosedDay.js";
+import { GetSystemSettings } from "./application/use-cases/getSystemSettings.js";
+import { ListClosedDays } from "./application/use-cases/listClosedDays.js";
+import { RemoveClosedDay } from "./application/use-cases/removeClosedDay.js";
+import { UpdateClosedDay } from "./application/use-cases/updateClosedDay.js";
+import { UpdateSystemSettings } from "./application/use-cases/updateSystemSettings.js";
 import { BcryptPasswordHasher } from "./infrastructure/auth/bcryptPasswordHasher.js";
 import { CryptoTemporaryPasswordGenerator } from "./infrastructure/auth/cryptoTemporaryPasswordGenerator.js";
 import { JwtTokenService } from "./infrastructure/auth/jwtTokenService.js";
@@ -47,6 +53,8 @@ import { DrizzleUserRepository } from "./infrastructure/db/drizzleUserRepository
 import { DrizzleLabProcedureRepository } from "./infrastructure/db/drizzleLabProcedureRepository.js";
 import { DrizzleProcedureCategoryRepository } from "./infrastructure/db/drizzleProcedureCategoryRepository.js";
 import { DrizzlePromotionRepository } from "./infrastructure/db/drizzlePromotionRepository.js";
+import { DrizzleClosedDayRepository } from "./infrastructure/db/drizzleClosedDayRepository.js";
+import { DrizzleSettingsRepository } from "./infrastructure/db/drizzleSettingsRepository.js";
 import { createApp } from "./infrastructure/http/app.js";
 import { NodemailerAccountEmails } from "./infrastructure/mail/nodemailerAccountEmails.js";
 import { SystemClock } from "./infrastructure/systemClock.js";
@@ -82,6 +90,12 @@ import { GetPromotionController } from "./interface/http/controllers/getPromotio
 import { ListPromotionsController } from "./interface/http/controllers/listPromotionsController.js";
 import { SetPromotionActiveController } from "./interface/http/controllers/setPromotionActiveController.js";
 import { UpdatePromotionController } from "./interface/http/controllers/updatePromotionController.js";
+import { AddClosedDayController } from "./interface/http/controllers/addClosedDayController.js";
+import { GetSystemSettingsController } from "./interface/http/controllers/getSystemSettingsController.js";
+import { ListClosedDaysController } from "./interface/http/controllers/listClosedDaysController.js";
+import { RemoveClosedDayController } from "./interface/http/controllers/removeClosedDayController.js";
+import { UpdateClosedDayController } from "./interface/http/controllers/updateClosedDayController.js";
+import { UpdateSystemSettingsController } from "./interface/http/controllers/updateSystemSettingsController.js";
 import { Authenticate } from "./interface/http/middleware/authenticate.js";
 
 const config = loadConfig();
@@ -98,6 +112,8 @@ const roles = new DrizzleRoleRepository(db);
 const categories = new DrizzleProcedureCategoryRepository(db);
 const procedures = new DrizzleLabProcedureRepository(db);
 const promotions = new DrizzlePromotionRepository(db);
+const settings = new DrizzleSettingsRepository(db);
+const closedDays = new DrizzleClosedDayRepository(db);
 const temporaryPasswords = new CryptoTemporaryPasswordGenerator();
 const accountEmails = new NodemailerAccountEmails({
   smtpHost: config.smtpHost,
@@ -202,6 +218,12 @@ const app = createApp({
       new UpdatePromotion(promotions, procedures, clock),
     ),
     setPromotionActive: new SetPromotionActiveController(new SetPromotionActive(promotions, clock)),
+    getSystemSettings: new GetSystemSettingsController(new GetSystemSettings(settings)),
+    updateSystemSettings: new UpdateSystemSettingsController(new UpdateSystemSettings(settings)),
+    listClosedDays: new ListClosedDaysController(new ListClosedDays(closedDays)),
+    addClosedDay: new AddClosedDayController(new AddClosedDay(closedDays)),
+    updateClosedDay: new UpdateClosedDayController(new UpdateClosedDay(closedDays)),
+    removeClosedDay: new RemoveClosedDayController(new RemoveClosedDay(closedDays)),
   },
   middlewares: {
     authenticate: new Authenticate(authenticateRequest),

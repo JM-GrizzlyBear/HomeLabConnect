@@ -65,6 +65,13 @@ import type {
 } from "../../src/application/ports/promotionRepository.js";
 import { PromotionNameTaken } from "../../src/domain/catalog/catalogErrors.js";
 import type { Promotion, PromotionDetails } from "../../src/domain/catalog/promotion.js";
+import type { ClosedDayRepository } from "../../src/application/ports/closedDayRepository.js";
+import type {
+  SettingsRecord,
+  SettingsRepository,
+} from "../../src/application/ports/settingsRepository.js";
+import type { ClosedDay, ClosedDayDetails } from "../../src/domain/settings/closedDay.js";
+import { DEFAULT_SETTINGS, type SystemSettings } from "../../src/domain/settings/systemSettings.js";
 
 export class FixedClock implements Clock {
   constructor(public current = new Date("2026-01-15T08:00:00Z")) {}
@@ -622,5 +629,69 @@ export class InMemoryPromotionRepository implements PromotionRepository {
   async setActive(id: string, isActive: boolean): Promise<void> {
     const promotion = this.promotions.get(id);
     if (promotion) this.promotions.set(id, { ...promotion, isActive });
+  }
+}
+
+/** System settings in memory; names come from the users fake. */
+export class InMemorySettingsRepository implements SettingsRepository {
+  saved: { settings: SystemSettings; actorId: string; at: Date } | null = null;
+
+  constructor(
+    private readonly users?: InMemoryUserRepository,
+    private readonly clock?: Clock,
+  ) {}
+
+  async get(): Promise<SettingsRecord> {
+    if (!this.saved) return { settings: DEFAULT_SETTINGS, updatedAt: null, updatedBy: null };
+    const actor = this.users?.users.get(this.saved.actorId);
+    return {
+      settings: this.saved.settings,
+      updatedAt: this.saved.at,
+      updatedBy: actor ? `${actor.firstName} ${actor.lastName}` : null,
+    };
+  }
+
+  async save(settings: SystemSettings, actorId: string): Promise<void> {
+    this.saved = { settings, actorId, at: this.clock?.now() ?? new Date() };
+  }
+}
+
+/** Closed days in memory. */
+export class InMemoryClosedDayRepository implements ClosedDayRepository {
+  readonly closedDays = new Map<string, ClosedDay>();
+
+  /** Adds a closed day directly, for arranging tests. */
+  add(details: Partial<ClosedDayDetails> & { date: string }): ClosedDay {
+    const created: ClosedDay = {
+      id: randomUUID(),
+      name: "Closed",
+      kind: "holiday",
+      repeatsYearly: false,
+      ...details,
+    };
+    this.closedDays.set(created.id, created);
+    return created;
+  }
+
+  async list(): Promise<ClosedDay[]> {
+    return [...this.closedDays.values()].sort(
+      (a, b) => Number(b.repeatsYearly) - Number(a.repeatsYearly) || a.date.localeCompare(b.date),
+    );
+  }
+
+  async findById(id: string): Promise<ClosedDay | null> {
+    return this.closedDays.get(id) ?? null;
+  }
+
+  async create(details: ClosedDayDetails): Promise<ClosedDay> {
+    return this.add(details);
+  }
+
+  async update(id: string, details: ClosedDayDetails): Promise<void> {
+    if (this.closedDays.has(id)) this.closedDays.set(id, { id, ...details });
+  }
+
+  async delete(id: string): Promise<void> {
+    this.closedDays.delete(id);
   }
 }

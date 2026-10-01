@@ -5,6 +5,7 @@ import { createDatabase } from "./client.js";
 import { employees, patients, roles, users } from "./schema/index.js";
 import { seedCatalog } from "./seedCatalog.js";
 import { seedCustomRoles } from "./seedCustomRoles.js";
+import { seedHolidays } from "./seedHolidays.js";
 import { seedPromotions } from "./seedPromotions.js";
 import { syncPermissionCatalog } from "./seedPermissions.js";
 
@@ -110,11 +111,14 @@ try {
 
   const proceduresAdded = await seedCatalog(db);
   const promotionsAdded = await seedPromotions(db);
+  const holidaysAdded = await seedHolidays(db);
 
   console.log(
     `Seeded ${baseRoles.length} base roles, ${customRoleIds.size} custom roles, ${permissionCount} permissions and ${created} new accounts (password: ${SEED_PASSWORD}).`,
   );
-  console.log(`Added ${proceduresAdded} new lab procedures and ${promotionsAdded} promotions.`);
+  console.log(
+    `Added ${proceduresAdded} new lab procedures, ${promotionsAdded} promotions and ${holidaysAdded} holidays.`,
+  );
 } finally {
   await pool.end();
 }

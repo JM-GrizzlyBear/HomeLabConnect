@@ -1,3 +1,4 @@
+import { businessDate } from "../time/businessDate.js";
 import { InvalidPromotion } from "./catalogErrors.js";
 import { MAX_PRICE_CENTAVOS } from "./labProcedure.js";
 
@@ -25,14 +26,6 @@ export interface Promotion extends PromotionDetails {
   id: string;
   /** An admin can switch a promotion off before it ends. */
   isActive: boolean;
-}
-
-/** The business runs on Philippine time (UTC+8, no daylight saving). */
-const BUSINESS_UTC_OFFSET_MS = 8 * 60 * 60 * 1000;
-
-/** The business day `now` falls on, as "YYYY-MM-DD". */
-export function businessDate(now: Date): string {
-  return new Date(now.getTime() + BUSINESS_UTC_OFFSET_MS).toISOString().slice(0, 10);
 }
 
 const rules: { holds(details: PromotionDetails): boolean; message: string }[] = [

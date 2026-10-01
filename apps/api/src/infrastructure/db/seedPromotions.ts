@@ -1,14 +1,7 @@
 import { inArray } from "drizzle-orm";
-import { businessDate } from "../../domain/catalog/promotion.js";
+import { addDays, businessDate } from "../../domain/time/businessDate.js";
 import type { Database } from "./client.js";
 import { labProcedures, promotionProcedures, promotions } from "./schema/index.js";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** "YYYY-MM-DD" `days` after `date`. */
-function addDays(date: string, days: number): string {
-  return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
-}
 
 /**
  * Two sample promotions, dated from the day the seed runs: a standing

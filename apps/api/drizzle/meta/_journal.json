@@ -50,6 +50,13 @@
       "when": 1790842112123,
       "tag": "0006_skinny_vindicator",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790864616977,
+      "tag": "0007_silent_sprite",
+      "breakpoints": true
     }
   ]
 }

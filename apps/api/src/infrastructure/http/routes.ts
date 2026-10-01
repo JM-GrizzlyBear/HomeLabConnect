@@ -32,6 +32,12 @@ import type { GetPromotionController } from "../../interface/http/controllers/ge
 import type { ListPromotionsController } from "../../interface/http/controllers/listPromotionsController.js";
 import type { SetPromotionActiveController } from "../../interface/http/controllers/setPromotionActiveController.js";
 import type { UpdatePromotionController } from "../../interface/http/controllers/updatePromotionController.js";
+import type { AddClosedDayController } from "../../interface/http/controllers/addClosedDayController.js";
+import type { GetSystemSettingsController } from "../../interface/http/controllers/getSystemSettingsController.js";
+import type { ListClosedDaysController } from "../../interface/http/controllers/listClosedDaysController.js";
+import type { RemoveClosedDayController } from "../../interface/http/controllers/removeClosedDayController.js";
+import type { UpdateClosedDayController } from "../../interface/http/controllers/updateClosedDayController.js";
+import type { UpdateSystemSettingsController } from "../../interface/http/controllers/updateSystemSettingsController.js";
 import type { Middleware } from "../../interface/http/httpTypes.js";
 import { RequirePermission } from "../../interface/http/middleware/requirePermission.js";
 import { adapt } from "./expressAdapter.js";
@@ -69,6 +75,12 @@ export interface Controllers {
   createPromotion: CreatePromotionController;
   updatePromotion: UpdatePromotionController;
   setPromotionActive: SetPromotionActiveController;
+  getSystemSettings: GetSystemSettingsController;
+  updateSystemSettings: UpdateSystemSettingsController;
+  listClosedDays: ListClosedDaysController;
+  addClosedDay: AddClosedDayController;
+  updateClosedDay: UpdateClosedDayController;
+  removeClosedDay: RemoveClosedDayController;
 }
 
 export interface Middlewares {
@@ -190,6 +202,14 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
     "/catalog/promotions/:id/status",
     adapt(controllers.setPromotionActive, ...can("promotions.manage")),
   );
+
+  router.get("/settings", adapt(controllers.getSystemSettings, ...can("settings.view")));
+  router.put("/settings", adapt(controllers.updateSystemSettings, ...can("settings.manage")));
+
+  router.get("/holidays", adapt(controllers.listClosedDays, ...can("holidays.view")));
+  router.post("/holidays", adapt(controllers.addClosedDay, ...can("holidays.manage")));
+  router.put("/holidays/:id", adapt(controllers.updateClosedDay, ...can("holidays.manage")));
+  router.delete("/holidays/:id", adapt(controllers.removeClosedDay, ...can("holidays.manage")));
 
   return router;
 }

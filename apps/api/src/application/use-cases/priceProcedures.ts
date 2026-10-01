@@ -1,8 +1,5 @@
-import {
-  type AppliedPromotion,
-  bestPromotion,
-  businessDate,
-} from "../../domain/catalog/promotion.js";
+import { type AppliedPromotion, bestPromotion } from "../../domain/catalog/promotion.js";
+import { businessDate } from "../../domain/time/businessDate.js";
 import type { Clock } from "../ports/clock.js";
 import type { LabProcedureRecord } from "../ports/labProcedureRepository.js";
 import type { PromotionRepository } from "../ports/promotionRepository.js";

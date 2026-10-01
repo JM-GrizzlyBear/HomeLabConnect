@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { InvalidPromotion } from "../../../src/domain/catalog/catalogErrors.js";
 import {
   bestPromotion,
-  businessDate,
   checkPromotionDetails,
   discountedPrice,
   type Promotion,
@@ -26,13 +25,6 @@ const promotion = (changes: Partial<Promotion> = {}): Promotion => ({
   isActive: true,
   ...seniorWeek,
   ...changes,
-});
-
-describe("businessDate", () => {
-  it("uses Philippine time, so late evening UTC is already the next day", () => {
-    expect(businessDate(new Date("2026-01-15T15:59:59Z"))).toBe("2026-01-15");
-    expect(businessDate(new Date("2026-01-15T16:00:00Z"))).toBe("2026-01-16");
-  });
 });
 
 describe("checkPromotionDetails", () => {
