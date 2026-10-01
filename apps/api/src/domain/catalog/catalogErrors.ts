@@ -28,6 +28,27 @@ export class InvalidProcedure extends DomainError {
   }
 }
 
+export class PromotionNotFound extends DomainError {
+  readonly kind = "not_found";
+  constructor() {
+    super("Promotion not found.", "promotion_not_found");
+  }
+}
+
+export class PromotionNameTaken extends DomainError {
+  readonly kind = "conflict";
+  constructor() {
+    super("A promotion with this name already exists.", "promotion_name_taken");
+  }
+}
+
+export class InvalidPromotion extends DomainError {
+  readonly kind = "validation";
+  constructor(message: string) {
+    super(message, "invalid_promotion");
+  }
+}
+
 export class CategoryNotFound extends DomainError {
   readonly kind = "not_found";
   constructor() {

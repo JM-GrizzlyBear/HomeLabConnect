@@ -57,6 +57,16 @@ import { ReissueTemporaryPasswordController } from "../../src/interface/http/con
 import { SetUserActiveController } from "../../src/interface/http/controllers/setUserActiveController.js";
 import { UpdateProfileController } from "../../src/interface/http/controllers/updateProfileController.js";
 import { Authenticate } from "../../src/interface/http/middleware/authenticate.js";
+import { CreatePromotion } from "../../src/application/use-cases/createPromotion.js";
+import { GetPromotion } from "../../src/application/use-cases/getPromotion.js";
+import { ListPromotions } from "../../src/application/use-cases/listPromotions.js";
+import { SetPromotionActive } from "../../src/application/use-cases/setPromotionActive.js";
+import { UpdatePromotion } from "../../src/application/use-cases/updatePromotion.js";
+import { CreatePromotionController } from "../../src/interface/http/controllers/createPromotionController.js";
+import { GetPromotionController } from "../../src/interface/http/controllers/getPromotionController.js";
+import { ListPromotionsController } from "../../src/interface/http/controllers/listPromotionsController.js";
+import { SetPromotionActiveController } from "../../src/interface/http/controllers/setPromotionActiveController.js";
+import { UpdatePromotionController } from "../../src/interface/http/controllers/updatePromotionController.js";
 import {
   FakeAccountEmails,
   FakePasswordHasher,
@@ -64,6 +74,7 @@ import {
   InMemoryAccessRepository,
   InMemoryLabProcedureRepository,
   InMemoryProcedureCategoryRepository,
+  InMemoryPromotionRepository,
   InMemoryRoleRepository,
   FakeTokenService,
   FixedClock,
@@ -81,6 +92,7 @@ export function buildTestApp({ databaseReachable = true } = {}) {
   const access = new InMemoryAccessRepository(users, roles);
   const categories = new InMemoryProcedureCategoryRepository();
   const procedures = new InMemoryLabProcedureRepository(categories);
+  const promotions = new InMemoryPromotionRepository();
   const resolvePermissions = new ResolvePermissions(access, clock);
   const emails = new FakeAccountEmails();
   const passwords = new FakeTemporaryPasswordGenerator();
@@ -137,8 +149,12 @@ export function buildTestApp({ databaseReachable = true } = {}) {
       deleteProcedureCategory: new DeleteProcedureCategoryController(
         new DeleteProcedureCategory(categories),
       ),
-      listLabProcedures: new ListLabProceduresController(new ListLabProcedures(procedures)),
-      getLabProcedure: new GetLabProcedureController(new GetLabProcedure(procedures)),
+      listLabProcedures: new ListLabProceduresController(
+        new ListLabProcedures(procedures, promotions, clock),
+      ),
+      getLabProcedure: new GetLabProcedureController(
+        new GetLabProcedure(procedures, promotions, clock),
+      ),
       createLabProcedure: new CreateLabProcedureController(
         new CreateLabProcedure(procedures, categories),
       ),
@@ -147,6 +163,17 @@ export function buildTestApp({ databaseReachable = true } = {}) {
       ),
       setLabProcedureActive: new SetLabProcedureActiveController(
         new SetLabProcedureActive(procedures),
+      ),
+      listPromotions: new ListPromotionsController(new ListPromotions(promotions, clock)),
+      getPromotion: new GetPromotionController(new GetPromotion(promotions, clock)),
+      createPromotion: new CreatePromotionController(
+        new CreatePromotion(promotions, procedures, clock),
+      ),
+      updatePromotion: new UpdatePromotionController(
+        new UpdatePromotion(promotions, procedures, clock),
+      ),
+      setPromotionActive: new SetPromotionActiveController(
+        new SetPromotionActive(promotions, clock),
       ),
     },
     middlewares: {
@@ -168,5 +195,6 @@ export function buildTestApp({ databaseReachable = true } = {}) {
     passwords,
     categories,
     procedures,
+    promotions,
   };
 }

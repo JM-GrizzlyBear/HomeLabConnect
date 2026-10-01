@@ -27,6 +27,11 @@ import type { ListProcedureCategoriesController } from "../../interface/http/con
 import type { RenameProcedureCategoryController } from "../../interface/http/controllers/renameProcedureCategoryController.js";
 import type { SetLabProcedureActiveController } from "../../interface/http/controllers/setLabProcedureActiveController.js";
 import type { UpdateLabProcedureController } from "../../interface/http/controllers/updateLabProcedureController.js";
+import type { CreatePromotionController } from "../../interface/http/controllers/createPromotionController.js";
+import type { GetPromotionController } from "../../interface/http/controllers/getPromotionController.js";
+import type { ListPromotionsController } from "../../interface/http/controllers/listPromotionsController.js";
+import type { SetPromotionActiveController } from "../../interface/http/controllers/setPromotionActiveController.js";
+import type { UpdatePromotionController } from "../../interface/http/controllers/updatePromotionController.js";
 import type { Middleware } from "../../interface/http/httpTypes.js";
 import { RequirePermission } from "../../interface/http/middleware/requirePermission.js";
 import { adapt } from "./expressAdapter.js";
@@ -59,6 +64,11 @@ export interface Controllers {
   createLabProcedure: CreateLabProcedureController;
   updateLabProcedure: UpdateLabProcedureController;
   setLabProcedureActive: SetLabProcedureActiveController;
+  listPromotions: ListPromotionsController;
+  getPromotion: GetPromotionController;
+  createPromotion: CreatePromotionController;
+  updatePromotion: UpdatePromotionController;
+  setPromotionActive: SetPromotionActiveController;
 }
 
 export interface Middlewares {
@@ -163,6 +173,22 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.patch(
     "/catalog/procedures/:id/status",
     adapt(controllers.setLabProcedureActive, ...can("procedures.manage")),
+  );
+
+  // Viewers see running promotions only; managers see every status.
+  router.get("/catalog/promotions", adapt(controllers.listPromotions, ...can("promotions.view")));
+  router.get("/catalog/promotions/:id", adapt(controllers.getPromotion, ...can("promotions.view")));
+  router.post(
+    "/catalog/promotions",
+    adapt(controllers.createPromotion, ...can("promotions.manage")),
+  );
+  router.put(
+    "/catalog/promotions/:id",
+    adapt(controllers.updatePromotion, ...can("promotions.manage")),
+  );
+  router.patch(
+    "/catalog/promotions/:id/status",
+    adapt(controllers.setPromotionActive, ...can("promotions.manage")),
   );
 
   return router;

@@ -29,6 +29,11 @@ import { ListProcedureCategories } from "./application/use-cases/listProcedureCa
 import { RenameProcedureCategory } from "./application/use-cases/renameProcedureCategory.js";
 import { SetLabProcedureActive } from "./application/use-cases/setLabProcedureActive.js";
 import { UpdateLabProcedure } from "./application/use-cases/updateLabProcedure.js";
+import { CreatePromotion } from "./application/use-cases/createPromotion.js";
+import { GetPromotion } from "./application/use-cases/getPromotion.js";
+import { ListPromotions } from "./application/use-cases/listPromotions.js";
+import { SetPromotionActive } from "./application/use-cases/setPromotionActive.js";
+import { UpdatePromotion } from "./application/use-cases/updatePromotion.js";
 import { BcryptPasswordHasher } from "./infrastructure/auth/bcryptPasswordHasher.js";
 import { CryptoTemporaryPasswordGenerator } from "./infrastructure/auth/cryptoTemporaryPasswordGenerator.js";
 import { JwtTokenService } from "./infrastructure/auth/jwtTokenService.js";
@@ -41,6 +46,7 @@ import { DrizzleSessionRepository } from "./infrastructure/db/drizzleSessionRepo
 import { DrizzleUserRepository } from "./infrastructure/db/drizzleUserRepository.js";
 import { DrizzleLabProcedureRepository } from "./infrastructure/db/drizzleLabProcedureRepository.js";
 import { DrizzleProcedureCategoryRepository } from "./infrastructure/db/drizzleProcedureCategoryRepository.js";
+import { DrizzlePromotionRepository } from "./infrastructure/db/drizzlePromotionRepository.js";
 import { createApp } from "./infrastructure/http/app.js";
 import { NodemailerAccountEmails } from "./infrastructure/mail/nodemailerAccountEmails.js";
 import { SystemClock } from "./infrastructure/systemClock.js";
@@ -71,6 +77,11 @@ import { ListProcedureCategoriesController } from "./interface/http/controllers/
 import { RenameProcedureCategoryController } from "./interface/http/controllers/renameProcedureCategoryController.js";
 import { SetLabProcedureActiveController } from "./interface/http/controllers/setLabProcedureActiveController.js";
 import { UpdateLabProcedureController } from "./interface/http/controllers/updateLabProcedureController.js";
+import { CreatePromotionController } from "./interface/http/controllers/createPromotionController.js";
+import { GetPromotionController } from "./interface/http/controllers/getPromotionController.js";
+import { ListPromotionsController } from "./interface/http/controllers/listPromotionsController.js";
+import { SetPromotionActiveController } from "./interface/http/controllers/setPromotionActiveController.js";
+import { UpdatePromotionController } from "./interface/http/controllers/updatePromotionController.js";
 import { Authenticate } from "./interface/http/middleware/authenticate.js";
 
 const config = loadConfig();
@@ -86,6 +97,7 @@ const access = new DrizzleAccessRepository(db);
 const roles = new DrizzleRoleRepository(db);
 const categories = new DrizzleProcedureCategoryRepository(db);
 const procedures = new DrizzleLabProcedureRepository(db);
+const promotions = new DrizzlePromotionRepository(db);
 const temporaryPasswords = new CryptoTemporaryPasswordGenerator();
 const accountEmails = new NodemailerAccountEmails({
   smtpHost: config.smtpHost,
@@ -166,8 +178,12 @@ const app = createApp({
     deleteProcedureCategory: new DeleteProcedureCategoryController(
       new DeleteProcedureCategory(categories),
     ),
-    listLabProcedures: new ListLabProceduresController(new ListLabProcedures(procedures)),
-    getLabProcedure: new GetLabProcedureController(new GetLabProcedure(procedures)),
+    listLabProcedures: new ListLabProceduresController(
+      new ListLabProcedures(procedures, promotions, clock),
+    ),
+    getLabProcedure: new GetLabProcedureController(
+      new GetLabProcedure(procedures, promotions, clock),
+    ),
     createLabProcedure: new CreateLabProcedureController(
       new CreateLabProcedure(procedures, categories),
     ),
@@ -177,6 +193,15 @@ const app = createApp({
     setLabProcedureActive: new SetLabProcedureActiveController(
       new SetLabProcedureActive(procedures),
     ),
+    listPromotions: new ListPromotionsController(new ListPromotions(promotions, clock)),
+    getPromotion: new GetPromotionController(new GetPromotion(promotions, clock)),
+    createPromotion: new CreatePromotionController(
+      new CreatePromotion(promotions, procedures, clock),
+    ),
+    updatePromotion: new UpdatePromotionController(
+      new UpdatePromotion(promotions, procedures, clock),
+    ),
+    setPromotionActive: new SetPromotionActiveController(new SetPromotionActive(promotions, clock)),
   },
   middlewares: {
     authenticate: new Authenticate(authenticateRequest),

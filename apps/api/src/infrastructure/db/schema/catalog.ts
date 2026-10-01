@@ -1,5 +1,15 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, integer, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  check,
+  date,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { timestamps } from "./columns.js";
 
 /** Groups of procedures, e.g. "Hematology". */
@@ -36,4 +46,45 @@ export const labProcedures = pgTable(
     uniqueIndex("lab_procedures_name_lower_idx").on(sql`lower(${table.name})`),
     check("lab_procedures_price_positive", sql`${table.priceCentavos} > 0`),
   ],
+);
+
+/**
+ * Sales on some or all procedures. `value` is a percent or centavos off.
+ * The dates are whole days in Philippine time, both included.
+ */
+export const promotions = pgTable(
+  "promotions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description"),
+    discountType: text("discount_type", { enum: ["percent", "fixed"] }).notNull(),
+    value: integer("value").notNull(),
+    startsOn: date("starts_on").notNull(),
+    /** null: no end date. */
+    endsOn: date("ends_on"),
+    appliesTo: text("applies_to", { enum: ["all", "selected"] }).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("promotions_name_lower_idx").on(sql`lower(${table.name})`),
+    check("promotions_value_positive", sql`${table.value} > 0`),
+    // Passes for a null end date too: a CHECK only fails on false, not unknown.
+    check("promotions_dates_in_order", sql`${table.endsOn} >= ${table.startsOn}`),
+  ],
+);
+
+/** The procedures a promotion covers when it applies to selected ones only. */
+export const promotionProcedures = pgTable(
+  "promotion_procedures",
+  {
+    promotionId: uuid("promotion_id")
+      .notNull()
+      .references(() => promotions.id, { onDelete: "cascade" }),
+    procedureId: uuid("procedure_id")
+      .notNull()
+      .references(() => labProcedures.id, { onDelete: "restrict" }),
+  },
+  (table) => [primaryKey({ columns: [table.promotionId, table.procedureId] })],
 );

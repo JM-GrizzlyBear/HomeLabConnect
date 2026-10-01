@@ -36,4 +36,6 @@ export interface LabProcedureRepository {
   /** Throws ProcedureCodeTaken or ProcedureNameTaken on a duplicate. */
   update(id: string, details: LabProcedureDetails): Promise<void>;
   setActive(id: string, isActive: boolean): Promise<void>;
+  /** Which of `ids` exist (active or not). */
+  findExistingIds(ids: readonly string[]): Promise<string[]>;
 }

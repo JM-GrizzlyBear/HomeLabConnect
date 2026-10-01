@@ -16,15 +16,19 @@ import {
   ProcedureNotFound,
 } from "../../../src/domain/catalog/catalogErrors.js";
 import {
+  FixedClock,
   InMemoryLabProcedureRepository,
   InMemoryProcedureCategoryRepository,
+  InMemoryPromotionRepository,
 } from "../../support/fakes.js";
 
 function setup() {
   const categories = new InMemoryProcedureCategoryRepository();
   const procedures = new InMemoryLabProcedureRepository(categories);
+  const promotions = new InMemoryPromotionRepository();
+  const clock = new FixedClock();
   const hematology = categories.add("Hematology");
-  return { categories, procedures, hematology };
+  return { categories, procedures, promotions, clock, hematology };
 }
 
 const details = (categoryId: string) => ({
@@ -103,20 +107,20 @@ describe("UpdateLabProcedure", () => {
 
 describe("SetLabProcedureActive and the viewer rules", () => {
   it("hides a deactivated procedure from people who can't manage the catalogue", async () => {
-    const { procedures, hematology } = setup();
+    const { procedures, promotions, clock, hematology } = setup();
     const cbc = procedures.add({ code: "CBC", categoryId: hematology.id });
     procedures.add({ code: "ESR", categoryId: hematology.id });
 
     await new SetLabProcedureActive(procedures).execute({ id: cbc.id, isActive: false });
 
-    const list = new ListLabProcedures(procedures);
+    const list = new ListLabProcedures(procedures, promotions, clock);
     const base = { search: null, categoryId: null, isActive: null, page: 1, pageSize: 20 };
     const asViewer = await list.execute({ ...base, includeInactive: false });
     const asManager = await list.execute({ ...base, includeInactive: true });
     expect(asViewer.items.map((item) => item.code)).toEqual(["ESR"]);
     expect(asManager.total).toBe(2);
 
-    const get = new GetLabProcedure(procedures);
+    const get = new GetLabProcedure(procedures, promotions, clock);
     await expect(get.execute({ id: cbc.id, includeInactive: false })).rejects.toThrow(
       ProcedureNotFound,
     );
@@ -124,11 +128,11 @@ describe("SetLabProcedureActive and the viewer rules", () => {
   });
 
   it("searches code and name", async () => {
-    const { procedures, hematology } = setup();
+    const { procedures, promotions, clock, hematology } = setup();
     procedures.add({ code: "CBC", name: "Complete Blood Count", categoryId: hematology.id });
     procedures.add({ code: "ESR", name: "Sedimentation Rate", categoryId: hematology.id });
 
-    const result = await new ListLabProcedures(procedures).execute({
+    const result = await new ListLabProcedures(procedures, promotions, clock).execute({
       search: " blood ",
       categoryId: null,
       isActive: null,

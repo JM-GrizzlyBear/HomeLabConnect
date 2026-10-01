@@ -59,6 +59,12 @@ import {
 } from "../../src/domain/catalog/catalogErrors.js";
 import type { LabProcedure, LabProcedureDetails } from "../../src/domain/catalog/labProcedure.js";
 import type { ProcedureCategory } from "../../src/domain/catalog/procedureCategory.js";
+import type {
+  PromotionRecord,
+  PromotionRepository,
+} from "../../src/application/ports/promotionRepository.js";
+import { PromotionNameTaken } from "../../src/domain/catalog/catalogErrors.js";
+import type { Promotion, PromotionDetails } from "../../src/domain/catalog/promotion.js";
 
 export class FixedClock implements Clock {
   constructor(public current = new Date("2026-01-15T08:00:00Z")) {}
@@ -528,6 +534,10 @@ export class InMemoryLabProcedureRepository implements LabProcedureRepository {
     if (procedure) this.procedures.set(id, { ...procedure, isActive });
   }
 
+  async findExistingIds(ids: readonly string[]): Promise<string[]> {
+    return ids.filter((id) => this.procedures.has(id));
+  }
+
   private assertUnique(details: LabProcedureDetails, ownId: string | null) {
     for (const other of this.procedures.values()) {
       if (other.id === ownId) continue;
@@ -546,5 +556,71 @@ export class InMemoryLabProcedureRepository implements LabProcedureRepository {
       createdAt: stored?.createdAt ?? new Date(0),
       updatedAt: stored?.updatedAt ?? new Date(0),
     };
+  }
+}
+
+/** Promotions in memory. */
+export class InMemoryPromotionRepository implements PromotionRepository {
+  readonly promotions = new Map<string, PromotionRecord>();
+
+  /** Adds a promotion directly, for arranging tests. Defaults: 20% off everything in Jan 2026. */
+  add(promotion: Partial<Promotion> & { name: string }): PromotionRecord {
+    const now = new Date("2026-01-01T00:00:00Z");
+    const created: PromotionRecord = {
+      id: randomUUID(),
+      description: null,
+      discountType: "percent",
+      value: 20,
+      startsOn: "2026-01-01",
+      endsOn: "2026-01-31",
+      appliesTo: "all",
+      procedureIds: [],
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+      ...promotion,
+    };
+    this.promotions.set(created.id, created);
+    return created;
+  }
+
+  async list(): Promise<PromotionRecord[]> {
+    return [...this.promotions.values()].sort(
+      (a, b) => b.startsOn.localeCompare(a.startsOn) || a.name.localeCompare(b.name),
+    );
+  }
+
+  async listRunningOn(date: string): Promise<Promotion[]> {
+    return [...this.promotions.values()].filter(
+      (promotion) =>
+        promotion.isActive &&
+        promotion.startsOn <= date &&
+        (promotion.endsOn === null || promotion.endsOn >= date),
+    );
+  }
+
+  async findById(id: string): Promise<PromotionRecord | null> {
+    return this.promotions.get(id) ?? null;
+  }
+
+  async findByName(name: string): Promise<Promotion | null> {
+    return (
+      [...this.promotions.values()].find((promotion) => sameText(promotion.name, name)) ?? null
+    );
+  }
+
+  async create(details: PromotionDetails): Promise<PromotionRecord> {
+    if (await this.findByName(details.name)) throw new PromotionNameTaken();
+    return this.add(details);
+  }
+
+  async update(id: string, details: PromotionDetails): Promise<void> {
+    const promotion = this.promotions.get(id);
+    if (promotion) this.promotions.set(id, { ...promotion, ...details });
+  }
+
+  async setActive(id: string, isActive: boolean): Promise<void> {
+    const promotion = this.promotions.get(id);
+    if (promotion) this.promotions.set(id, { ...promotion, isActive });
   }
 }

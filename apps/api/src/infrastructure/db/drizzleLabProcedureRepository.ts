@@ -1,4 +1,4 @@
-import { and, asc, count, eq, ilike, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, count, eq, ilike, inArray, or, type SQL, sql } from "drizzle-orm";
 import type {
   LabProcedureListPage,
   LabProcedureListQuery,
@@ -105,6 +105,15 @@ export class DrizzleLabProcedureRepository implements LabProcedureRepository {
 
   async setActive(id: string, isActive: boolean): Promise<void> {
     await this.db.update(labProcedures).set({ isActive }).where(eq(labProcedures.id, id));
+  }
+
+  async findExistingIds(ids: readonly string[]): Promise<string[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.db
+      .select({ id: labProcedures.id })
+      .from(labProcedures)
+      .where(inArray(labProcedures.id, [...ids]));
+    return rows.map((row) => row.id);
   }
 
   private selectWithCategory() {

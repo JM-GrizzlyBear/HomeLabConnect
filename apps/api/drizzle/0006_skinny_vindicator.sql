@@ -1,0 +1,1 @@
+ALTER TABLE "promotions" ALTER COLUMN "ends_on" DROP NOT NULL;

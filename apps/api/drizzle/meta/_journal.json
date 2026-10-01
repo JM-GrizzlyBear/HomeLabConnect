@@ -36,6 +36,20 @@
       "when": 1790776500761,
       "tag": "0004_first_archangel",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790784238929,
+      "tag": "0005_overrated_expediter",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790842112123,
+      "tag": "0006_skinny_vindicator",
+      "breakpoints": true
     }
   ]
 }
