@@ -248,6 +248,14 @@ Pages and data
 - [ ] Leave: file a request as `seniormedtech@`, approve it as `medteam@`, then approve it as `admin@`.
 - [ ] Create a staff account: the email shows in Mailpit.
 
+Appointments
+
+- [ ] As `patient05@`: **Book a Visit** → tick two tests (sale prices and the total show on the right) → pick an open day and time (Sundays show "No team"; full times are crossed out) → the address is prefilled → **Book visit**. The appointment page shows "Waiting for review" and "Unpaid"; Mailpit has "We received your booking".
+- [ ] **My Appointments** lists it under Upcoming. **Cancel visit** works until the cut-off (24 hours before by default).
+- [ ] As `admin@`: **All Appointments** shows pending bookings first. **Accept** one (the patient gets "confirmed"), **Reject** another with a reason.
+- [ ] As `support@`: **Propose new time** on a booking. As that patient: the appointment shows the new time with **Accept new time** / **Decline**; accepting moves the visit.
+- [ ] Try to book the last place of a time from two browsers at once: one succeeds, the other is told the time was just taken.
+
 Production image (optional)
 
 - [ ] `docker compose --profile api up --build`, then http://localhost:8080/api/health answers `{"status":"ok","db":"ok"}`.

@@ -49,7 +49,7 @@ user override → custom role grant → base role grant → deny. The full catal
 2. **Roles & Permissions:** base and custom roles, 21 modules and 67 permissions, per-user temporary overrides.
 3. **Lab Procedure Catalog:** procedures, categories, prices and promotions/discounts.
 4. **Scheduling & Teams:** shifts set month by month on a calendar, leave requests (team lead → admin for med team; admin for everyone else), med teams and two-week rosters. See [erd/scheduling.md](erd/scheduling.md).
-5. **Appointments:** patient booking, accept/reject, reschedule proposals, team assignment, daily routes, collection, return visits, notes and attachments.
+5. **Appointments:** patient booking with live sale prices and open slots (one visit per med team on duty per slot), staff accept/reject, new-time proposals the patient accepts or declines, cancellation, and emails at each step (built: slices 5A and 5B). Still to come: team assignment, the med team's visits, daily routes, collection, return visits, notes and attachments. See [erd/appointments.md](erd/appointments.md).
 6. **Results:** doctors upload result files and patients view or download them. Results are **held until the appointment is paid**.
 7. **Payments (Stripe + Cash):** online checkout, cash recording, refunds and a payment list with export.
 8. **Support Desk:** patient help desk, tickets auto-assigned to on-shift agents, ticket chat.

@@ -75,6 +75,12 @@ Seeded examples:
 - `settings.view` opens the Settings page read-only; `settings.manage` saves changes. The _President_ role can view but not change settings.
 - `holidays.view` (admin, med team, doctors, support) shows the Holidays & Closed Days page; `holidays.manage` (admin) adds, edits and removes them. Patients never see the list; closed days are simply not bookable.
 
+### Appointments
+
+- `appointments.book` (patients) opens **Book a Visit**: availability, prices and booking. `appointments.view_own` opens **My Appointments** and lets the patient answer a proposed new time. `appointments.cancel` lets patients cancel their own visits before the cut-off, and staff who also have `appointments.view_all` cancel any appointment with a reason.
+- `appointments.view_all` opens **All Appointments** (admin, doctors, support). On it, `accept` and `reject` decide pending bookings (admin), and `reschedule` proposes a new time (admin, support).
+- An appointment's page opens for its patient, or for anyone with `appointments.view_all`; everyone else gets 404.
+
 ### Scheduling, teams and leave
 
 - `shifts.view_own` opens My Schedule; `shifts.view` the shift board; `shifts.manage` sets shifts on the month calendar.
