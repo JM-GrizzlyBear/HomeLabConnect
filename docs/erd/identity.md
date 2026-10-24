@@ -7,7 +7,7 @@ erDiagram
     roles ||--o{ users : "base role of"
     users ||--o| patients : "patient profile"
     users ||--o| employees : "staff profile"
-    users ||--o{ sessions : "signs in with"
+    users ||..o{ session : "signed in (sess.userId)"
 
     roles {
         text id PK "patient | med_team | doctor | support | admin"
@@ -41,20 +41,16 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    sessions {
-        uuid id PK "the JWT's sid claim"
-        uuid user_id FK
-        timestamptz created_at
-        timestamptz expires_at
-        timestamptz revoked_at "set on logout / deactivation"
-        text ip_address
-        text user_agent
+    session {
+        varchar sid PK "the id in the hlc.sid cookie"
+        json sess "cookie settings + userId"
+        timestamp expire "removed once past"
     }
 ```
 
 **Notes**
 
-- Every access token names its session. A request is only accepted while that session is neither expired nor revoked and the user is active, so logout and deactivation take effect immediately.
+- Signing in starts an express-session: the browser gets an httpOnly `hlc.sid` cookie (SameSite=Lax, HTTPS-only in production) and the `session` row (connect-pg-simple's table) records the user. Every request loads the user again, so a deactivated user is refused at once. Logging out, deactivating a user and reissuing a temporary password delete the user's `session` rows.
 - Every role (patient, med team, doctor, support, admin) edits their own profile: first name, last name and phone. Patients also edit `patients.birth_date` and `patients.address`, and must keep a phone; for staff the phone is optional. Email and role can't be changed from the profile.
 - Changing a password clears `must_change_password` and `temporary_password_expires_at`, and revokes every other session of that user. The session that made the change stays signed in.
 - Admins create staff accounts (med team, doctor, support, admin). This adds a `users` row with `must_change_password = true` and an `employees` row, and emails the user a random temporary password. Patients only come from self-registration.

@@ -10,20 +10,21 @@ Patients pay online with **Stripe** (card) or in **cash** when the team arrives.
 
 ## 2. Technology Stack
 
-| Layer          | Technology                                 | Purpose                                         |
-| -------------- | ------------------------------------------ | ----------------------------------------------- |
-| Frontend       | React 19 + Vite, TypeScript                | Single-page web app for every role              |
-| Styling        | Tailwind CSS v4                            | Utility-first styling, responsive layouts       |
-| Backend        | Node.js 24 + Express 5, TypeScript         | REST API, business logic, background jobs       |
-| Database       | PostgreSQL 16 + Drizzle ORM                | Relational data storage (47 tables), migrations |
-| Payments       | Stripe (Checkout + Webhooks + Refunds)     | Online card payments and refunds                |
-| Authentication | JWT + bcrypt                               | Stateless sessions, hashed passwords            |
-| Email          | Nodemailer (Mailpit for local testing)     | Temporary passwords and notification emails     |
-| Real-time      | Server-Sent Events (SSE)                   | Live notification bell                          |
-| File storage   | S3-compatible storage (to be chosen)¹      | Result files and attachments                    |
-| DevOps         | Docker Compose, pnpm workspaces, Turborepo | Local Postgres/Mailpit, monorepo task pipeline  |
+| Layer          | Technology                                  | Purpose                                         |
+| -------------- | ------------------------------------------- | ----------------------------------------------- |
+| Frontend       | React 19 + Vite, TypeScript, TanStack Query | Single-page web app for every role, cached data |
+| Styling        | Tailwind CSS v4                             | Utility-first styling, responsive layouts       |
+| Backend        | Node.js 24 + Express 5, TypeScript          | REST API, business logic, background jobs       |
+| Database       | PostgreSQL 16 + Drizzle ORM                 | Relational data storage (47 tables), migrations |
+| Payments       | Stripe (Checkout + Webhooks + Refunds)      | Online card payments and refunds                |
+| Authentication | express-session + bcrypt                    | httpOnly session cookie, sessions in Postgres   |
+| Email          | Nodemailer (Mailpit for local testing)      | Temporary passwords and notification emails     |
+| Real-time      | Server-Sent Events (SSE)                    | Live notification bell                          |
+| Images         | Cloudinary (local folder in development)¹   | Profile photos; later attachments               |
+| Hosting        | Netlify, Render (Docker), Neon              | Website, API, managed Postgres                  |
+| DevOps         | Docker, GitHub Actions, pnpm, Turborepo     | API image, CI/deploy workflows, task pipeline   |
 
-¹ MinIO no longer publishes Docker images, so the storage server is decided in the Doctor module. The API talks to it through the S3 API, so any S3-compatible server works.
+¹ Behind the `PhotoStorage` port, so result files (PDFs) can use Cloudinary or another store when the Results module arrives.
 
 ---
 
@@ -93,11 +94,14 @@ user override → custom role grant → base role grant → deny. The full catal
 
 ```
 [ React + Tailwind (browser) ]
-            │  HTTPS / JSON (JWT in Authorization header)
+            │  HTTPS / JSON (httpOnly session cookie)
             ▼
-[ Node.js + Express API ] ──► [ PostgreSQL ]
+[ Netlify: website, forwards /api/* ]
+            │
+            ▼
+[ Node.js + Express API (Render) ] ──► [ PostgreSQL (Neon) ]
       │        │   │
-      │        │   └────────► [ S3 storage: result files ]
+      │        │   └────────► [ Cloudinary: photos ]
       │        └────────────► [ SMTP / Mailpit: emails ]
       ▼
 [ Stripe API ] ◄── webhooks ── Stripe
@@ -136,7 +140,7 @@ The backend follows **Clean Architecture** (Uncle Bob). Dependencies point inwar
 
 | Domain                          | Tables                                                                                                                                                                                                                                   |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Identity & access               | users, roles, custom_roles, modules, permissions, role_permissions, custom_role_permissions, user_permission_overrides, leave_approval_rules, sessions, audit_logs                                                                       |
+| Identity & access               | users, roles, custom_roles, modules, permissions, role_permissions, custom_role_permissions, user_permission_overrides, leave_approval_rules, session, audit_logs                                                                        |
 | People, scheduling & teams      | patients, employees, doctors, med_team_members, support_agents, employee_shifts, employee_shift_overrides, leave_requests, holidays, med_teams, team_rosters, team_roster_members, system_settings                                       |
 | Catalog & pricing               | procedure_categories, lab_procedures, promotions, promotion_procedures                                                                                                                                                                   |
 | Appointments, results & routing | appointments, appointment_procedures, appointment_assignments, reschedule_proposals, appointment_events, appointment_notes, appointment_attachments, result_files, appointment_reviews, promotion_redemptions, daily_routes, route_stops |
@@ -155,18 +159,27 @@ The backend follows **Clean Architecture** (Uncle Bob). Dependencies point inwar
 
 ```env
 # Database
-DATABASE_URL=postgres://homelabconnect:homelabconnectpass@localhost:5433/homelabconnect
+DATABASE_URL=postgres://homelabconnect:homelabconnectpass@localhost:5436/homelabconnect
 
-# Auth
-JWT_SECRET=change-me-to-a-long-random-string
+# Auth (session cookies, stored in Postgres)
+SESSION_SECRET=change-me-to-a-long-random-string-32-plus
 SESSION_TTL_MINUTES=720
+# HTTPS-only cookie; defaults to true when NODE_ENV=production
+# COOKIE_SECURE=false
+# How many proxies sit in front of the API (2 on Render behind Netlify); 0 locally
+# TRUST_PROXY=2
+
+# Photos: "local" keeps them in apps/api/uploads; "cloudinary" uses CLOUDINARY_URL
+PHOTO_STORAGE=local
+# CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+# CLOUDINARY_FOLDER=homelabconnect
 
 # Server
 PORT=4000
 APP_URL=http://localhost:5173
 
-# Frontend (Vite)
-VITE_API_URL=http://localhost:4000
+# Frontend (Vite). The client calls /api on its own address: Vite forwards it to the API in
+# development, Netlify to Render in production, so no API URL is needed.
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 
 # Stripe
@@ -191,7 +204,7 @@ pnpm i
 cp .env.example .env
 
 # 3. Start Postgres and Mailpit (inbox: http://localhost:8025)
-docker compose up -d
+docker compose up -d postgres mailpit
 
 # 4. Create tables and seed data
 turbo run db:migrate
