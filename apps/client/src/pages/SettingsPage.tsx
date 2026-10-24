@@ -17,8 +17,8 @@ import { FieldError } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchClosedDays, fetchSettings, saveSettings } from "../api/settings";
-import { useApiData } from "../api/useApiData";
-import { useAuth } from "../auth/authContext";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -83,7 +83,7 @@ const assignmentOptions = [
 
 /** Booking and assignment rules. Everyone with settings.view sees them; settings.manage edits. */
 export function SettingsPage() {
-  const { data, error, reload } = useApiData(fetchSettings, [], {
+  const { data, error, reload } = useApiQuery(queryKeys.settings, fetchSettings, {
     errorMessage: "Could not load the settings. Try again.",
   });
 
@@ -109,7 +109,6 @@ export function SettingsPage() {
 }
 
 function SettingsForm({ response, onSaved }: { response: SettingsResponse; onSaved(): void }) {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const can = useCan();
   const canManage = can("settings.manage");
@@ -118,10 +117,12 @@ function SettingsForm({ response, onSaved }: { response: SettingsResponse; onSav
   const { values, errors, submitting, set, setValues, field, submit } = useFormState(() =>
     toFormValues(response),
   );
-  const closedDays = useApiData(
-    (authToken, signal) => fetchClosedDays(authToken, new Date().getFullYear(), signal),
-    [],
-    { enabled: can("holidays.view") },
+  const closedDays = useApiQuery(
+    queryKeys.closedDays(new Date().getFullYear()),
+    (signal) => fetchClosedDays(new Date().getFullYear(), signal),
+    {
+      enabled: can("holidays.view"),
+    },
   );
 
   function toggleDay(day: number, on: boolean) {
@@ -134,7 +135,6 @@ function SettingsForm({ response, onSaved }: { response: SettingsResponse; onSav
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
     const parsed = systemSettingsSchema.safeParse({
       ...values,
       slotMinutes: Number(values.slotMinutes),
@@ -146,7 +146,7 @@ function SettingsForm({ response, onSaved }: { response: SettingsResponse; onSav
     await submit(
       parsed,
       async (settings) => {
-        await saveSettings(token, settings);
+        await saveSettings(settings);
         feedback.success({
           title: "Settings saved",
           description: "New bookings follow them from now on.",

@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { mockApi, renderApp, sampleUser, toasts } from "../support/renderApp";
@@ -16,7 +16,6 @@ const patientProfile = {
 describe("ProfilePage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("saves a patient's details and updates the name in the sidebar", async () => {
@@ -86,5 +85,49 @@ describe("ProfilePage", () => {
 
     expect(await toasts().findByText("Password changed")).toBeInTheDocument();
     expect(screen.getByLabelText("Current password")).toHaveValue("");
+  });
+
+  it("uploads a profile photo, and checks its type and size first", async () => {
+    let sent: FormData | undefined;
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: sampleUser }),
+      "GET /api/users/me/profile": () => ({ status: 200, body: patientProfile }),
+      "PUT /api/users/me/photo": (body) => {
+        sent = body as FormData;
+        return { status: 200, body: { photoUrl: "https://res.cloudinary.com/demo/me.jpg" } };
+      },
+    });
+    renderApp("/app/profile");
+    const input = await screen.findByLabelText("Profile photo file");
+
+    const big = new File([new Uint8Array(2 * 1024 * 1024 + 1)], "big.png", { type: "image/png" });
+    await userEvent.upload(input, big);
+    const dialog = within(await screen.findByRole("dialog"));
+    expect(dialog.getAllByText("The photo must be 2 MB or smaller")[0]).toBeInTheDocument();
+    expect(sent).toBeUndefined();
+    await userEvent.click(dialog.getByRole("button", { name: "OK" }));
+
+    const photo = new File(["photo"], "me.png", { type: "image/png" });
+    await userEvent.upload(input, photo);
+
+    expect(await toasts().findByText("Photo updated")).toBeInTheDocument();
+    expect((sent?.get("photo") as File).name).toBe("me.png");
+    expect(screen.getByRole("button", { name: "Change photo" })).toBeInTheDocument();
+  });
+
+  it("removes the photo after confirming", async () => {
+    const withPhoto = { ...sampleUser, photoUrl: "https://res.cloudinary.com/demo/me.jpg" };
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: withPhoto }),
+      "GET /api/users/me/profile": () => ({ status: 200, body: patientProfile }),
+      "DELETE /api/users/me/photo": () => ({ status: 200, body: { photoUrl: null } }),
+    });
+    renderApp("/app/profile");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Remove" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Remove" }));
+
+    expect(await toasts().findByText("Photo removed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add photo" })).toBeInTheDocument();
   });
 });

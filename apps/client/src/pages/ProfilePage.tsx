@@ -8,11 +8,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchProfile, updateProfile } from "../api/profile";
-import { useApiData } from "../api/useApiData";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { useAuth } from "../auth/authContext";
 import { roleLabels } from "../auth/roleLabels";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
+import { ProfilePhotoCard } from "../components/profile/ProfilePhotoCard";
 import { useFeedback } from "../feedback/feedbackContext";
 import { ChangePasswordForm } from "../forms/ChangePasswordForm";
 import { useFormState } from "../forms/useFormState";
@@ -48,7 +50,7 @@ const fieldByCode: Record<string, string> = { phone_required: "phone" };
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
   const feedback = useFeedback();
-  const { data: profile, error: loadError } = useApiData(fetchProfile, [], {
+  const { data: profile, error: loadError } = useApiQuery(queryKeys.profile, fetchProfile, {
     errorMessage: "Could not load your profile. Try again.",
   });
 
@@ -79,16 +81,24 @@ export function ProfilePage() {
             </div>
           )}
         </ContentCard>
-        <ContentCard title="Password" className="lg:col-span-2">
-          <ChangePasswordForm
-            onChanged={() =>
-              feedback.success({
-                title: "Password changed",
-                description: "Other devices signed in to your account have been logged out.",
-              })
-            }
-          />
-        </ContentCard>
+        <div className="grid gap-6 lg:col-span-2">
+          <ContentCard title="Profile photo">
+            <ProfilePhotoCard
+              user={user}
+              onChanged={(photoUrl) => updateUser({ ...user, photoUrl })}
+            />
+          </ContentCard>
+          <ContentCard title="Password">
+            <ChangePasswordForm
+              onChanged={() =>
+                feedback.success({
+                  title: "Password changed",
+                  description: "Other devices signed in to your account have been logged out.",
+                })
+              }
+            />
+          </ContentCard>
+        </div>
       </div>
     </>
   );
@@ -101,7 +111,6 @@ function ProfileForm({
   profile: Profile;
   onSaved: (profile: Profile) => void;
 }) {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const isPatient = profile.role === "patient";
   const form = useFormState(() => toFormValues(profile));
@@ -110,7 +119,6 @@ function ProfileForm({
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
 
     const parsed = updateProfileRequestSchema.safeParse({
       firstName: values.firstName,
@@ -124,7 +132,7 @@ function ProfileForm({
     await submit(
       parsed,
       async (request) => {
-        const updated = await updateProfile(token, request);
+        const updated = await updateProfile(request);
         form.setValues(toFormValues(updated));
         onSaved(updated);
         feedback.success({ title: "Profile saved", description: "Your details are up to date." });

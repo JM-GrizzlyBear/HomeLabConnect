@@ -6,7 +6,6 @@ import { adminUser, mockApi, renderApp, sampleUser } from "../../support/renderA
 const admin = adminUser;
 
 function signedInAs(user: typeof sampleUser | typeof admin) {
-  localStorage.setItem("homelabconnect.token", "tkn");
   mockApi({
     "GET /api/auth/me": () => ({ status: 200, body: user }),
     "POST /api/auth/logout": () => ({ status: 204 }),

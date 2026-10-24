@@ -50,7 +50,6 @@ const categories = () => ({
 describe("ProceduresPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("shows patients a read-only catalogue with prices and preparation details", async () => {

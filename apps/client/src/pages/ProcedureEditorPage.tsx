@@ -14,8 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { createProcedure, fetchCategories, fetchProcedure, updateProcedure } from "../api/catalog";
-import { useApiData } from "../api/useApiData";
-import { useAuth } from "../auth/authContext";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { useFeedback } from "../feedback/feedbackContext";
@@ -66,11 +66,12 @@ const toNumber = (text: string) => (text.trim() === "" ? Number.NaN : Number(tex
 export function ProcedureEditorPage() {
   const { id } = useParams();
   const title = id ? "Edit Procedure" : "New Procedure";
-  const { data, error: loadError } = useApiData(
-    async (token, signal) => {
+  const { data, error: loadError } = useApiQuery(
+    queryKeys.procedure(id),
+    async (signal) => {
       const [categories, procedure] = await Promise.all([
-        fetchCategories(token, signal),
-        id ? fetchProcedure(token, id, signal) : null,
+        fetchCategories(signal),
+        id ? fetchProcedure(id, signal) : null,
       ]);
       const initialValues: FormValues = procedure
         ? {
@@ -87,7 +88,6 @@ export function ProcedureEditorPage() {
         : emptyForm;
       return { id, categories, initialValues };
     },
-    [id],
     { errorMessage: "Could not load the procedure. Try again." },
   );
 
@@ -134,7 +134,6 @@ interface ProcedureFormProps {
 
 function ProcedureForm({ id, categories, initialValues }: ProcedureFormProps) {
   const isNew = id === undefined;
-  const { token } = useAuth();
   const feedback = useFeedback();
   const navigate = useNavigate();
   const {
@@ -152,7 +151,6 @@ function ProcedureForm({ id, categories, initialValues }: ProcedureFormProps) {
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
 
     const parsed = labProcedureRequestSchema.safeParse({
       code: values.code,
@@ -168,9 +166,7 @@ function ProcedureForm({ id, categories, initialValues }: ProcedureFormProps) {
     await submit(
       parsed,
       async (request) => {
-        const saved = id
-          ? await updateProcedure(token, id, request)
-          : await createProcedure(token, request);
+        const saved = id ? await updateProcedure(id, request) : await createProcedure(request);
         feedback.success({
           title: id ? "Procedure saved" : "Procedure added",
           description: `${saved.name} (${saved.code}) is in the catalogue.`,

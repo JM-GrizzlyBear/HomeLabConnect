@@ -15,7 +15,6 @@ async function fillForm(current: string, next: string, confirm = next) {
 describe("ChangePasswordPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("changes the temporary password and continues to the app", async () => {

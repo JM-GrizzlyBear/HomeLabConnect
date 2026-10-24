@@ -17,8 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { entrySummary } from "../access/rolePermissions";
 import { createRole, fetchRole, fetchRoles, updateRole } from "../api/roles";
-import { useApiData } from "../api/useApiData";
-import { useAuth } from "../auth/authContext";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { roleLabels } from "../auth/roleLabels";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -43,11 +43,12 @@ const baseRoleOptions = (Object.keys(roleLabels) as BaseRole[]).map((role) => ({
 export function RoleEditorPage() {
   const { id } = useParams();
   const title = id ? "Edit Role" : "New Role";
-  const { data, error: loadError } = useApiData(
-    async (token, signal) => {
+  const { data, error: loadError } = useApiQuery(
+    queryKeys.role(id),
+    async (signal) => {
       const [roles, role] = await Promise.all([
-        fetchRoles(token, signal),
-        id ? fetchRole(token, id, signal) : null,
+        fetchRoles(signal),
+        id ? fetchRole(id, signal) : null,
       ]);
       const initialValues: FormValues = role
         ? {
@@ -59,7 +60,6 @@ export function RoleEditorPage() {
         : emptyForm;
       return { id, roles, initialValues };
     },
-    [id],
     { errorMessage: "Could not load the role. Try again." },
   );
 
@@ -104,7 +104,6 @@ interface RoleFormProps {
 
 function RoleForm({ id, roles, initialValues }: RoleFormProps) {
   const isNew = id === undefined;
-  const { token } = useAuth();
   const feedback = useFeedback();
   const navigate = useNavigate();
   const {
@@ -122,7 +121,6 @@ function RoleForm({ id, roles, initialValues }: RoleFormProps) {
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
 
     const parsed = createCustomRoleRequestSchema.safeParse({
       name: values.name,
@@ -135,8 +133,8 @@ function RoleForm({ id, roles, initialValues }: RoleFormProps) {
       async (request) => {
         const { name, description, entries } = request;
         const saved = id
-          ? await updateRole(token, id, { name, description, entries })
-          : await createRole(token, request);
+          ? await updateRole(id, { name, description, entries })
+          : await createRole(request);
         feedback.success({
           title: id ? "Role saved" : "Role created",
           description: `${saved.name} is ready. People holding it get the changes on their next click.`,

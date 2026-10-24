@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/sheet";
 import { ApiError } from "../../api/apiClient";
 import { fetchShiftBoard, saveShiftDays } from "../../api/scheduling";
-import { useApiData } from "../../api/useApiData";
-import { useAuth } from "../../auth/authContext";
+import { queryKeys } from "../../queries/queryKeys";
+import { useApiQuery } from "../../queries/useApiQuery";
 import { useFeedback } from "../../feedback/feedbackContext";
 import { datesOfMonth, monthEnd, monthOf, shiftMonth } from "../../format/schedule";
 import { formatTime, timeOptions } from "../../format/settings";
@@ -68,7 +68,6 @@ export function ShiftMonthEditor({ target, onClose, onSaved }: ShiftMonthEditorP
 }
 
 function EditorBody({ target, onSaved }: { target: ShiftEditorTarget; onSaved(): void }) {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const { person } = target;
   const [month, setMonth] = useState(() => monthOf(target.date));
@@ -77,9 +76,9 @@ function EditorBody({ target, onSaved }: { target: ShiftEditorTarget; onSaved():
   );
   const [hours, setHours] = useState({ start: "08:00", end: "17:00" });
   const [saving, setSaving] = useState<"hours" | "off" | null>(null);
-  const board = useApiData(
-    (authToken, signal) => fetchShiftBoard(authToken, month, monthEnd(month), person.role, signal),
-    [month, person.role],
+  const board = useApiQuery(
+    queryKeys.shiftBoard(month, monthEnd(month), person.role),
+    (signal) => fetchShiftBoard(month, monthEnd(month), person.role, signal),
     { errorMessage: "Could not load the shifts. Try again." },
   );
   const days = board.data?.find((row) => row.person.id === person.id)?.days ?? null;
@@ -114,10 +113,10 @@ function EditorBody({ target, onSaved }: { target: ShiftEditorTarget; onSaved():
   }
 
   async function apply(kind: "hours" | "off") {
-    if (!token || count === 0) return;
+    if (count === 0) return;
     setSaving(kind);
     try {
-      await saveShiftDays(token, person.id, {
+      await saveShiftDays(person.id, {
         dates: [...selected].sort(),
         hours: kind === "hours" ? hours : null,
       });

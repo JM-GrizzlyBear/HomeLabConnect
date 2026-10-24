@@ -24,7 +24,6 @@ const outing = {
 describe("HolidaysPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("lists closed days by month, with yearly ones moved into this year", async () => {

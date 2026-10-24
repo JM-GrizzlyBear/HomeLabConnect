@@ -23,19 +23,16 @@ export async function register(request: RegisterPatientRequest): Promise<Current
   );
 }
 
-export async function fetchCurrentUser(token: string, signal?: AbortSignal): Promise<SessionUser> {
-  return sessionUserSchema.parse(await apiRequest("/auth/me", { token, signal }));
+export async function fetchCurrentUser(signal?: AbortSignal): Promise<SessionUser> {
+  return sessionUserSchema.parse(await apiRequest("/auth/me", { signal }));
 }
 
-export async function changePassword(
-  token: string,
-  request: ChangePasswordRequest,
-): Promise<SessionUser> {
+export async function changePassword(request: ChangePasswordRequest): Promise<SessionUser> {
   return sessionUserSchema.parse(
-    await apiRequest("/auth/password", { method: "PUT", body: request, token }),
+    await apiRequest("/auth/password", { method: "PUT", body: request }),
   );
 }
 
-export async function logout(token: string): Promise<void> {
-  await apiRequest("/auth/logout", { method: "POST", token });
+export async function logout(): Promise<void> {
+  await apiRequest("/auth/logout", { method: "POST" });
 }

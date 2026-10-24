@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { decideLeave } from "../../api/scheduling";
-import { useAuth } from "../../auth/authContext";
 import { useFeedback } from "../../feedback/feedbackContext";
 import { approvalStepLabels, formatLeaveDates, leaveTypeLabels } from "../../format/leave";
 import { useFormState } from "../../forms/useFormState";
@@ -83,7 +82,6 @@ function DecideForm({
   onClose(): void;
   onDecided(): void;
 }) {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const { leave, decision } = deciding;
   const approving = decision === "approved";
@@ -91,11 +89,10 @@ function DecideForm({
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
     await submit(
       leaveDecisionRequestSchema.safeParse({ decision, note: values.note.trim() || null }),
       async (request) => {
-        const decided = await decideLeave(token, leave.id, request);
+        const decided = await decideLeave(leave.id, request);
         onClose();
         onDecided();
         feedback.success({

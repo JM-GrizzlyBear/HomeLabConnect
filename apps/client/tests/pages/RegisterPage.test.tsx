@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { mockApi, renderApp, sampleUser, toasts } from "../support/renderApp";
 
 async function fillRequiredFields() {
-  await userEvent.type(screen.getByLabelText("First name"), "Juan");
+  await userEvent.type(await screen.findByLabelText("First name"), "Juan");
   await userEvent.type(screen.getByLabelText("Last name"), "Dela Cruz");
   await userEvent.type(screen.getByLabelText("Email"), "juan@example.com");
   await userEvent.type(screen.getByLabelText("Mobile number"), "09171234567");
@@ -43,12 +43,12 @@ describe("RegisterPage", () => {
     const fetchSpy = mockApi({});
     renderApp("/register");
 
-    await userEvent.type(screen.getByLabelText("Password"), "short");
+    await userEvent.type(await screen.findByLabelText("Password"), "short");
     await userEvent.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(screen.getByText("Enter your first name.")).toBeInTheDocument();
     expect(screen.getByText("Password must be at least 8 characters.")).toBeInTheDocument();
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalledWith("/api/auth/register", expect.anything());
   });
 
   it("marks the email field when it is already registered", async () => {

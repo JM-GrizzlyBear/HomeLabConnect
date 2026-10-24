@@ -36,7 +36,6 @@ const diabetesCheck = promotion({
 describe("PromotionsPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("lists promotions with their discount, scope, dates and status", async () => {

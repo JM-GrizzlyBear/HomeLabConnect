@@ -14,16 +14,14 @@ describe("protected pages", () => {
     expect(router.state.location.pathname).toBe("/login");
   });
 
-  it("restore the session from a stored token", async () => {
-    localStorage.setItem("homelabconnect.token", "tkn");
+  it("restore the session from its cookie", async () => {
     mockApi({ "GET /api/auth/me": () => ({ status: 200, body: sampleUser }) });
     renderApp("/app");
 
     expect(await screen.findByText("Welcome back, Juan")).toBeInTheDocument();
   });
 
-  it("drop a stored token the API no longer accepts", async () => {
-    localStorage.setItem("homelabconnect.token", "revoked");
+  it("treat a session the API no longer accepts as signed out", async () => {
     mockApi({
       "GET /api/auth/me": () => ({
         status: 401,
@@ -33,11 +31,9 @@ describe("protected pages", () => {
     renderApp("/app");
 
     expect(await screen.findByRole("heading", { name: "Login" })).toBeInTheDocument();
-    expect(localStorage.getItem("homelabconnect.token")).toBeNull();
   });
 
   it("log out through the API and return to sign in", async () => {
-    localStorage.setItem("homelabconnect.token", "tkn");
     const fetchSpy = mockApi({
       "GET /api/auth/me": () => ({ status: 200, body: sampleUser }),
       "POST /api/auth/logout": () => ({ status: 204 }),
@@ -49,12 +45,10 @@ describe("protected pages", () => {
 
     expect(await screen.findByRole("heading", { name: "Login" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/login");
-    expect(localStorage.getItem("homelabconnect.token")).toBeNull();
     expect(fetchSpy).toHaveBeenCalledWith("/api/auth/logout", expect.anything());
   });
 
   it("send a user on a temporary password to change it first", async () => {
-    localStorage.setItem("homelabconnect.token", "tkn");
     mockApi({
       "GET /api/auth/me": () => ({
         status: 200,

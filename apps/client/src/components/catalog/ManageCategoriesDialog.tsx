@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { ApiError } from "../../api/apiClient";
 import { createCategory, deleteCategory, renameCategory } from "../../api/catalog";
-import { useAuth } from "../../auth/authContext";
 import { useFeedback } from "../../feedback/feedbackContext";
 import { useFormState } from "../../forms/useFormState";
 
@@ -89,7 +88,6 @@ function CategoryRow({
   onRename(): void;
   onDeleted(): void;
 }) {
-  const { token } = useAuth();
   const feedback = useFeedback();
 
   async function remove() {
@@ -99,9 +97,9 @@ function CategoryRow({
       confirmLabel: "Delete category",
       destructive: true,
     });
-    if (!confirmed || !token) return;
+    if (!confirmed) return;
     try {
-      await deleteCategory(token, category.id);
+      await deleteCategory(category.id);
       onDeleted();
     } catch (error) {
       feedback.error({
@@ -150,16 +148,14 @@ function RenameCategoryRow({
   onDone(): void;
   onCancel(): void;
 }) {
-  const { token } = useAuth();
   const { values, submitting, field, submit } = useFormState({ name: category.name });
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
     await submit(
       categoryRequestSchema.safeParse(values),
       async ({ name }) => {
-        await renameCategory(token, category.id, name);
+        await renameCategory(category.id, name);
         onDone();
       },
       { title: "Couldn't rename the category", fieldByCode },
@@ -189,16 +185,14 @@ function RenameCategoryRow({
 }
 
 function AddCategoryForm({ onAdded }: { onAdded(): void }) {
-  const { token } = useAuth();
   const { values, submitting, setValues, field, submit } = useFormState({ name: "" });
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
     await submit(
       categoryRequestSchema.safeParse(values),
       async ({ name }) => {
-        await createCategory(token, name);
+        await createCategory(name);
         setValues({ name: "" });
         onAdded();
       },

@@ -55,7 +55,6 @@ const savedPromotion = {
 describe("PromotionEditorPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("previews the sale price as the discount is typed", async () => {

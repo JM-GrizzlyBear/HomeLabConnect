@@ -26,16 +26,15 @@ export function ChangePasswordForm({
   submitLabel = "Change password",
   onChanged,
 }: ChangePasswordFormProps) {
-  const { token, updateUser } = useAuth();
+  const { updateUser } = useAuth();
   const { values, submitting, setValues, field, submit } = useFormState(emptyForm);
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
     await submit(
       changePasswordFormSchema.safeParse(values),
       async ({ currentPassword, newPassword }) => {
-        const user = await changePassword(token, { currentPassword, newPassword });
+        const user = await changePassword({ currentPassword, newPassword });
         setValues(emptyForm);
         updateUser(user);
         onChanged?.(user);

@@ -10,47 +10,34 @@ import {
 } from "@homelabconnect/shared";
 import { apiRequest } from "./apiClient";
 
-export async function fetchRoles(token: string, signal?: AbortSignal): Promise<RoleList> {
-  return roleListSchema.parse(await apiRequest("/roles", { token, signal }));
+export async function fetchRoles(signal?: AbortSignal): Promise<RoleList> {
+  return roleListSchema.parse(await apiRequest("/roles", { signal }));
 }
 
-export async function fetchRole(
-  token: string,
-  id: string,
-  signal?: AbortSignal,
-): Promise<CustomRole> {
-  return customRoleSchema.parse(await apiRequest(`/roles/${id}`, { token, signal }));
+export async function fetchRole(id: string, signal?: AbortSignal): Promise<CustomRole> {
+  return customRoleSchema.parse(await apiRequest(`/roles/${id}`, { signal }));
 }
 
-export async function createRole(
-  token: string,
-  request: CreateCustomRoleRequest,
-): Promise<CustomRole> {
-  return customRoleSchema.parse(
-    await apiRequest("/roles", { method: "POST", body: request, token }),
-  );
+export async function createRole(request: CreateCustomRoleRequest): Promise<CustomRole> {
+  return customRoleSchema.parse(await apiRequest("/roles", { method: "POST", body: request }));
 }
 
 export async function updateRole(
-  token: string,
   id: string,
   request: UpdateCustomRoleRequest,
 ): Promise<CustomRole> {
-  return customRoleSchema.parse(
-    await apiRequest(`/roles/${id}`, { method: "PUT", body: request, token }),
-  );
+  return customRoleSchema.parse(await apiRequest(`/roles/${id}`, { method: "PUT", body: request }));
 }
 
-export async function deleteRole(token: string, id: string): Promise<void> {
-  await apiRequest(`/roles/${id}`, { method: "DELETE", token });
+export async function deleteRole(id: string): Promise<void> {
+  await apiRequest(`/roles/${id}`, { method: "DELETE" });
 }
 
 export async function assignRole(
-  token: string,
   userId: string,
   customRoleId: string | null,
 ): Promise<UserSummary> {
   return userSummarySchema.parse(
-    await apiRequest(`/users/${userId}/role`, { method: "PUT", body: { customRoleId }, token }),
+    await apiRequest(`/users/${userId}/role`, { method: "PUT", body: { customRoleId } }),
   );
 }

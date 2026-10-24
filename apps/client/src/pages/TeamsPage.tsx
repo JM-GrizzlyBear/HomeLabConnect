@@ -22,8 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "../api/apiClient";
 import { copyPreviousRosters, fetchTeamBoard, setTeamStatus } from "../api/scheduling";
-import { useApiData } from "../api/useApiData";
-import { useAuth } from "../auth/authContext";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -39,7 +39,6 @@ const shiftDays = (date: string, days: number) =>
 
 /** Med teams and who is on each one, two weeks at a time. */
 export function TeamsPage() {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const can = useCan();
   const canRoster = can("teams.roster");
@@ -52,7 +51,7 @@ export function TeamsPage() {
     data: board,
     error,
     reload,
-  } = useApiData((authToken, signal) => fetchTeamBoard(authToken, date, signal), [date], {
+  } = useApiQuery(queryKeys.teams(date), (signal) => fetchTeamBoard(date, signal), {
     errorMessage: "Could not load the teams. Try again.",
   });
 
@@ -60,9 +59,9 @@ export function TeamsPage() {
   const hasRosters = board?.teams.some((team) => team.members.length > 0) ?? false;
 
   async function copyPrevious() {
-    if (!token || !board) return;
+    if (!board) return;
     try {
-      const copied = await copyPreviousRosters(token, board.periodStart);
+      const copied = await copyPreviousRosters(board.periodStart);
       feedback.success({
         title: copied ? "Rosters copied" : "Nothing to copy",
         description: copied
@@ -89,9 +88,8 @@ export function TeamsPage() {
       });
       if (!confirmed) return;
     }
-    if (!token) return;
     try {
-      await setTeamStatus(token, team.id, isActive);
+      await setTeamStatus(team.id, isActive);
       feedback.success({ title: isActive ? "Team reactivated" : "Team deactivated" });
       reload();
     } catch (failure) {

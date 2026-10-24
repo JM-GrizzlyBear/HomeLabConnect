@@ -18,21 +18,30 @@ export class ApiError extends Error {
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  /** Sent as JSON, or as a multipart form when it's FormData (file uploads). */
   body?: unknown;
-  token?: string | null;
   signal?: AbortSignal;
 }
 
-/** Calls the API (proxied to /api by Vite) and returns the JSON body, or undefined for 204. */
+/**
+ * Calls the API and returns the JSON body, or undefined for 204. The browser sends the
+ * session cookie by itself: /api is on the same address (Vite forwards it in development,
+ * Netlify in production).
+ */
 export async function apiRequest(path: string, options: RequestOptions = {}): Promise<unknown> {
+  const isForm = options.body instanceof FormData;
   const headers: Record<string, string> = {};
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
-  if (options.token) headers.Authorization = `Bearer ${options.token}`;
+  // A form sets its own multipart Content-Type (with the boundary)
+  if (options.body !== undefined && !isForm) headers["Content-Type"] = "application/json";
 
   const res = await fetch(`/api${path}`, {
     method: options.method ?? "GET",
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    body: isForm
+      ? (options.body as FormData)
+      : options.body === undefined
+        ? undefined
+        : JSON.stringify(options.body),
     signal: options.signal,
   });
 

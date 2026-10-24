@@ -33,8 +33,8 @@ import {
 } from "@/components/ui/table";
 import { ApiError } from "../api/apiClient";
 import { fetchCategories, fetchProcedures, setProcedureStatus } from "../api/catalog";
-import { useApiData } from "../api/useApiData";
-import { useAuth } from "../auth/authContext";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -60,17 +60,16 @@ const statusOptions = [
 
 /** The lab procedure catalogue: read-only for most people, editable with procedures.manage. */
 export function ProceduresPage() {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const can = useCan();
   const navigate = useNavigate();
   const canManage = can("procedures.manage");
   const [filters, setFilters] = useState<Filters>({ q: "", categoryId: ALL, status: ALL, page: 1 });
   const [search, setSearch] = useState("");
-  const procedures = useApiData(
-    (authToken, signal) =>
+  const procedures = useApiQuery(
+    queryKeys.procedures(filters),
+    (signal) =>
       fetchProcedures(
-        authToken,
         {
           q: filters.q || undefined,
           categoryId: filters.categoryId === ALL ? undefined : filters.categoryId,
@@ -80,11 +79,10 @@ export function ProceduresPage() {
         },
         signal,
       ),
-    [filters],
     { errorMessage: "Could not load procedures. Try again." },
   );
   // If this fails the category filter just stays empty; the list itself still loads.
-  const categoryData = useApiData(fetchCategories, []);
+  const categoryData = useApiQuery(queryKeys.categories, fetchCategories);
   const [viewing, setViewing] = useState<LabProcedure | null>(null);
   const [managingCategories, setManagingCategories] = useState(false);
   const { data: list, error: loadError } = procedures;
@@ -111,9 +109,9 @@ export function ProceduresPage() {
             destructive: true,
           },
     );
-    if (!confirmed || !token) return;
+    if (!confirmed) return;
     try {
-      await setProcedureStatus(token, procedure.id, isActive);
+      await setProcedureStatus(procedure.id, isActive);
       feedback.success({
         title: isActive ? "Procedure reactivated" : "Procedure deactivated",
         description: isActive

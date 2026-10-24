@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { fetchShiftBoard } from "../api/scheduling";
-import { useApiData } from "../api/useApiData";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { roleLabels } from "../auth/roleLabels";
 import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
@@ -53,10 +54,9 @@ export function ShiftsPage() {
     data: rows,
     error,
     reload,
-  } = useApiData(
-    (token, signal) =>
-      fetchShiftBoard(token, weekStart, weekEnd, role === ALL ? null : role, signal),
-    [weekStart, role],
+  } = useApiQuery(
+    queryKeys.shiftBoard(weekStart, weekEnd, role === ALL ? null : role),
+    (signal) => fetchShiftBoard(weekStart, weekEnd, role === ALL ? null : role, signal),
     { errorMessage: "Could not load shifts. Try again." },
   );
   const dates = datesFrom(weekStart, 7);

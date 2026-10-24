@@ -26,42 +26,30 @@ import { apiRequest } from "./apiClient";
 
 /** The teams and rosters for the two-week period containing `date` (today when null). */
 export async function fetchTeamBoard(
-  token: string,
   date: string | null,
   signal?: AbortSignal,
 ): Promise<TeamBoard> {
   const query = date ? `?date=${date}` : "";
-  return teamBoardSchema.parse(await apiRequest(`/teams${query}`, { token, signal }));
+  return teamBoardSchema.parse(await apiRequest(`/teams${query}`, { signal }));
 }
 
-export async function createTeam(token: string, request: MedTeamRequest): Promise<TeamSummary> {
+export async function createTeam(request: MedTeamRequest): Promise<TeamSummary> {
+  return teamSummarySchema.parse(await apiRequest("/teams", { method: "POST", body: request }));
+}
+
+export async function updateTeam(id: string, request: MedTeamRequest): Promise<TeamSummary> {
   return teamSummarySchema.parse(
-    await apiRequest("/teams", { method: "POST", body: request, token }),
+    await apiRequest(`/teams/${id}`, { method: "PUT", body: request }),
   );
 }
 
-export async function updateTeam(
-  token: string,
-  id: string,
-  request: MedTeamRequest,
-): Promise<TeamSummary> {
+export async function setTeamStatus(id: string, isActive: boolean): Promise<TeamSummary> {
   return teamSummarySchema.parse(
-    await apiRequest(`/teams/${id}`, { method: "PUT", body: request, token }),
-  );
-}
-
-export async function setTeamStatus(
-  token: string,
-  id: string,
-  isActive: boolean,
-): Promise<TeamSummary> {
-  return teamSummarySchema.parse(
-    await apiRequest(`/teams/${id}/status`, { method: "PATCH", body: { isActive }, token }),
+    await apiRequest(`/teams/${id}/status`, { method: "PATCH", body: { isActive } }),
   );
 }
 
 export async function saveRoster(
-  token: string,
   teamId: string,
   periodStart: string,
   request: RosterRequest,
@@ -69,39 +57,32 @@ export async function saveRoster(
   await apiRequest(`/teams/${teamId}/rosters/${periodStart}`, {
     method: "PUT",
     body: request,
-    token,
   });
 }
 
 /** Returns how many rosters were copied. */
-export async function copyPreviousRosters(token: string, periodStart: string): Promise<number> {
+export async function copyPreviousRosters(periodStart: string): Promise<number> {
   const result = copyRostersResponseSchema.parse(
-    await apiRequest(`/rosters/${periodStart}/copy-previous`, { method: "POST", token }),
+    await apiRequest(`/rosters/${periodStart}/copy-previous`, { method: "POST" }),
   );
   return result.copied;
 }
 
-export async function fetchStaff(
-  token: string,
-  role: BaseRole,
-  signal?: AbortSignal,
-): Promise<StaffMember[]> {
-  return staffListSchema.parse(await apiRequest(`/staff?role=${role}`, { token, signal }));
+export async function fetchStaff(role: BaseRole, signal?: AbortSignal): Promise<StaffMember[]> {
+  return staffListSchema.parse(await apiRequest(`/staff?role=${role}`, { signal }));
 }
 
 export async function fetchMySchedule(
-  token: string,
   from: string,
   to: string,
   signal?: AbortSignal,
 ): Promise<ScheduleDay[]> {
   return scheduleDayListSchema.parse(
-    await apiRequest(`/shifts/mine?from=${from}&to=${to}`, { token, signal }),
+    await apiRequest(`/shifts/mine?from=${from}&to=${to}`, { signal }),
   );
 }
 
 export async function fetchShiftBoard(
-  token: string,
   from: string,
   to: string,
   role: BaseRole | null,
@@ -109,56 +90,45 @@ export async function fetchShiftBoard(
 ): Promise<ShiftBoard> {
   const roleQuery = role ? `&role=${role}` : "";
   return shiftBoardSchema.parse(
-    await apiRequest(`/shifts?from=${from}&to=${to}${roleQuery}`, { token, signal }),
+    await apiRequest(`/shifts?from=${from}&to=${to}${roleQuery}`, { signal }),
   );
 }
 
 /** Gives the picked days the same hours, or makes them days off with null. Returns how many changed. */
-export async function saveShiftDays(
-  token: string,
-  userId: string,
-  request: ShiftDaysRequest,
-): Promise<number> {
+export async function saveShiftDays(userId: string, request: ShiftDaysRequest): Promise<number> {
   const result = shiftDaysResponseSchema.parse(
-    await apiRequest(`/shifts/${userId}/days`, { method: "PUT", body: request, token }),
+    await apiRequest(`/shifts/${userId}/days`, { method: "PUT", body: request }),
   );
   return result.changed;
 }
 
-export async function requestLeave(token: string, request: LeaveRequestBody): Promise<LeaveView> {
-  return leaveViewSchema.parse(
-    await apiRequest("/leave", { method: "POST", body: request, token }),
-  );
+export async function requestLeave(request: LeaveRequestBody): Promise<LeaveView> {
+  return leaveViewSchema.parse(await apiRequest("/leave", { method: "POST", body: request }));
 }
 
-export async function fetchMyLeave(token: string, signal?: AbortSignal): Promise<LeaveView[]> {
-  return leaveListSchema.parse(await apiRequest("/leave/mine", { token, signal }));
+export async function fetchMyLeave(signal?: AbortSignal): Promise<LeaveView[]> {
+  return leaveListSchema.parse(await apiRequest("/leave/mine", { signal }));
 }
 
-export async function cancelLeave(token: string, id: string): Promise<LeaveView> {
-  return leaveViewSchema.parse(await apiRequest(`/leave/${id}/cancel`, { method: "PATCH", token }));
+export async function cancelLeave(id: string): Promise<LeaveView> {
+  return leaveViewSchema.parse(await apiRequest(`/leave/${id}/cancel`, { method: "PATCH" }));
 }
 
 /** Requests waiting at a step the signed-in person may decide. */
-export async function fetchLeaveInbox(token: string, signal?: AbortSignal): Promise<LeaveView[]> {
-  return leaveListSchema.parse(await apiRequest("/leave/inbox", { token, signal }));
+export async function fetchLeaveInbox(signal?: AbortSignal): Promise<LeaveView[]> {
+  return leaveListSchema.parse(await apiRequest("/leave/inbox", { signal }));
 }
 
-export async function decideLeave(
-  token: string,
-  id: string,
-  request: LeaveDecisionRequest,
-): Promise<LeaveView> {
+export async function decideLeave(id: string, request: LeaveDecisionRequest): Promise<LeaveView> {
   return leaveViewSchema.parse(
-    await apiRequest(`/leave/${id}/decision`, { method: "POST", body: request, token }),
+    await apiRequest(`/leave/${id}/decision`, { method: "POST", body: request }),
   );
 }
 
 export async function fetchAllLeave(
-  token: string,
   status: LeaveStatus | null,
   signal?: AbortSignal,
 ): Promise<LeaveView[]> {
   const query = status ? `?status=${status}` : "";
-  return leaveListSchema.parse(await apiRequest(`/leave${query}`, { token, signal }));
+  return leaveListSchema.parse(await apiRequest(`/leave${query}`, { signal }));
 }

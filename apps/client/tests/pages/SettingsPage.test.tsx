@@ -39,7 +39,6 @@ const HOLIDAYS = `GET /api/holidays?year=${new Date().getFullYear()}`;
 describe("SettingsPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("shows the defaults, with every day open and a link to closed days", async () => {

@@ -6,9 +6,9 @@ import { SelectInputField } from "@/components/form/SelectInputField";
 import { TextInputField } from "@/components/form/TextInputField";
 import { Button } from "@/components/ui/button";
 import { fetchRoles } from "../api/roles";
-import { useApiData } from "../api/useApiData";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { createStaff } from "../api/users";
-import { useAuth } from "../auth/authContext";
 import { roleLabels } from "../auth/roleLabels";
 import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
@@ -54,13 +54,12 @@ const fieldByCode: Record<string, keyof FormValues> = {
 };
 
 export function CreateStaffPage() {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const can = useCan();
   // Picking a custom role is role assignment: it needs roles.assign, and roles.view to list them.
   const canPickRole = can("roles.assign") && can("roles.view");
   // Without the list the form still works; the account just gets its base role.
-  const { data: roleList } = useApiData(fetchRoles, [], { enabled: canPickRole });
+  const { data: roleList } = useApiQuery(queryKeys.roles, fetchRoles, { enabled: canPickRole });
   const { values, errors, submitting, set, setValues, field, submit } = useFormState(emptyForm);
 
   const customRoleOptions = [
@@ -72,7 +71,6 @@ export function CreateStaffPage() {
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
 
     const parsed = createStaffRequestSchema.safeParse({
       email: values.email.trim(),
@@ -86,7 +84,7 @@ export function CreateStaffPage() {
     await submit(
       parsed,
       async (request) => {
-        const result = await createStaff(token, request);
+        const result = await createStaff(request);
         setValues(emptyForm);
         feedback.success(temporaryPasswordMessage(result, "Staff account created"));
       },

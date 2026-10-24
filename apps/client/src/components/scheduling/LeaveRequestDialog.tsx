@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { requestLeave } from "../../api/scheduling";
-import { useAuth } from "../../auth/authContext";
 import { useFeedback } from "../../feedback/feedbackContext";
 import { approvalStepLabels, leaveTypeLabels } from "../../format/leave";
 import { useFormState } from "../../forms/useFormState";
@@ -51,7 +50,6 @@ export function LeaveRequestDialog({ open, onClose, onFiled }: LeaveRequestDialo
 }
 
 function LeaveForm({ onClose, onFiled }: Omit<LeaveRequestDialogProps, "open">) {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const { values, errors, submitting, set, setValues, submit } = useFormState({
     type: "vacation" as LeaveType,
@@ -62,11 +60,10 @@ function LeaveForm({ onClose, onFiled }: Omit<LeaveRequestDialogProps, "open">) 
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
     await submit(
       leaveRequestBodySchema.safeParse(values),
       async (request) => {
-        const filed = await requestLeave(token, request);
+        const filed = await requestLeave(request);
         onClose();
         onFiled();
         feedback.success({

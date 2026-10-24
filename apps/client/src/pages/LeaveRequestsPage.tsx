@@ -9,7 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchAllLeave, fetchLeaveInbox } from "../api/scheduling";
-import { useApiData } from "../api/useApiData";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -29,12 +30,12 @@ export function LeaveRequestsPage() {
   const can = useCan();
   const canViewAll = can("leave.view");
   const [status, setStatus] = useState<LeaveStatus | typeof ALL>("pending");
-  const inbox = useApiData(fetchLeaveInbox, [], {
+  const inbox = useApiQuery(queryKeys.leaveInbox, fetchLeaveInbox, {
     errorMessage: "Could not load the requests. Try again.",
   });
-  const all = useApiData(
-    (token, signal) => fetchAllLeave(token, status === ALL ? null : status, signal),
-    [status],
+  const all = useApiQuery(
+    queryKeys.allLeave(status === ALL ? null : status),
+    (signal) => fetchAllLeave(status === ALL ? null : status, signal),
     { enabled: canViewAll, errorMessage: "Could not load the requests. Try again." },
   );
   const reloadBoth = () => {

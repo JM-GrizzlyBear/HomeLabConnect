@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "../api/apiClient";
 import { deleteClosedDay, fetchClosedDays } from "../api/settings";
-import { useApiData } from "../api/useApiData";
-import { useAuth } from "../auth/authContext";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -37,17 +37,18 @@ function occurrencesIn(year: number, closedDays: readonly ClosedDay[]): Occurren
 
 /** Holidays and special days off: dates nobody can book. */
 export function HolidaysPage() {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const can = useCan();
   const canManage = can("holidays.manage");
   const thisYear = new Date().getFullYear();
   const [year, setYear] = useState(thisYear);
   const [editing, setEditing] = useState<ClosedDayDialogTarget>(null);
-  const { data, error, reload } = useApiData(
-    (authToken, signal) => fetchClosedDays(authToken, year, signal),
-    [year],
-    { errorMessage: "Could not load the closed days. Try again." },
+  const { data, error, reload } = useApiQuery(
+    queryKeys.closedDays(year),
+    (signal) => fetchClosedDays(year, signal),
+    {
+      errorMessage: "Could not load the closed days. Try again.",
+    },
   );
 
   const yearOptions = [thisYear - 1, thisYear, thisYear + 1, thisYear + 2].map((option) => ({
@@ -70,9 +71,9 @@ export function HolidaysPage() {
       confirmLabel: "Remove",
       destructive: true,
     });
-    if (!confirmed || !token) return;
+    if (!confirmed) return;
     try {
-      await deleteClosedDay(token, closedDay.id);
+      await deleteClosedDay(closedDay.id);
       feedback.success({
         title: "Closed day removed",
         description: `${closedDay.name} is open again.`,

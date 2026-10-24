@@ -7,7 +7,6 @@ export interface AuthState {
   status: AuthStatus;
   /** The signed-in user, with their effective permission keys. */
   user: SessionUser | null;
-  token: string | null;
   signIn(email: string, password: string): Promise<SessionUser>;
   signOut(): Promise<void>;
   /** Replaces the signed-in user after the API returns a newer copy (password or profile change). */

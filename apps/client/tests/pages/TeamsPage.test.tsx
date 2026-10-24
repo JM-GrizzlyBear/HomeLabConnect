@@ -33,7 +33,6 @@ const staff = () => ({
 describe("TeamsPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("shows each team's lead and members for the period, and who's unassigned", async () => {

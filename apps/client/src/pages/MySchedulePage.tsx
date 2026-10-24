@@ -5,7 +5,8 @@ import { CalendarLegend, MonthCalendar } from "@/components/scheduling/MonthCale
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { fetchMySchedule } from "../api/scheduling";
-import { useApiData } from "../api/useApiData";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { monthEnd, monthOf, shiftMonth } from "../format/schedule";
@@ -13,9 +14,9 @@ import { monthEnd, monthOf, shiftMonth } from "../format/schedule";
 /** A staff member's month: working hours, days off, holidays and leave. */
 export function MySchedulePage() {
   const [month, setMonth] = useState(() => monthOf());
-  const { data: days, error } = useApiData(
-    (token, signal) => fetchMySchedule(token, month, monthEnd(month), signal),
-    [month],
+  const { data: days, error } = useApiQuery(
+    queryKeys.mySchedule(month, monthEnd(month)),
+    (signal) => fetchMySchedule(month, monthEnd(month), signal),
     { errorMessage: "Could not load your schedule. Try again." },
   );
   const working = days?.filter((day) => day.status === "working").length ?? 0;

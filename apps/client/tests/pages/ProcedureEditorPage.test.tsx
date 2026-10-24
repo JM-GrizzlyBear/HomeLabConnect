@@ -44,7 +44,6 @@ async function fillForm() {
 describe("ProcedureEditorPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("shows field errors before sending anything", async () => {

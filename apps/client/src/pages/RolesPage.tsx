@@ -20,8 +20,8 @@ import {
 import { entrySummary } from "../access/rolePermissions";
 import { ApiError } from "../api/apiClient";
 import { deleteRole, fetchRoles } from "../api/roles";
-import { useApiData } from "../api/useApiData";
-import { useAuth } from "../auth/authContext";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { roleLabels } from "../auth/roleLabels";
 import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
@@ -31,7 +31,6 @@ import { useFeedback } from "../feedback/feedbackContext";
 type Viewing = Parameters<typeof RolePermissionsSheet>[0]["role"];
 
 export function RolesPage() {
-  const { token } = useAuth();
   const can = useCan();
   const feedback = useFeedback();
   const navigate = useNavigate();
@@ -39,7 +38,9 @@ export function RolesPage() {
     data: roles,
     error: loadError,
     reload,
-  } = useApiData(fetchRoles, [], { errorMessage: "Could not load roles. Try again." });
+  } = useApiQuery(queryKeys.roles, fetchRoles, {
+    errorMessage: "Could not load roles. Try again.",
+  });
   const [viewing, setViewing] = useState<Viewing>(null);
 
   const grantsOf = (baseRole: BaseRole) =>
@@ -52,9 +53,9 @@ export function RolesPage() {
       confirmLabel: "Delete role",
       destructive: true,
     });
-    if (!confirmed || !token) return;
+    if (!confirmed) return;
     try {
-      await deleteRole(token, role.id);
+      await deleteRole(role.id);
       feedback.success({ title: "Role deleted", description: `${role.name} has been deleted.` });
       reload();
     } catch (error) {

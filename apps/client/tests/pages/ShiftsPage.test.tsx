@@ -34,7 +34,6 @@ const longLabel = (date: string) => format(parseISO(date), "EEEE, MMMM d");
 
 beforeEach(() => {
   localStorage.clear();
-  localStorage.setItem("homelabconnect.token", "tkn");
 });
 
 describe("MySchedulePage", () => {

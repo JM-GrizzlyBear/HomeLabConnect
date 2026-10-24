@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { createClosedDay, updateClosedDay } from "../../api/settings";
-import { useAuth } from "../../auth/authContext";
 import { useFeedback } from "../../feedback/feedbackContext";
 import { closedDayKindLabels } from "../../format/settings";
 import { useFormState } from "../../forms/useFormState";
@@ -67,7 +66,6 @@ function ClosedDayForm({
   onClose(): void;
   onSaved(): void;
 }) {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const repeatsId = useId();
   const { values, errors, submitting, set, setValues, field, submit } = useFormState({
@@ -79,13 +77,12 @@ function ClosedDayForm({
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
     await submit(
       closedDayRequestSchema.safeParse(values),
       async (request) => {
         const saved = closedDay
-          ? await updateClosedDay(token, closedDay.id, request)
-          : await createClosedDay(token, request);
+          ? await updateClosedDay(closedDay.id, request)
+          : await createClosedDay(request);
         onClose();
         onSaved();
         feedback.success({

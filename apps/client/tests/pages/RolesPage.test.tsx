@@ -31,7 +31,6 @@ const roleList = (customRoles: unknown[] = [frontDesk]) => ({
 describe("RolesPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("lists custom roles with what they change, and the base roles", async () => {

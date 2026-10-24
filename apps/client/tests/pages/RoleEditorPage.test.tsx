@@ -33,7 +33,6 @@ const permission = (label: string) => within(screen.getByLabelText(label));
 describe("RoleEditorPage", { timeout: 40_000 }, () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("creates a role that allows and denies single permissions", async () => {

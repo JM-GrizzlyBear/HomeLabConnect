@@ -15,8 +15,8 @@ import { FieldError } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchStaff, saveRoster } from "../../api/scheduling";
-import { useApiData } from "../../api/useApiData";
-import { useAuth } from "../../auth/authContext";
+import { queryKeys } from "../../queries/queryKeys";
+import { useApiQuery } from "../../queries/useApiQuery";
 import { useFeedback } from "../../feedback/feedbackContext";
 import { useFormState } from "../../forms/useFormState";
 
@@ -67,10 +67,11 @@ function RosterForm({
   onClose,
   onSaved,
 }: Omit<RosterDialogProps, "team" | "periodLabel"> & { team: MedTeam }) {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const id = useId();
-  const staff = useApiData((authToken, signal) => fetchStaff(authToken, "med_team", signal), []);
+  const staff = useApiQuery(queryKeys.staff("med_team"), (signal) =>
+    fetchStaff("med_team", signal),
+  );
   const { values, errors, submitting, setValues, submit } = useFormState({
     memberIds: team.members.map((member) => member.id),
     leadUserId: team.lead?.id ?? "",
@@ -95,14 +96,13 @@ function RosterForm({
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
     await submit(
       rosterRequestSchema.safeParse({
         memberIds: values.memberIds,
         leadUserId: values.leadUserId || null,
       }),
       async (request) => {
-        await saveRoster(token, team.id, periodStart, request);
+        await saveRoster(team.id, periodStart, request);
         onClose();
         onSaved();
         feedback.success({

@@ -1,64 +1,75 @@
 import type { SessionUser } from "@homelabconnect/shared";
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type ReactNode, useCallback, useMemo } from "react";
 import { ApiError } from "../api/apiClient";
 import * as authApi from "../api/auth";
+import { queryKeys } from "../queries/queryKeys";
 import { AuthContext, type AuthState, type AuthStatus } from "./authContext";
-import { tokenStorage } from "./tokenStorage";
+
+/** Who is signed in (null: nobody). The session is an httpOnly cookie, so the API answers. */
+async function fetchSignedInUser(signal: AbortSignal): Promise<SessionUser | null> {
+  try {
+    return await authApi.fetchCurrentUser(signal);
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) return null;
+    throw error;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => tokenStorage.get());
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [status, setStatus] = useState<AuthStatus>(() => (token ? "loading" : "signedOut"));
+  const queryClient = useQueryClient();
+  // Every page reads this one cached answer.
+  const current = useQuery({
+    queryKey: queryKeys.currentUser,
+    queryFn: async ({ signal }) => await fetchSignedInUser(signal),
+    staleTime: Infinity,
+    retry: false,
+  });
 
-  // Restore the session after a reload by asking the API who the stored token belongs to.
-  useEffect(() => {
-    if (!token || user) return;
-    const controller = new AbortController();
-    async function restore(storedToken: string) {
+  const setUser = useCallback(
+    (user: SessionUser | null) => {
+      // Forget the previous user's data, but keep the answer the pages watch.
+      queryClient.removeQueries({
+        predicate: (query) => query.queryKey[0] !== queryKeys.currentUser[0],
+      });
+      queryClient.setQueryData(queryKeys.currentUser, user);
+    },
+    [queryClient],
+  );
+
+  const logIn = useMutation({
+    mutationFn: async (credentials: { email: string; password: string }) =>
+      await authApi.login(credentials),
+    onSuccess: (result) => setUser(result.user),
+  });
+  const logOut = useMutation({
+    mutationFn: async () => {
       try {
-        setUser(await authApi.fetchCurrentUser(storedToken, controller.signal));
-        setStatus("signedIn");
-      } catch (error) {
-        if (controller.signal.aborted) return;
-        // 401/403 means the token is dead (logged out, expired, deactivated).
-        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-          tokenStorage.clear();
-          setToken(null);
-        }
-        setStatus("signedOut");
+        await authApi.logout();
+      } catch {
+        // Sign out locally even if the API can't be reached.
       }
-    }
-    void restore(token);
-    return () => controller.abort();
-  }, [token, user]);
+    },
+    onSettled: () => setUser(null),
+  });
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const result = await authApi.login({ email, password });
-    tokenStorage.set(result.token);
-    setToken(result.token);
-    setUser(result.user);
-    setStatus("signedIn");
-    return result.user;
-  }, []);
+  const { mutateAsync: logInAsync } = logIn;
+  const signIn = useCallback(
+    async (email: string, password: string) => (await logInAsync({ email, password })).user,
+    [logInAsync],
+  );
+  const { mutateAsync: logOutAsync } = logOut;
+  const signOut = useCallback(async () => await logOutAsync(), [logOutAsync]);
+  const updateUser = useCallback(
+    (updated: SessionUser) => queryClient.setQueryData(queryKeys.currentUser, updated),
+    [queryClient],
+  );
 
-  const signOut = useCallback(async () => {
-    try {
-      if (token) await authApi.logout(token);
-    } catch {
-      // Sign out locally even if the API can't be reached.
-    } finally {
-      tokenStorage.clear();
-      setToken(null);
-      setUser(null);
-      setStatus("signedOut");
-    }
-  }, [token]);
-
-  const updateUser = useCallback((updated: SessionUser) => setUser(updated), []);
-
+  const user = current.data ?? null;
+  const status: AuthStatus = current.isPending ? "loading" : user ? "signedIn" : "signedOut";
   const value = useMemo<AuthState>(
-    () => ({ status, user, token, signIn, signOut, updateUser }),
-    [status, user, token, signIn, signOut, updateUser],
+    () => ({ status, user, signIn, signOut, updateUser }),
+    [status, user, signIn, signOut, updateUser],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

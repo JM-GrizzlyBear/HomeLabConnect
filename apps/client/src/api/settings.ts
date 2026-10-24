@@ -9,50 +9,31 @@ import {
 } from "@homelabconnect/shared";
 import { apiRequest } from "./apiClient";
 
-export async function fetchSettings(
-  token: string,
-  signal?: AbortSignal,
-): Promise<SettingsResponse> {
-  return settingsResponseSchema.parse(await apiRequest("/settings", { token, signal }));
+export async function fetchSettings(signal?: AbortSignal): Promise<SettingsResponse> {
+  return settingsResponseSchema.parse(await apiRequest("/settings", { signal }));
 }
 
-export async function saveSettings(
-  token: string,
-  settings: SystemSettings,
-): Promise<SettingsResponse> {
+export async function saveSettings(settings: SystemSettings): Promise<SettingsResponse> {
   return settingsResponseSchema.parse(
-    await apiRequest("/settings", { method: "PUT", body: settings, token }),
+    await apiRequest("/settings", { method: "PUT", body: settings }),
   );
 }
 
 /** One-time closed days in `year`, plus every yearly one. */
-export async function fetchClosedDays(
-  token: string,
-  year: number,
-  signal?: AbortSignal,
-): Promise<ClosedDay[]> {
-  return closedDayListSchema.parse(await apiRequest(`/holidays?year=${year}`, { token, signal }));
+export async function fetchClosedDays(year: number, signal?: AbortSignal): Promise<ClosedDay[]> {
+  return closedDayListSchema.parse(await apiRequest(`/holidays?year=${year}`, { signal }));
 }
 
-export async function createClosedDay(
-  token: string,
-  request: ClosedDayRequest,
-): Promise<ClosedDay> {
+export async function createClosedDay(request: ClosedDayRequest): Promise<ClosedDay> {
+  return closedDaySchema.parse(await apiRequest("/holidays", { method: "POST", body: request }));
+}
+
+export async function updateClosedDay(id: string, request: ClosedDayRequest): Promise<ClosedDay> {
   return closedDaySchema.parse(
-    await apiRequest("/holidays", { method: "POST", body: request, token }),
+    await apiRequest(`/holidays/${id}`, { method: "PUT", body: request }),
   );
 }
 
-export async function updateClosedDay(
-  token: string,
-  id: string,
-  request: ClosedDayRequest,
-): Promise<ClosedDay> {
-  return closedDaySchema.parse(
-    await apiRequest(`/holidays/${id}`, { method: "PUT", body: request, token }),
-  );
-}
-
-export async function deleteClosedDay(token: string, id: string): Promise<void> {
-  await apiRequest(`/holidays/${id}`, { method: "DELETE", token });
+export async function deleteClosedDay(id: string): Promise<void> {
+  await apiRequest(`/holidays/${id}`, { method: "DELETE" });
 }

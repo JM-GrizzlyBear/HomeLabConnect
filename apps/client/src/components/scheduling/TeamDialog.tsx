@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { createTeam, updateTeam } from "../../api/scheduling";
-import { useAuth } from "../../auth/authContext";
 import { useFeedback } from "../../feedback/feedbackContext";
 import { useFormState } from "../../forms/useFormState";
 
@@ -54,7 +53,6 @@ function TeamForm({
   onClose(): void;
   onSaved(): void;
 }) {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const { values, submitting, field, submit } = useFormState({
     name: team?.name ?? "",
@@ -63,13 +61,10 @@ function TeamForm({
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
     await submit(
       medTeamRequestSchema.safeParse({ name: values.name, area: values.area.trim() || null }),
       async (request) => {
-        const saved = team
-          ? await updateTeam(token, team.id, request)
-          : await createTeam(token, request);
+        const saved = team ? await updateTeam(team.id, request) : await createTeam(request);
         onClose();
         onSaved();
         feedback.success({

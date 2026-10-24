@@ -28,7 +28,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ApiError } from "../api/apiClient";
-import { useApiData } from "../api/useApiData";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { fetchUsers, reissueTemporaryPassword, setUserStatus } from "../api/users";
 import { useAuth } from "../auth/authContext";
 import { useCan } from "../auth/useCan";
@@ -64,7 +65,7 @@ const statusOptions = [
 ];
 
 export function UsersPage() {
-  const { token, user: me } = useAuth();
+  const { user: me } = useAuth();
   const feedback = useFeedback();
   const can = useCan();
   const [filters, setFilters] = useState<Filters>({ q: "", role: ALL, status: ALL, page: 1 });
@@ -73,10 +74,10 @@ export function UsersPage() {
     data: list,
     error: loadError,
     reload,
-  } = useApiData(
-    (authToken, signal) =>
+  } = useApiQuery(
+    queryKeys.users(filters),
+    (signal) =>
       fetchUsers(
-        authToken,
         {
           q: filters.q || undefined,
           role: filters.role === ALL ? undefined : filters.role,
@@ -86,7 +87,6 @@ export function UsersPage() {
         },
         signal,
       ),
-    [filters],
     { errorMessage: "Could not load users. Try again." },
   );
   const [changingRole, setChangingRole] = useState<UserSummary | null>(null);
@@ -125,10 +125,10 @@ export function UsersPage() {
             destructive: true,
           },
     );
-    if (!confirmed || !token) return;
+    if (!confirmed) return;
     await run(
       async () => {
-        await setUserStatus(token, target.id, isActive);
+        await setUserStatus(target.id, isActive);
         feedback.success({
           title: isActive ? "Account reactivated" : "Account deactivated",
           description: isActive
@@ -146,9 +146,9 @@ export function UsersPage() {
       description: `Their current password stops working and they're signed out everywhere. The new one is emailed to ${target.email} and works for 7 days.`,
       confirmLabel: "Send new password",
     });
-    if (!confirmed || !token) return;
+    if (!confirmed) return;
     await run(async () => {
-      const result = await reissueTemporaryPassword(token, target.id);
+      const result = await reissueTemporaryPassword(target.id);
       feedback.success(temporaryPasswordMessage(result, "New temporary password sent"));
     }, "Couldn't issue a new temporary password");
   }

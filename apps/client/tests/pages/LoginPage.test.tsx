@@ -6,22 +6,21 @@ import { mockApi, renderApp, sampleUser } from "../support/renderApp";
 describe("LoginPage", () => {
   beforeEach(() => localStorage.clear());
 
-  it("signs in, stores the token and opens the dashboard", async () => {
+  it("signs in and opens the dashboard", async () => {
     mockApi({
       "POST /api/auth/login": () => ({
         status: 200,
-        body: { token: "tkn", expiresAt: "2026-01-15T20:00:00.000Z", user: sampleUser },
+        body: { user: sampleUser },
       }),
     });
     const router = renderApp("/login");
 
-    await userEvent.type(screen.getByLabelText("Email"), "juan@example.com");
+    await userEvent.type(await screen.findByLabelText("Email"), "juan@example.com");
     await userEvent.type(screen.getByLabelText("Password"), "Password123");
     await userEvent.click(screen.getByRole("button", { name: "Login Now" }));
 
     expect(await screen.findByText("Welcome back, Juan")).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/app");
-    expect(localStorage.getItem("homelabconnect.token")).toBe("tkn");
   });
 
   it("shows the API's message for wrong credentials", async () => {
@@ -35,7 +34,7 @@ describe("LoginPage", () => {
     });
     renderApp("/login");
 
-    await userEvent.type(screen.getByLabelText("Email"), "juan@example.com");
+    await userEvent.type(await screen.findByLabelText("Email"), "juan@example.com");
     await userEvent.type(screen.getByLabelText("Password"), "Wrong1234");
     await userEvent.click(screen.getByRole("button", { name: "Login Now" }));
 
@@ -58,7 +57,7 @@ describe("LoginPage", () => {
     });
     renderApp("/login");
 
-    await userEvent.type(screen.getByLabelText("Email"), "ana@example.com");
+    await userEvent.type(await screen.findByLabelText("Email"), "ana@example.com");
     await userEvent.type(screen.getByLabelText("Password"), "Xk7mP2qR9wTz");
     await userEvent.click(screen.getByRole("button", { name: "Login Now" }));
 
@@ -71,11 +70,11 @@ describe("LoginPage", () => {
     const fetchSpy = mockApi({});
     renderApp("/login");
 
-    await userEvent.type(screen.getByLabelText("Email"), "not-an-email");
+    await userEvent.type(await screen.findByLabelText("Email"), "not-an-email");
     await userEvent.click(screen.getByRole("button", { name: "Login Now" }));
 
     expect(screen.getByText("Enter a valid email address.")).toBeInTheDocument();
     expect(screen.getByText("Enter your password.")).toBeInTheDocument();
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalledWith("/api/auth/login", expect.anything());
   });
 });

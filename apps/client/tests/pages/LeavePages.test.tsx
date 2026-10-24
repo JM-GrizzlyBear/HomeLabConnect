@@ -27,7 +27,6 @@ const leave = (overrides: Record<string, unknown> = {}) => ({
 describe("MyLeavePage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("shows each request's status and where it is in the chain", async () => {
@@ -118,7 +117,6 @@ describe("MyLeavePage", () => {
 describe("LeaveRequestsPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("shows admins what's waiting and everyone's requests", async () => {

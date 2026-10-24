@@ -1,5 +1,7 @@
 import { defaultBaseGrants, PERMISSION_KEYS } from "@homelabconnect/shared";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { vi } from "vitest";
 import { AuthProvider } from "../../src/auth/AuthProvider";
@@ -18,24 +20,40 @@ export function mockApi(handlers: Record<string, Handler>) {
     const key = `${init.method ?? "GET"} ${String(input)}`;
     const handler = handlers[key];
     const { status, body } = handler
-      ? handler(init.body ? JSON.parse(String(init.body)) : undefined, init)
+      ? handler(readBody(init.body), init)
       : { status: 404, body: { error: { code: "route_not_found", message: key } } };
     return new Response(body === undefined ? null : JSON.stringify(body), { status });
   });
+}
+
+/** A fresh query cache per test, without retries, so one test's data never leaks into the next. */
+export function QueryWrapper({ children }: { children: ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+
+/** JSON bodies are parsed; a FormData upload is passed through as is. */
+function readBody(body: RequestInit["body"]): unknown {
+  if (body instanceof FormData) return body;
+  return body ? JSON.parse(String(body)) : undefined;
 }
 
 /** Renders the real routes, starting at `path`, inside the AuthProvider. */
 export function renderApp(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(
-    <AuthProvider>
-      <TooltipProvider>
-        {/* Toasts stay put in tests, so a slow run can't miss them. */}
-        <FeedbackProvider toastDurationMs={60_000}>
-          <RouterProvider router={router} />
-        </FeedbackProvider>
-      </TooltipProvider>
-    </AuthProvider>,
+    <QueryWrapper>
+      <AuthProvider>
+        <TooltipProvider>
+          {/* Toasts stay put in tests, so a slow run can't miss them. */}
+          <FeedbackProvider toastDurationMs={60_000}>
+            <RouterProvider router={router} />
+          </FeedbackProvider>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryWrapper>,
   );
   return router;
 }
@@ -50,6 +68,7 @@ export const sampleUser = {
   firstName: "Juan",
   lastName: "Dela Cruz",
   mustChangePassword: false,
+  photoUrl: null as string | null,
   permissions: [...defaultBaseGrants.patient] as string[],
 };
 

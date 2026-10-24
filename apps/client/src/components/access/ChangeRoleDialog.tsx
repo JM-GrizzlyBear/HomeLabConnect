@@ -10,8 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { assignRole, fetchRoles } from "../../api/roles";
-import { useApiData } from "../../api/useApiData";
-import { useAuth } from "../../auth/authContext";
+import { queryKeys } from "../../queries/queryKeys";
+import { useApiQuery } from "../../queries/useApiQuery";
 import { roleLabels } from "../../auth/roleLabels";
 import { useFeedback } from "../../feedback/feedbackContext";
 import { useFormState } from "../../forms/useFormState";
@@ -54,9 +54,8 @@ function ChangeRoleForm({
   onClose,
   onChanged,
 }: ChangeRoleDialogProps & { user: UserSummary }) {
-  const { token } = useAuth();
   const feedback = useFeedback();
-  const roles = useApiData(fetchRoles, []);
+  const roles = useApiQuery(queryKeys.roles, fetchRoles);
   const { values, submitting, setValues, submit } = useFormState({
     choice: user.customRole?.id ?? NONE,
   });
@@ -71,11 +70,10 @@ function ChangeRoleForm({
   ];
 
   async function save() {
-    if (!token) return;
     await submit(
       { success: true, data: values.choice === NONE ? null : values.choice },
       async (customRoleId) => {
-        const updated = await assignRole(token, user.id, customRoleId);
+        const updated = await assignRole(user.id, customRoleId);
         onClose();
         onChanged();
         feedback.success({

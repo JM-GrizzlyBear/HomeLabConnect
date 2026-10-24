@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/table";
 import { ApiError } from "../api/apiClient";
 import { fetchPromotions, setPromotionStatus } from "../api/catalog";
-import { useApiData } from "../api/useApiData";
-import { useAuth } from "../auth/authContext";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { useCan } from "../auth/useCan";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -47,7 +47,6 @@ const statusBadge: Record<PromotionStatus, "success" | "warning" | "muted" | "de
 
 /** Sales and discounts: running ones for everyone, all of them for promotions.manage. */
 export function PromotionsPage() {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const can = useCan();
   const navigate = useNavigate();
@@ -57,10 +56,9 @@ export function PromotionsPage() {
     data: promotions,
     error: loadError,
     reload,
-  } = useApiData(
-    (authToken, signal) =>
-      fetchPromotions(authToken, { status: status === ALL ? undefined : status }, signal),
-    [status],
+  } = useApiQuery(
+    queryKeys.promotions(status),
+    (signal) => fetchPromotions({ status: status === ALL ? undefined : status }, signal),
     { errorMessage: "Could not load promotions. Try again." },
   );
 
@@ -74,9 +72,8 @@ export function PromotionsPage() {
       });
       if (!confirmed) return;
     }
-    if (!token) return;
     try {
-      await setPromotionStatus(token, promotion.id, isActive);
+      await setPromotionStatus(promotion.id, isActive);
       feedback.success({
         title: isActive ? "Promotion turned on" : "Promotion turned off",
         description: isActive

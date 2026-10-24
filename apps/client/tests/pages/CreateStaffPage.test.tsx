@@ -12,6 +12,7 @@ const createdUser = {
   firstName: "Ana",
   lastName: "Reyes",
   mustChangePassword: true,
+  photoUrl: null,
 };
 
 async function fillForm() {
@@ -25,7 +26,6 @@ async function fillForm() {
 describe("CreateStaffPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("creates a staff account and says the password was emailed", async () => {

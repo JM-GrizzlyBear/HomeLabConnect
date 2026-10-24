@@ -1,7 +1,7 @@
 import { ChevronDownIcon, LogOutIcon, UserIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -113,6 +113,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             className="group flex flex-col items-center rounded-2xl p-2 text-center transition outline-none hover:bg-slate-50 focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <Avatar className="size-20 ring-4 ring-brand-400 ring-offset-4">
+              {user.photoUrl && <AvatarImage src={user.photoUrl} alt="" />}
               <AvatarFallback className="bg-brand-50 text-2xl font-semibold text-brand-700">
                 {initials(user.firstName, user.lastName)}
               </AvatarFallback>

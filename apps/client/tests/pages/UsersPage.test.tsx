@@ -54,7 +54,6 @@ async function openActions(name: string) {
 describe("UsersPage", () => {
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem("homelabconnect.token", "tkn");
   });
 
   it("lists users with their status and no actions on your own row", async () => {
@@ -136,6 +135,7 @@ describe("UsersPage", () => {
             firstName: "Ben",
             lastName: "Tan",
             mustChangePassword: true,
+            photoUrl: null,
           },
           temporaryPasswordExpiresAt: "2030-01-08T08:00:00.000Z",
           emailSent: true,

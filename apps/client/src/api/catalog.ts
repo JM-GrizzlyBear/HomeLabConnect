@@ -16,33 +16,24 @@ import {
 } from "@homelabconnect/shared";
 import { apiRequest } from "./apiClient";
 
-export async function fetchCategories(
-  token: string,
-  signal?: AbortSignal,
-): Promise<ProcedureCategory[]> {
-  return procedureCategoryListSchema.parse(
-    await apiRequest("/catalog/categories", { token, signal }),
-  );
+export async function fetchCategories(signal?: AbortSignal): Promise<ProcedureCategory[]> {
+  return procedureCategoryListSchema.parse(await apiRequest("/catalog/categories", { signal }));
 }
 
-export async function createCategory(token: string, name: string): Promise<ProcedureCategory> {
+export async function createCategory(name: string): Promise<ProcedureCategory> {
   return procedureCategorySchema.parse(
-    await apiRequest("/catalog/categories", { method: "POST", body: { name }, token }),
+    await apiRequest("/catalog/categories", { method: "POST", body: { name } }),
   );
 }
 
-export async function renameCategory(
-  token: string,
-  id: string,
-  name: string,
-): Promise<ProcedureCategory> {
+export async function renameCategory(id: string, name: string): Promise<ProcedureCategory> {
   return procedureCategorySchema.parse(
-    await apiRequest(`/catalog/categories/${id}`, { method: "PUT", body: { name }, token }),
+    await apiRequest(`/catalog/categories/${id}`, { method: "PUT", body: { name } }),
   );
 }
 
-export async function deleteCategory(token: string, id: string): Promise<void> {
-  await apiRequest(`/catalog/categories/${id}`, { method: "DELETE", token });
+export async function deleteCategory(id: string): Promise<void> {
+  await apiRequest(`/catalog/categories/${id}`, { method: "DELETE" });
 }
 
 /** "?a=1&b=2" from the defined, non-empty values, or "". */
@@ -55,103 +46,72 @@ function queryString(query: object): string {
 }
 
 export async function fetchProcedures(
-  token: string,
   query: ListLabProceduresQuery,
   signal?: AbortSignal,
 ): Promise<LabProcedureList> {
   return labProcedureListSchema.parse(
-    await apiRequest(`/catalog/procedures${queryString(query)}`, { token, signal }),
+    await apiRequest(`/catalog/procedures${queryString(query)}`, { signal }),
   );
 }
 
 export async function fetchPromotions(
-  token: string,
   query: ListPromotionsQuery,
   signal?: AbortSignal,
 ): Promise<Promotion[]> {
   return promotionListSchema.parse(
-    await apiRequest(`/catalog/promotions${queryString(query)}`, { token, signal }),
+    await apiRequest(`/catalog/promotions${queryString(query)}`, { signal }),
   );
 }
 
-export async function fetchPromotion(
-  token: string,
-  id: string,
-  signal?: AbortSignal,
-): Promise<Promotion> {
-  return promotionSchema.parse(await apiRequest(`/catalog/promotions/${id}`, { token, signal }));
+export async function fetchPromotion(id: string, signal?: AbortSignal): Promise<Promotion> {
+  return promotionSchema.parse(await apiRequest(`/catalog/promotions/${id}`, { signal }));
 }
 
-export async function createPromotion(
-  token: string,
-  request: PromotionRequest,
-): Promise<Promotion> {
+export async function createPromotion(request: PromotionRequest): Promise<Promotion> {
   return promotionSchema.parse(
-    await apiRequest("/catalog/promotions", { method: "POST", body: request, token }),
+    await apiRequest("/catalog/promotions", { method: "POST", body: request }),
   );
 }
 
-export async function updatePromotion(
-  token: string,
-  id: string,
-  request: PromotionRequest,
-): Promise<Promotion> {
+export async function updatePromotion(id: string, request: PromotionRequest): Promise<Promotion> {
   return promotionSchema.parse(
-    await apiRequest(`/catalog/promotions/${id}`, { method: "PUT", body: request, token }),
+    await apiRequest(`/catalog/promotions/${id}`, { method: "PUT", body: request }),
   );
 }
 
-export async function setPromotionStatus(
-  token: string,
-  id: string,
-  isActive: boolean,
-): Promise<Promotion> {
+export async function setPromotionStatus(id: string, isActive: boolean): Promise<Promotion> {
   return promotionSchema.parse(
     await apiRequest(`/catalog/promotions/${id}/status`, {
       method: "PATCH",
       body: { isActive },
-      token,
     }),
   );
 }
 
-export async function fetchProcedure(
-  token: string,
-  id: string,
-  signal?: AbortSignal,
-): Promise<LabProcedure> {
-  return labProcedureSchema.parse(await apiRequest(`/catalog/procedures/${id}`, { token, signal }));
+export async function fetchProcedure(id: string, signal?: AbortSignal): Promise<LabProcedure> {
+  return labProcedureSchema.parse(await apiRequest(`/catalog/procedures/${id}`, { signal }));
 }
 
-export async function createProcedure(
-  token: string,
-  request: LabProcedureRequest,
-): Promise<LabProcedure> {
+export async function createProcedure(request: LabProcedureRequest): Promise<LabProcedure> {
   return labProcedureSchema.parse(
-    await apiRequest("/catalog/procedures", { method: "POST", body: request, token }),
+    await apiRequest("/catalog/procedures", { method: "POST", body: request }),
   );
 }
 
 export async function updateProcedure(
-  token: string,
   id: string,
   request: LabProcedureRequest,
 ): Promise<LabProcedure> {
   return labProcedureSchema.parse(
-    await apiRequest(`/catalog/procedures/${id}`, { method: "PUT", body: request, token }),
+    await apiRequest(`/catalog/procedures/${id}`, { method: "PUT", body: request }),
   );
 }
 
-export async function setProcedureStatus(
-  token: string,
-  id: string,
-  isActive: boolean,
-): Promise<LabProcedure> {
+export async function setProcedureStatus(id: string, isActive: boolean): Promise<LabProcedure> {
   return labProcedureSchema.parse(
     await apiRequest(`/catalog/procedures/${id}/status`, {
       method: "PATCH",
       body: { isActive },
-      token,
     }),
   );
 }

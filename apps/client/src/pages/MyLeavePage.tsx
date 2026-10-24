@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "../api/apiClient";
 import { cancelLeave, fetchLeaveInbox, fetchMyLeave } from "../api/scheduling";
-import { useApiData } from "../api/useApiData";
-import { useAuth } from "../auth/authContext";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { useFeedback } from "../feedback/feedbackContext";
@@ -25,13 +25,12 @@ const isCancellable = (leave: LeaveView, today: string) =>
  * Team leads also see their team's requests waiting for them here.
  */
 export function MyLeavePage() {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const [requesting, setRequesting] = useState(false);
-  const mine = useApiData(fetchMyLeave, [], {
+  const mine = useApiQuery(queryKeys.myLeave, fetchMyLeave, {
     errorMessage: "Could not load your leave. Try again.",
   });
-  const inbox = useApiData(fetchLeaveInbox, []);
+  const inbox = useApiQuery(queryKeys.leaveInbox, fetchLeaveInbox);
   const today = format(new Date(), "yyyy-MM-dd");
 
   async function withdraw(leave: LeaveView) {
@@ -42,9 +41,9 @@ export function MyLeavePage() {
       cancelLabel: "Keep it",
       destructive: true,
     });
-    if (!confirmed || !token) return;
+    if (!confirmed) return;
     try {
-      await cancelLeave(token, leave.id);
+      await cancelLeave(leave.id);
       feedback.success({ title: "Leave request cancelled" });
       mine.reload();
     } catch (error) {

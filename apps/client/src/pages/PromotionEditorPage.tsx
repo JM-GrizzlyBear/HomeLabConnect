@@ -17,8 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { createPromotion, fetchProcedures, fetchPromotion, updatePromotion } from "../api/catalog";
-import { useApiData } from "../api/useApiData";
-import { useAuth } from "../auth/authContext";
+import { queryKeys } from "../queries/queryKeys";
+import { useApiQuery } from "../queries/useApiQuery";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { useFeedback } from "../feedback/feedbackContext";
@@ -86,11 +86,12 @@ function discountValue(values: FormValues): number {
 export function PromotionEditorPage() {
   const { id } = useParams();
   const title = id ? "Edit Promotion" : "New Promotion";
-  const { data, error: loadError } = useApiData(
-    async (token, signal) => {
+  const { data, error: loadError } = useApiQuery(
+    queryKeys.promotion(id),
+    async (signal) => {
       const [procedures, promotion] = await Promise.all([
-        fetchProcedures(token, { status: "active", pageSize: 100 }, signal),
-        id ? fetchPromotion(token, id, signal) : null,
+        fetchProcedures({ status: "active", pageSize: 100 }, signal),
+        id ? fetchPromotion(id, signal) : null,
       ]);
       const initialValues: FormValues = promotion
         ? {
@@ -110,7 +111,6 @@ export function PromotionEditorPage() {
         : emptyForm;
       return { id, procedures: procedures.items, initialValues };
     },
-    [id],
     { errorMessage: "Could not load the promotion. Try again." },
   );
 
@@ -156,7 +156,6 @@ interface PromotionFormProps {
 }
 
 function PromotionForm({ id, procedures, initialValues }: PromotionFormProps) {
-  const { token } = useAuth();
   const feedback = useFeedback();
   const navigate = useNavigate();
   const { values, errors, submitting, set, setValues, field, submit } = useFormState(initialValues);
@@ -170,7 +169,6 @@ function PromotionForm({ id, procedures, initialValues }: PromotionFormProps) {
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token) return;
 
     const parsed = promotionRequestSchema.safeParse({
       name: values.name,
@@ -185,9 +183,7 @@ function PromotionForm({ id, procedures, initialValues }: PromotionFormProps) {
     await submit(
       parsed,
       async (request) => {
-        const saved = id
-          ? await updatePromotion(token, id, request)
-          : await createPromotion(token, request);
+        const saved = id ? await updatePromotion(id, request) : await createPromotion(request);
         feedback.success({
           title: id ? "Promotion saved" : "Promotion created",
           description: `${saved.name} is ${saved.status === "running" ? "running now" : saved.status}.`,
