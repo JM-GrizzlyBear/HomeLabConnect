@@ -66,6 +66,18 @@ import type {
 import { PromotionNameTaken } from "../../src/domain/catalog/catalogErrors.js";
 import type { Promotion, PromotionDetails } from "../../src/domain/catalog/promotion.js";
 import type { ClosedDayRepository } from "../../src/application/ports/closedDayRepository.js";
+import type { MedTeamRepository } from "../../src/application/ports/medTeamRepository.js";
+import type { ShiftRepository } from "../../src/application/ports/shiftRepository.js";
+import type { LeaveDays, ShiftDay, ShiftHours } from "../../src/domain/scheduling/shift.js";
+import type {
+  LeaveRepository,
+  NewLeaveRequest,
+} from "../../src/application/ports/leaveRepository.js";
+import type { LeaveRequest, LeaveStatus } from "../../src/domain/scheduling/leave.js";
+import type { StaffDirectory, StaffMember } from "../../src/application/ports/staffDirectory.js";
+import type { MedTeam, MedTeamDetails } from "../../src/domain/scheduling/medTeam.js";
+import type { Roster } from "../../src/domain/scheduling/roster.js";
+import { TeamNameTaken } from "../../src/domain/scheduling/schedulingErrors.js";
 import type {
   SettingsRecord,
   SettingsRepository,
@@ -693,5 +705,161 @@ export class InMemoryClosedDayRepository implements ClosedDayRepository {
 
   async delete(id: string): Promise<void> {
     this.closedDays.delete(id);
+  }
+}
+
+/** Active staff from the users fake. */
+export class InMemoryStaffDirectory implements StaffDirectory {
+  constructor(private readonly users: InMemoryUserRepository) {}
+
+  async listActive(role: BaseRole | null): Promise<StaffMember[]> {
+    return [...this.users.users.values()]
+      .filter((user) => user.isActive && (role ? user.role === role : user.role !== "patient"))
+      .map((user) => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      }))
+      .sort(
+        (a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName),
+      );
+  }
+}
+
+/** Med teams and rosters in memory. */
+export class InMemoryMedTeamRepository implements MedTeamRepository {
+  readonly teams = new Map<string, MedTeam>();
+  readonly rosters: Roster[] = [];
+
+  /** Adds a team directly, for arranging tests. */
+  add(team: Partial<MedTeam> & { name: string }): MedTeam {
+    const created: MedTeam = { id: randomUUID(), area: null, isActive: true, ...team };
+    this.teams.set(created.id, created);
+    return created;
+  }
+
+  async list(): Promise<MedTeam[]> {
+    return [...this.teams.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async findById(id: string): Promise<MedTeam | null> {
+    return this.teams.get(id) ?? null;
+  }
+
+  async findByName(name: string): Promise<MedTeam | null> {
+    return [...this.teams.values()].find((team) => sameText(team.name, name)) ?? null;
+  }
+
+  async create(details: MedTeamDetails): Promise<MedTeam> {
+    if (await this.findByName(details.name)) throw new TeamNameTaken();
+    return this.add(details);
+  }
+
+  async update(id: string, details: MedTeamDetails): Promise<void> {
+    const team = this.teams.get(id);
+    if (team) this.teams.set(id, { ...team, ...details });
+  }
+
+  async setActive(id: string, isActive: boolean): Promise<void> {
+    const team = this.teams.get(id);
+    if (team) this.teams.set(id, { ...team, isActive });
+  }
+
+  async listRosters(periodStart: string): Promise<Roster[]> {
+    return this.rosters.filter((roster) => roster.periodStart === periodStart);
+  }
+
+  async saveRoster(roster: Roster): Promise<void> {
+    const index = this.rosters.findIndex(
+      (other) => other.teamId === roster.teamId && other.periodStart === roster.periodStart,
+    );
+    if (index >= 0) this.rosters.splice(index, 1);
+    if (roster.memberIds.length > 0) this.rosters.push(roster);
+  }
+}
+
+/** Shift days in memory, by user id. */
+export class InMemoryShiftRepository implements ShiftRepository {
+  readonly days = new Map<string, ShiftDay[]>();
+
+  /** Gives someone the same hours on each date, for arranging tests. */
+  add(userId: string, dates: readonly string[], start = "06:00", end = "14:00"): void {
+    this.replace(userId, dates, { start, end });
+  }
+
+  async shiftsFor(
+    userIds: readonly string[],
+    from: string,
+    to: string,
+  ): Promise<Map<string, ShiftDay[]>> {
+    return new Map(
+      userIds.map((id) => [
+        id,
+        (this.days.get(id) ?? [])
+          .filter((day) => day.date >= from && day.date <= to)
+          .sort((a, b) => a.date.localeCompare(b.date)),
+      ]),
+    );
+  }
+
+  async setDays(userId: string, dates: readonly string[], hours: ShiftHours | null): Promise<void> {
+    this.replace(userId, dates, hours);
+  }
+
+  private replace(userId: string, dates: readonly string[], hours: ShiftHours | null): void {
+    const kept = (this.days.get(userId) ?? []).filter((day) => !dates.includes(day.date));
+    const added = hours ? dates.map((date) => ({ date, ...hours })) : [];
+    this.days.set(userId, [...kept, ...added]);
+  }
+}
+
+/** Leave requests in memory. */
+export class InMemoryLeaveRepository implements LeaveRepository {
+  readonly requests: LeaveRequest[] = [];
+
+  async create(request: NewLeaveRequest): Promise<LeaveRequest> {
+    const created: LeaveRequest = { ...request, id: randomUUID(), decisions: [] };
+    // Newest first, like the database's ORDER BY created_at DESC.
+    this.requests.unshift(created);
+    return created;
+  }
+
+  async findById(id: string): Promise<LeaveRequest | null> {
+    return this.requests.find((request) => request.id === id) ?? null;
+  }
+
+  async listForUser(userId: string): Promise<LeaveRequest[]> {
+    return this.requests.filter((request) => request.userId === userId);
+  }
+
+  async list(status: LeaveStatus | null): Promise<LeaveRequest[]> {
+    return this.requests.filter((request) => !status || request.status === status);
+  }
+
+  async update(request: LeaveRequest): Promise<void> {
+    const index = this.requests.findIndex((existing) => existing.id === request.id);
+    if (index >= 0) this.requests[index] = request;
+  }
+
+  async approvedDays(
+    userIds: readonly string[],
+    from: string,
+    to: string,
+  ): Promise<Map<string, LeaveDays[]>> {
+    return new Map(
+      userIds.map((id) => [
+        id,
+        this.requests
+          .filter(
+            (request) =>
+              request.userId === id &&
+              request.status === "approved" &&
+              request.startsOn <= to &&
+              request.endsOn >= from,
+          )
+          .map(({ startsOn, endsOn }) => ({ startsOn, endsOn })),
+      ]),
+    );
   }
 }

@@ -1,3 +1,4 @@
+import { isHalfHour, minutesOf } from "../time/clockTime.js";
 import { InvalidSettings } from "./settingsErrors.js";
 
 export type BookingApproval = "staff" | "automatic";
@@ -37,14 +38,6 @@ export const DEFAULT_SETTINGS: SystemSettings = {
   teamAssignment: "manual",
 };
 
-const HALF_HOUR = /^([01]\d|2[0-3]):(00|30)$/;
-
-/** "06:30" → 390. */
-export function minutesOf(time: string): number {
-  const [hours = "0", minutes = "0"] = time.split(":");
-  return Number(hours) * 60 + Number(minutes);
-}
-
 const isWholeBetween = (value: number, min: number, max: number) =>
   Number.isInteger(value) && value >= min && value <= max;
 
@@ -55,7 +48,7 @@ const rules: { holds(settings: SystemSettings): boolean; message: string }[] = [
     message: "Choose at least one visit day.",
   },
   {
-    holds: ({ visitStart, visitEnd }) => HALF_HOUR.test(visitStart) && HALF_HOUR.test(visitEnd),
+    holds: ({ visitStart, visitEnd }) => isHalfHour(visitStart) && isHalfHour(visitEnd),
     message: "Visit hours are on the hour or half hour.",
   },
   {

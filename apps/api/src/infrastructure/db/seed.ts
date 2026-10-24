@@ -7,6 +7,8 @@ import { seedCatalog } from "./seedCatalog.js";
 import { seedCustomRoles } from "./seedCustomRoles.js";
 import { seedHolidays } from "./seedHolidays.js";
 import { seedPromotions } from "./seedPromotions.js";
+import { seedShifts } from "./seedShifts.js";
+import { seedTeams } from "./seedTeams.js";
 import { syncPermissionCatalog } from "./seedPermissions.js";
 
 // Seed data is added module by module (admin account, roles, permissions, ...).
@@ -112,12 +114,14 @@ try {
   const proceduresAdded = await seedCatalog(db);
   const promotionsAdded = await seedPromotions(db);
   const holidaysAdded = await seedHolidays(db);
+  const teamsAdded = await seedTeams(db, EMAIL_DOMAIN);
+  const staffWithShifts = await seedShifts(db);
 
   console.log(
     `Seeded ${baseRoles.length} base roles, ${customRoleIds.size} custom roles, ${permissionCount} permissions and ${created} new accounts (password: ${SEED_PASSWORD}).`,
   );
   console.log(
-    `Added ${proceduresAdded} new lab procedures, ${promotionsAdded} promotions and ${holidaysAdded} holidays.`,
+    `Added ${proceduresAdded} new lab procedures, ${promotionsAdded} promotions, ${holidaysAdded} holidays, ${teamsAdded} med teams, and shifts for ${staffWithShifts} staff.`,
   );
 } finally {
   await pool.end();

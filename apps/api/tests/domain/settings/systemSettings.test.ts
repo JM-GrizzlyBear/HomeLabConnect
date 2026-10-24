@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { InvalidSettings } from "../../../src/domain/settings/settingsErrors.js";
-import {
-  checkSettings,
-  DEFAULT_SETTINGS,
-  minutesOf,
-} from "../../../src/domain/settings/systemSettings.js";
+import { checkSettings, DEFAULT_SETTINGS } from "../../../src/domain/settings/systemSettings.js";
+import { minutesOf } from "../../../src/domain/time/clockTime.js";
 
 describe("checkSettings", () => {
   it("accepts the defaults: every day, 06:00–12:00, 1-hour slots", () => {

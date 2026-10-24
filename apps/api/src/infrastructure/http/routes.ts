@@ -38,6 +38,22 @@ import type { ListClosedDaysController } from "../../interface/http/controllers/
 import type { RemoveClosedDayController } from "../../interface/http/controllers/removeClosedDayController.js";
 import type { UpdateClosedDayController } from "../../interface/http/controllers/updateClosedDayController.js";
 import type { UpdateSystemSettingsController } from "../../interface/http/controllers/updateSystemSettingsController.js";
+import type { CopyPreviousRostersController } from "../../interface/http/controllers/copyPreviousRostersController.js";
+import type { CreateTeamController } from "../../interface/http/controllers/createTeamController.js";
+import type { ListStaffController } from "../../interface/http/controllers/listStaffController.js";
+import type { ListTeamsController } from "../../interface/http/controllers/listTeamsController.js";
+import type { SaveRosterController } from "../../interface/http/controllers/saveRosterController.js";
+import type { SetTeamActiveController } from "../../interface/http/controllers/setTeamActiveController.js";
+import type { UpdateTeamController } from "../../interface/http/controllers/updateTeamController.js";
+import type { GetMyScheduleController } from "../../interface/http/controllers/getMyScheduleController.js";
+import type { GetShiftBoardController } from "../../interface/http/controllers/getShiftBoardController.js";
+import type { SetShiftDaysController } from "../../interface/http/controllers/setShiftDaysController.js";
+import type { CancelLeaveController } from "../../interface/http/controllers/cancelLeaveController.js";
+import type { DecideLeaveController } from "../../interface/http/controllers/decideLeaveController.js";
+import type { ListAllLeaveController } from "../../interface/http/controllers/listAllLeaveController.js";
+import type { ListLeaveInboxController } from "../../interface/http/controllers/listLeaveInboxController.js";
+import type { ListMyLeaveController } from "../../interface/http/controllers/listMyLeaveController.js";
+import type { RequestLeaveController } from "../../interface/http/controllers/requestLeaveController.js";
 import type { Middleware } from "../../interface/http/httpTypes.js";
 import { RequirePermission } from "../../interface/http/middleware/requirePermission.js";
 import { adapt } from "./expressAdapter.js";
@@ -81,6 +97,22 @@ export interface Controllers {
   addClosedDay: AddClosedDayController;
   updateClosedDay: UpdateClosedDayController;
   removeClosedDay: RemoveClosedDayController;
+  listTeams: ListTeamsController;
+  createTeam: CreateTeamController;
+  updateTeam: UpdateTeamController;
+  setTeamActive: SetTeamActiveController;
+  saveRoster: SaveRosterController;
+  copyPreviousRosters: CopyPreviousRostersController;
+  listStaff: ListStaffController;
+  getMySchedule: GetMyScheduleController;
+  getShiftBoard: GetShiftBoardController;
+  setShiftDays: SetShiftDaysController;
+  requestLeave: RequestLeaveController;
+  listMyLeave: ListMyLeaveController;
+  cancelLeave: CancelLeaveController;
+  listLeaveInbox: ListLeaveInboxController;
+  decideLeave: DecideLeaveController;
+  listAllLeave: ListAllLeaveController;
 }
 
 export interface Middlewares {
@@ -210,6 +242,33 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.post("/holidays", adapt(controllers.addClosedDay, ...can("holidays.manage")));
   router.put("/holidays/:id", adapt(controllers.updateClosedDay, ...can("holidays.manage")));
   router.delete("/holidays/:id", adapt(controllers.removeClosedDay, ...can("holidays.manage")));
+
+  router.get("/teams", adapt(controllers.listTeams, ...can("teams.view")));
+  router.post("/teams", adapt(controllers.createTeam, ...can("teams.manage")));
+  router.put("/teams/:id", adapt(controllers.updateTeam, ...can("teams.manage")));
+  router.patch("/teams/:id/status", adapt(controllers.setTeamActive, ...can("teams.manage")));
+  router.put(
+    "/teams/:id/rosters/:periodStart",
+    adapt(controllers.saveRoster, ...can("teams.roster")),
+  );
+  router.post(
+    "/rosters/:periodStart/copy-previous",
+    adapt(controllers.copyPreviousRosters, ...can("teams.roster")),
+  );
+  router.get("/staff", adapt(controllers.listStaff, ...can("teams.roster")));
+
+  router.get("/shifts/mine", adapt(controllers.getMySchedule, ...can("shifts.view_own")));
+  router.get("/shifts", adapt(controllers.getShiftBoard, ...can("shifts.view")));
+  router.put("/shifts/:userId/days", adapt(controllers.setShiftDays, ...can("shifts.manage")));
+
+  router.post("/leave", adapt(controllers.requestLeave, ...can("leave.request")));
+  router.get("/leave/mine", adapt(controllers.listMyLeave, ...can("leave.request")));
+  router.patch("/leave/:id/cancel", adapt(controllers.cancelLeave, ...can("leave.request")));
+  // Team leads decide their team's first step without leave.approve, so the
+  // domain (canDecide) guards these two instead of a permission.
+  router.get("/leave/inbox", adapt(controllers.listLeaveInbox, middlewares.authenticate));
+  router.post("/leave/:id/decision", adapt(controllers.decideLeave, middlewares.authenticate));
+  router.get("/leave", adapt(controllers.listAllLeave, ...can("leave.view")));
 
   return router;
 }

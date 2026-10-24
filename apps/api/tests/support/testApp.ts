@@ -79,8 +79,44 @@ import { ListClosedDaysController } from "../../src/interface/http/controllers/l
 import { RemoveClosedDayController } from "../../src/interface/http/controllers/removeClosedDayController.js";
 import { UpdateClosedDayController } from "../../src/interface/http/controllers/updateClosedDayController.js";
 import { UpdateSystemSettingsController } from "../../src/interface/http/controllers/updateSystemSettingsController.js";
+import { CopyPreviousRosters } from "../../src/application/use-cases/copyPreviousRosters.js";
+import { CreateTeam } from "../../src/application/use-cases/createTeam.js";
+import { ListStaff } from "../../src/application/use-cases/listStaff.js";
+import { ListTeams } from "../../src/application/use-cases/listTeams.js";
+import { SaveRoster } from "../../src/application/use-cases/saveRoster.js";
+import { SetTeamActive } from "../../src/application/use-cases/setTeamActive.js";
+import { UpdateTeam } from "../../src/application/use-cases/updateTeam.js";
+import { CopyPreviousRostersController } from "../../src/interface/http/controllers/copyPreviousRostersController.js";
+import { CreateTeamController } from "../../src/interface/http/controllers/createTeamController.js";
+import { ListStaffController } from "../../src/interface/http/controllers/listStaffController.js";
+import { ListTeamsController } from "../../src/interface/http/controllers/listTeamsController.js";
+import { SaveRosterController } from "../../src/interface/http/controllers/saveRosterController.js";
+import { SetTeamActiveController } from "../../src/interface/http/controllers/setTeamActiveController.js";
+import { UpdateTeamController } from "../../src/interface/http/controllers/updateTeamController.js";
+import { GetMySchedule } from "../../src/application/use-cases/getMySchedule.js";
+import { GetShiftBoard } from "../../src/application/use-cases/getShiftBoard.js";
+import { SetShiftDays } from "../../src/application/use-cases/setShiftDays.js";
+import { GetMyScheduleController } from "../../src/interface/http/controllers/getMyScheduleController.js";
+import { GetShiftBoardController } from "../../src/interface/http/controllers/getShiftBoardController.js";
+import { SetShiftDaysController } from "../../src/interface/http/controllers/setShiftDaysController.js";
+import { CancelLeave } from "../../src/application/use-cases/cancelLeave.js";
+import { DecideLeave } from "../../src/application/use-cases/decideLeave.js";
+import { ListAllLeave } from "../../src/application/use-cases/listAllLeave.js";
+import { ListLeaveInbox } from "../../src/application/use-cases/listLeaveInbox.js";
+import { ListMyLeave } from "../../src/application/use-cases/listMyLeave.js";
+import { RequestLeave } from "../../src/application/use-cases/requestLeave.js";
+import { CancelLeaveController } from "../../src/interface/http/controllers/cancelLeaveController.js";
+import { DecideLeaveController } from "../../src/interface/http/controllers/decideLeaveController.js";
+import { ListAllLeaveController } from "../../src/interface/http/controllers/listAllLeaveController.js";
+import { ListLeaveInboxController } from "../../src/interface/http/controllers/listLeaveInboxController.js";
+import { ListMyLeaveController } from "../../src/interface/http/controllers/listMyLeaveController.js";
+import { RequestLeaveController } from "../../src/interface/http/controllers/requestLeaveController.js";
 import {
   FakeAccountEmails,
+  InMemoryLeaveRepository,
+  InMemoryShiftRepository,
+  InMemoryMedTeamRepository,
+  InMemoryStaffDirectory,
   FakePasswordHasher,
   FakeTemporaryPasswordGenerator,
   InMemoryAccessRepository,
@@ -109,6 +145,11 @@ export function buildTestApp({ databaseReachable = true } = {}) {
   const promotions = new InMemoryPromotionRepository();
   const settings = new InMemorySettingsRepository(users, clock);
   const closedDays = new InMemoryClosedDayRepository();
+  const teams = new InMemoryMedTeamRepository();
+  const staff = new InMemoryStaffDirectory(users);
+  const shifts = new InMemoryShiftRepository();
+  const leave = new InMemoryLeaveRepository();
+  const scheduleRepositories = { shifts, closedDays, leave };
   const resolvePermissions = new ResolvePermissions(access, clock);
   const emails = new FakeAccountEmails();
   const passwords = new FakeTemporaryPasswordGenerator();
@@ -197,6 +238,22 @@ export function buildTestApp({ databaseReachable = true } = {}) {
       addClosedDay: new AddClosedDayController(new AddClosedDay(closedDays)),
       updateClosedDay: new UpdateClosedDayController(new UpdateClosedDay(closedDays)),
       removeClosedDay: new RemoveClosedDayController(new RemoveClosedDay(closedDays)),
+      listTeams: new ListTeamsController(new ListTeams(teams, staff, clock)),
+      createTeam: new CreateTeamController(new CreateTeam(teams)),
+      updateTeam: new UpdateTeamController(new UpdateTeam(teams)),
+      setTeamActive: new SetTeamActiveController(new SetTeamActive(teams)),
+      saveRoster: new SaveRosterController(new SaveRoster(teams, staff)),
+      copyPreviousRosters: new CopyPreviousRostersController(new CopyPreviousRosters(teams, staff)),
+      listStaff: new ListStaffController(new ListStaff(staff)),
+      getMySchedule: new GetMyScheduleController(new GetMySchedule(scheduleRepositories)),
+      getShiftBoard: new GetShiftBoardController(new GetShiftBoard(scheduleRepositories, staff)),
+      setShiftDays: new SetShiftDaysController(new SetShiftDays(shifts, staff)),
+      requestLeave: new RequestLeaveController(new RequestLeave(leave, teams, staff, clock)),
+      listMyLeave: new ListMyLeaveController(new ListMyLeave(leave, staff)),
+      cancelLeave: new CancelLeaveController(new CancelLeave(leave, staff, clock)),
+      listLeaveInbox: new ListLeaveInboxController(new ListLeaveInbox(leave, staff)),
+      decideLeave: new DecideLeaveController(new DecideLeave(leave, staff, clock)),
+      listAllLeave: new ListAllLeaveController(new ListAllLeave(leave, staff)),
     },
     middlewares: {
       authenticate: new Authenticate(authenticateRequest),
@@ -220,5 +277,8 @@ export function buildTestApp({ databaseReachable = true } = {}) {
     promotions,
     settings,
     closedDays,
+    teams,
+    shifts,
+    leave,
   };
 }

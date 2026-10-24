@@ -40,6 +40,22 @@ import { ListClosedDays } from "./application/use-cases/listClosedDays.js";
 import { RemoveClosedDay } from "./application/use-cases/removeClosedDay.js";
 import { UpdateClosedDay } from "./application/use-cases/updateClosedDay.js";
 import { UpdateSystemSettings } from "./application/use-cases/updateSystemSettings.js";
+import { CopyPreviousRosters } from "./application/use-cases/copyPreviousRosters.js";
+import { CreateTeam } from "./application/use-cases/createTeam.js";
+import { ListStaff } from "./application/use-cases/listStaff.js";
+import { ListTeams } from "./application/use-cases/listTeams.js";
+import { SaveRoster } from "./application/use-cases/saveRoster.js";
+import { SetTeamActive } from "./application/use-cases/setTeamActive.js";
+import { UpdateTeam } from "./application/use-cases/updateTeam.js";
+import { GetMySchedule } from "./application/use-cases/getMySchedule.js";
+import { GetShiftBoard } from "./application/use-cases/getShiftBoard.js";
+import { SetShiftDays } from "./application/use-cases/setShiftDays.js";
+import { CancelLeave } from "./application/use-cases/cancelLeave.js";
+import { DecideLeave } from "./application/use-cases/decideLeave.js";
+import { ListAllLeave } from "./application/use-cases/listAllLeave.js";
+import { ListLeaveInbox } from "./application/use-cases/listLeaveInbox.js";
+import { ListMyLeave } from "./application/use-cases/listMyLeave.js";
+import { RequestLeave } from "./application/use-cases/requestLeave.js";
 import { BcryptPasswordHasher } from "./infrastructure/auth/bcryptPasswordHasher.js";
 import { CryptoTemporaryPasswordGenerator } from "./infrastructure/auth/cryptoTemporaryPasswordGenerator.js";
 import { JwtTokenService } from "./infrastructure/auth/jwtTokenService.js";
@@ -55,6 +71,10 @@ import { DrizzleProcedureCategoryRepository } from "./infrastructure/db/drizzleP
 import { DrizzlePromotionRepository } from "./infrastructure/db/drizzlePromotionRepository.js";
 import { DrizzleClosedDayRepository } from "./infrastructure/db/drizzleClosedDayRepository.js";
 import { DrizzleSettingsRepository } from "./infrastructure/db/drizzleSettingsRepository.js";
+import { DrizzleMedTeamRepository } from "./infrastructure/db/drizzleMedTeamRepository.js";
+import { DrizzleStaffDirectory } from "./infrastructure/db/drizzleStaffDirectory.js";
+import { DrizzleShiftRepository } from "./infrastructure/db/drizzleShiftRepository.js";
+import { DrizzleLeaveRepository } from "./infrastructure/db/drizzleLeaveRepository.js";
 import { createApp } from "./infrastructure/http/app.js";
 import { NodemailerAccountEmails } from "./infrastructure/mail/nodemailerAccountEmails.js";
 import { SystemClock } from "./infrastructure/systemClock.js";
@@ -96,6 +116,22 @@ import { ListClosedDaysController } from "./interface/http/controllers/listClose
 import { RemoveClosedDayController } from "./interface/http/controllers/removeClosedDayController.js";
 import { UpdateClosedDayController } from "./interface/http/controllers/updateClosedDayController.js";
 import { UpdateSystemSettingsController } from "./interface/http/controllers/updateSystemSettingsController.js";
+import { CopyPreviousRostersController } from "./interface/http/controllers/copyPreviousRostersController.js";
+import { CreateTeamController } from "./interface/http/controllers/createTeamController.js";
+import { ListStaffController } from "./interface/http/controllers/listStaffController.js";
+import { ListTeamsController } from "./interface/http/controllers/listTeamsController.js";
+import { SaveRosterController } from "./interface/http/controllers/saveRosterController.js";
+import { SetTeamActiveController } from "./interface/http/controllers/setTeamActiveController.js";
+import { UpdateTeamController } from "./interface/http/controllers/updateTeamController.js";
+import { GetMyScheduleController } from "./interface/http/controllers/getMyScheduleController.js";
+import { GetShiftBoardController } from "./interface/http/controllers/getShiftBoardController.js";
+import { SetShiftDaysController } from "./interface/http/controllers/setShiftDaysController.js";
+import { CancelLeaveController } from "./interface/http/controllers/cancelLeaveController.js";
+import { DecideLeaveController } from "./interface/http/controllers/decideLeaveController.js";
+import { ListAllLeaveController } from "./interface/http/controllers/listAllLeaveController.js";
+import { ListLeaveInboxController } from "./interface/http/controllers/listLeaveInboxController.js";
+import { ListMyLeaveController } from "./interface/http/controllers/listMyLeaveController.js";
+import { RequestLeaveController } from "./interface/http/controllers/requestLeaveController.js";
 import { Authenticate } from "./interface/http/middleware/authenticate.js";
 
 const config = loadConfig();
@@ -114,6 +150,11 @@ const procedures = new DrizzleLabProcedureRepository(db);
 const promotions = new DrizzlePromotionRepository(db);
 const settings = new DrizzleSettingsRepository(db);
 const closedDays = new DrizzleClosedDayRepository(db);
+const teams = new DrizzleMedTeamRepository(db);
+const staff = new DrizzleStaffDirectory(db);
+const shifts = new DrizzleShiftRepository(db);
+const leave = new DrizzleLeaveRepository(db);
+const scheduleRepositories = { shifts, closedDays, leave };
 const temporaryPasswords = new CryptoTemporaryPasswordGenerator();
 const accountEmails = new NodemailerAccountEmails({
   smtpHost: config.smtpHost,
@@ -224,6 +265,22 @@ const app = createApp({
     addClosedDay: new AddClosedDayController(new AddClosedDay(closedDays)),
     updateClosedDay: new UpdateClosedDayController(new UpdateClosedDay(closedDays)),
     removeClosedDay: new RemoveClosedDayController(new RemoveClosedDay(closedDays)),
+    listTeams: new ListTeamsController(new ListTeams(teams, staff, clock)),
+    createTeam: new CreateTeamController(new CreateTeam(teams)),
+    updateTeam: new UpdateTeamController(new UpdateTeam(teams)),
+    setTeamActive: new SetTeamActiveController(new SetTeamActive(teams)),
+    saveRoster: new SaveRosterController(new SaveRoster(teams, staff)),
+    copyPreviousRosters: new CopyPreviousRostersController(new CopyPreviousRosters(teams, staff)),
+    listStaff: new ListStaffController(new ListStaff(staff)),
+    getMySchedule: new GetMyScheduleController(new GetMySchedule(scheduleRepositories)),
+    getShiftBoard: new GetShiftBoardController(new GetShiftBoard(scheduleRepositories, staff)),
+    setShiftDays: new SetShiftDaysController(new SetShiftDays(shifts, staff)),
+    requestLeave: new RequestLeaveController(new RequestLeave(leave, teams, staff, clock)),
+    listMyLeave: new ListMyLeaveController(new ListMyLeave(leave, staff)),
+    cancelLeave: new CancelLeaveController(new CancelLeave(leave, staff, clock)),
+    listLeaveInbox: new ListLeaveInboxController(new ListLeaveInbox(leave, staff)),
+    decideLeave: new DecideLeaveController(new DecideLeave(leave, staff, clock)),
+    listAllLeave: new ListAllLeaveController(new ListAllLeave(leave, staff)),
   },
   middlewares: {
     authenticate: new Authenticate(authenticateRequest),
