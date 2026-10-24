@@ -22,7 +22,7 @@ The API (`apps/api`) follows **Clean Architecture** as described by Robert C. Ma
 │  │  └──────────────────────────────────────────────────┘  │  │
 │  └────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────┘
-          src/main.ts = composition root (wires everything)
+   src/buildApp.ts = composition root (wires everything)
 ```
 
 | Ring                    | Folder               | Contains                                                                                                                                                                                          | May import                                                |
@@ -31,7 +31,7 @@ The API (`apps/api`) follows **Clean Architecture** as described by Robert C. Ma
 | 2. Use cases            | `src/application`    | One class per use case, grouped by feature (`application/catalog/CreateLabProcedure.ts`), and the other **ports** (`ports/`: clock, password hasher, mailer, photo storage…).                     | `src/domain`                                              |
 | 3. Interface adapters   | `src/interface`      | `http/controllers` (request → use case input), `http/presenters` (use case output → response), `http/middleware`. Framework-free: they use `HttpRequest`/`HttpResponse` from `http/httpTypes.ts`. | `src/application`, `src/domain`, `@homelabconnect/shared` |
 | 4. Frameworks & drivers | `src/infrastructure` | Express app and routes, Drizzle schema and repository implementations, Stripe, mail, config. Implements the ports.                                                                                | Anything                                                  |
-| Composition root        | `src/main.ts`        | Creates the concrete classes and injects them through constructors.                                                                                                                               | Anything                                                  |
+| Composition root        | `src/buildApp.ts`    | Creates the concrete classes and injects them through constructors. `main.ts` reads the settings and starts it.                                                                                   | Anything                                                  |
 
 ## The Dependency Rule
 

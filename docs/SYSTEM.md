@@ -113,7 +113,7 @@ The backend follows **Clean Architecture** (Uncle Bob). Dependencies point inwar
 - **Application (Use Cases):** use cases and ports (interfaces)
 - **Interface (Interface Adapters):** controllers, presenters and middleware (auth, permissions), with no framework code
 - **Infrastructure (Frameworks & Drivers):** Express, database, Stripe, email and storage implementations
-- **main.ts:** the composition root that wires everything together
+- **buildApp.ts:** the composition root that wires everything together; `main.ts` reads the settings and starts the server
 
 ### Folder structure
 
@@ -126,7 +126,8 @@ The backend follows **Clean Architecture** (Uncle Bob). Dependencies point inwar
 │   │       ├── application     (use cases, ports)
 │   │       ├── interface       (controllers, presenters, middleware)
 │   │       ├── infrastructure  (http, db, stripe, mail, storage)
-│   │       └── main.ts         (composition root)
+│   │       ├── buildApp.ts     (composition root)
+│   │       └── main.ts         (starts the server)
 │   └── client              React + Vite + Tailwind frontend
 ├── packages
 │   └── shared              Validation schemas and types shared by api and client
@@ -140,8 +141,8 @@ The backend follows **Clean Architecture** (Uncle Bob). Dependencies point inwar
 
 | Domain                          | Tables                                                                                                                                                                                                                                   |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Identity & access               | users, roles, custom_roles, modules, permissions, role_permissions, custom_role_permissions, user_permission_overrides, leave_approval_rules, session, audit_logs                                                                        |
-| People, scheduling & teams      | patients, employees, doctors, med_team_members, support_agents, employee_shifts, employee_shift_overrides, leave_requests, holidays, med_teams, team_rosters, team_roster_members, system_settings                                       |
+| Identity & access               | users, roles, custom_roles, modules, permissions, role_permissions, custom_role_permissions, user_permission_overrides, session, audit_logs                                                                                              |
+| People, scheduling & teams      | patients, employees, doctors, med_team_members, support_agents, employee_shift_days, leave_requests, leave_decisions, holidays, med_teams, team_rosters, team_roster_members, system_settings                                            |
 | Catalog & pricing               | procedure_categories, lab_procedures, promotions, promotion_procedures                                                                                                                                                                   |
 | Appointments, results & routing | appointments, appointment_procedures, appointment_assignments, reschedule_proposals, appointment_events, appointment_notes, appointment_attachments, result_files, appointment_reviews, promotion_redemptions, daily_routes, route_stops |
 | Payments, support & reports     | payments, payment_webhook_events, support_tickets, chat_conversations, chat_participants, chat_messages, notifications, saved_reports                                                                                                    |
@@ -189,6 +190,9 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 # Email
 SMTP_HOST=localhost
 SMTP_PORT=1025
+# A real provider (Brevo: smtp-relay.brevo.com:587) needs a login; Mailpit doesn't
+# SMTP_USER=
+# SMTP_PASS=
 MAIL_FROM="HomeLabConnect <no-reply@homelabconnect.local>"
 ```
 

@@ -83,8 +83,8 @@ The website runs on **Netlify**, the API on **Render** (Docker) and the database
 ### 1. Neon (database)
 
 1. Create a project at [neon.tech](https://neon.tech) (region: Singapore, closest to the Philippines).
-2. Copy the connection string **without** `-pooler` in the host, and keep `?sslmode=require`:
-   `postgres://USER:PASSWORD@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require`
+2. Copy the connection string **without** `-pooler` in the host, and end it with `?sslmode=verify-full` (Neon shows `require`; `verify-full` is the same check without the driver's warning):
+   `postgres://USER:PASSWORD@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=verify-full`
 3. The tables are created by the API on its first start (it applies the migrations). To add the seed data (permission catalogue, admin account and sample data), run once from your machine: `DATABASE_URL="<neon url>" turbo run db:seed`.
 
 ### 2. Cloudinary (photos)
@@ -98,16 +98,16 @@ The website runs on **Netlify**, the API on **Render** (Docker) and the database
 2. **Health check path:** `/api/health`. **Auto-Deploy:** off (deploys go through the GitHub workflow).
 3. **Environment variables:**
 
-   | Name                                  | Value                                                                             |
-   | ------------------------------------- | --------------------------------------------------------------------------------- |
-   | `DATABASE_URL`                        | the Neon connection string                                                        |
-   | `SESSION_SECRET`                      | a long random string: `openssl rand -hex 32`                                      |
-   | `TRUST_PROXY`                         | `2` (Netlify's proxy, then Render's)                                              |
-   | `APP_URL`                             | your Netlify address, e.g. `https://homelabconnect.netlify.app` (links in emails) |
-   | `PHOTO_STORAGE`                       | `cloudinary`                                                                      |
-   | `CLOUDINARY_URL`                      | the Cloudinary API environment variable                                           |
-   | `CLOUDINARY_FOLDER`                   | `homelabconnect`                                                                  |
-   | `SMTP_HOST`, `SMTP_PORT`, `MAIL_FROM` | your mail provider (e.g. Brevo or Resend SMTP)                                    |
+   | Name                                                            | Value                                                                             |
+   | --------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+   | `DATABASE_URL`                                                  | the Neon connection string                                                        |
+   | `SESSION_SECRET`                                                | a long random string: `openssl rand -hex 32`                                      |
+   | `TRUST_PROXY`                                                   | `2` (Netlify's proxy, then Render's)                                              |
+   | `APP_URL`                                                       | your Netlify address, e.g. `https://homelabconnect.netlify.app` (links in emails) |
+   | `PHOTO_STORAGE`                                                 | `cloudinary`                                                                      |
+   | `CLOUDINARY_URL`                                                | the Cloudinary API environment variable                                           |
+   | `CLOUDINARY_FOLDER`                                             | `homelabconnect`                                                                  |
+   | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | your mail provider (e.g. Brevo SMTP)                                              |
 
 4. **Settings → Deploy Hook**: copy the URL (for GitHub below).
 
