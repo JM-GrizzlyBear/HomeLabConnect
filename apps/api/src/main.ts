@@ -20,6 +20,8 @@ const app = buildApp({
   accountEmails: new NodemailerAccountEmails({
     smtpHost: config.smtpHost,
     smtpPort: config.smtpPort,
+    smtpUser: config.smtpUser,
+    smtpPass: config.smtpPass,
     from: config.mailFrom,
     appUrl: config.appUrl,
   }),

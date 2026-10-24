@@ -27,6 +27,8 @@ const envSchema = z.object({
   CLOUDINARY_FOLDER: z.string().min(1).default("homelabconnect"),
   SMTP_HOST: z.string().min(1).default("localhost"),
   SMTP_PORT: z.coerce.number().int().positive().default(1025),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().min(1).default("HomeLabConnect <no-reply@homelabconnect.local>"),
 });
 
@@ -45,6 +47,8 @@ export interface Config {
   uploadsDir: string;
   smtpHost: string;
   smtpPort: number;
+  smtpUser: string | undefined;
+  smtpPass: string | undefined;
   mailFrom: string;
 }
 
@@ -76,6 +80,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     uploadsDir: fileURLToPath(new URL("../../uploads", import.meta.url)),
     smtpHost: parsed.data.SMTP_HOST,
     smtpPort: parsed.data.SMTP_PORT,
+    smtpUser: parsed.data.SMTP_USER?.trim() || undefined,
+    smtpPass: parsed.data.SMTP_PASS?.trim() || undefined,
     mailFrom: parsed.data.MAIL_FROM,
   };
 }

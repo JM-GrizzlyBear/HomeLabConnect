@@ -7,6 +7,9 @@ import type {
 export interface MailOptions {
   smtpHost: string;
   smtpPort: number;
+  /** Login for a real mail provider (Brevo, Resend); Mailpit needs none. */
+  smtpUser?: string;
+  smtpPass?: string;
   from: string;
   /** The client's base URL, for the sign-in link. */
   appUrl: string;
@@ -31,7 +34,16 @@ export class NodemailerAccountEmails implements AccountEmails {
   private readonly transport: Transporter;
 
   constructor(private readonly options: MailOptions) {
-    this.transport = createTransport({ host: options.smtpHost, port: options.smtpPort });
+    this.transport = createTransport({
+      host: options.smtpHost,
+      port: options.smtpPort,
+      // Port 465 speaks TLS from the start; 587 and 2525 upgrade with STARTTLS
+      secure: options.smtpPort === 465,
+      auth:
+        options.smtpUser && options.smtpPass
+          ? { user: options.smtpUser, pass: options.smtpPass }
+          : undefined,
+    });
   }
 
   sendStaffWelcome(email: TemporaryPasswordEmail): Promise<void> {
