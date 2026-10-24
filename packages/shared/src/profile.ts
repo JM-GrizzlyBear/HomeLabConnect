@@ -40,6 +40,18 @@ export const updateProfileRequestSchema = z.object({
     .optional(),
 });
 
+/** The answer to setting or removing a profile photo. */
+export const profilePhotoSchema = z.object({
+  photoUrl: z.string().nullable(),
+});
+
+/** Profile photos: JPG, PNG or WebP, up to 2 MB (checked again by the API). */
+export const PROFILE_PHOTO_LIMITS = {
+  maxBytes: 2 * 1024 * 1024,
+  types: ["image/jpeg", "image/png", "image/webp"],
+} as const;
+
 export type PatientDetails = z.infer<typeof patientDetailsSchema>;
 export type Profile = z.infer<typeof profileSchema>;
 export type UpdateProfileRequest = z.infer<typeof updateProfileRequestSchema>;
+export type ProfilePhoto = z.infer<typeof profilePhotoSchema>;

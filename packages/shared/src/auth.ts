@@ -57,6 +57,7 @@ export const currentUserSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   mustChangePassword: z.boolean(),
+  photoUrl: z.string().nullable(),
 });
 
 /** The signed-in user plus what they may do. Returned by login, /auth/me and password change. */
@@ -65,9 +66,8 @@ export const sessionUserSchema = currentUserSchema.extend({
   permissions: z.array(z.string()),
 });
 
+/** The session itself travels in an httpOnly cookie, so the body only carries the user. */
 export const loginResponseSchema = z.object({
-  token: z.string(),
-  expiresAt: z.iso.datetime(),
   user: sessionUserSchema,
 });
 
