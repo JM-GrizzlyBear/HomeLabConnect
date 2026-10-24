@@ -75,6 +75,12 @@ Seeded examples:
 - `settings.view` opens the Settings page read-only; `settings.manage` saves changes. The _President_ role can view but not change settings.
 - `holidays.view` (admin, med team, doctors, support) shows the Holidays & Closed Days page; `holidays.manage` (admin) adds, edits and removes them. Patients never see the list; closed days are simply not bookable.
 
+### Scheduling, teams and leave
+
+- `shifts.view_own` opens My Schedule; `shifts.view` the shift board; `shifts.manage` sets shifts on the month calendar.
+- `teams.view` shows the teams and rosters; `teams.roster` (admin, Senior Med Tech) edits rosters; `teams.manage` (admin) adds, renames and deactivates teams.
+- `leave.request` files and cancels your own leave (My Leave). Approving is decided by the **approval chain**, not one permission: a team lead approves their team's first step **without** `leave.approve` (the request shows on their My Leave page), as can any non-admin with `leave.approve` (Senior Med Tech); the admin step needs an admin with `leave.approve`. The Leave Requests page needs `leave.approve`; its "All requests" tab needs `leave.view`.
+
 ## Adding a permission (for a new module)
 
 1. Add the action to its module in `packages/shared/src/permissions.ts` (and to `defaultBaseGrants` if a base role should have it). Update the counts in the catalogue test and the table above.

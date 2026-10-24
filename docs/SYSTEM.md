@@ -47,7 +47,7 @@ user override → custom role grant → base role grant → deny. The full catal
 1. **Authentication & Accounts:** login, patient self-registration, staff accounts created with an emailed temporary password (valid for 7 days, must be changed on first login, reissued by an admin once expired), session revocation, profile editing, password change, account deactivation.
 2. **Roles & Permissions:** base and custom roles, 21 modules and 67 permissions, per-user temporary overrides.
 3. **Lab Procedure Catalog:** procedures, categories, prices and promotions/discounts.
-4. **Scheduling & Teams:** employee shifts, shift overrides, holidays, leave requests with approval chains, med teams and bi-weekly rosters.
+4. **Scheduling & Teams:** shifts set month by month on a calendar, leave requests (team lead → admin for med team; admin for everyone else), med teams and two-week rosters. See [erd/scheduling.md](erd/scheduling.md).
 5. **Appointments:** patient booking, accept/reject, reschedule proposals, team assignment, daily routes, collection, return visits, notes and attachments.
 6. **Results:** doctors upload result files and patients view or download them. Results are **held until the appointment is paid**.
 7. **Payments (Stripe + Cash):** online checkout, cash recording, refunds and a payment list with export.
