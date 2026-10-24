@@ -135,6 +135,28 @@ import { SetProfilePhotoController } from "./interface/http/controllers/SetProfi
 import type { TemporaryPasswordGenerator } from "./application/ports/TemporaryPasswordGenerator.js";
 import type { Pool } from "pg";
 import type { Database } from "./infrastructure/db/client.js";
+import type { AppointmentEmails } from "./application/ports/AppointmentEmails.js";
+import { DrizzleAppointmentRepository } from "./infrastructure/db/DrizzleAppointmentRepository.js";
+import { GetAvailability } from "./application/appointments/GetAvailability.js";
+import { GetAvailabilityController } from "./interface/http/controllers/GetAvailabilityController.js";
+import { QuoteBooking } from "./application/appointments/QuoteBooking.js";
+import { QuoteBookingController } from "./interface/http/controllers/QuoteBookingController.js";
+import { BookAppointment } from "./application/appointments/BookAppointment.js";
+import { BookAppointmentController } from "./interface/http/controllers/BookAppointmentController.js";
+import { ListMyAppointments } from "./application/appointments/ListMyAppointments.js";
+import { ListMyAppointmentsController } from "./interface/http/controllers/ListMyAppointmentsController.js";
+import { GetAppointment } from "./application/appointments/GetAppointment.js";
+import { GetAppointmentController } from "./interface/http/controllers/GetAppointmentController.js";
+import { CancelAppointment } from "./application/appointments/CancelAppointment.js";
+import { CancelAppointmentController } from "./interface/http/controllers/CancelAppointmentController.js";
+import { ListAppointments } from "./application/appointments/ListAppointments.js";
+import { ListAppointmentsController } from "./interface/http/controllers/ListAppointmentsController.js";
+import { DecideAppointment } from "./application/appointments/DecideAppointment.js";
+import { DecideAppointmentController } from "./interface/http/controllers/DecideAppointmentController.js";
+import { ProposeNewTime } from "./application/appointments/ProposeNewTime.js";
+import { ProposeNewTimeController } from "./interface/http/controllers/ProposeNewTimeController.js";
+import { AnswerProposal } from "./application/appointments/AnswerProposal.js";
+import { AnswerProposalController } from "./interface/http/controllers/AnswerProposalController.js";
 import { createSessionMiddleware } from "./infrastructure/http/session.js";
 
 export interface BuildAppOptions {
@@ -145,6 +167,7 @@ export interface BuildAppOptions {
   passwordHasher: PasswordHasher;
   temporaryPasswords: TemporaryPasswordGenerator;
   accountEmails: AccountEmails;
+  appointmentEmails: AppointmentEmails;
   sessionSecret: string;
   sessionTtlMinutes: number;
   /** HTTPS-only session cookie (production). */
@@ -178,6 +201,10 @@ export function buildApp(options: BuildAppOptions) {
   const shifts = new DrizzleShiftRepository(db);
   const leave = new DrizzleLeaveRepository(db);
   const scheduleRepositories = { shifts, closedDays, leave };
+  const appointments = new DrizzleAppointmentRepository(db);
+  const availabilityRepositories = { ...scheduleRepositories, appointments, teams, settings };
+  const quoteBooking = new QuoteBooking(procedures, promotions, clock);
+  const { appointmentEmails } = options;
 
   // Use cases
   const checkSystemHealth = new CheckSystemHealth(
@@ -305,6 +332,39 @@ export function buildApp(options: BuildAppOptions) {
       listLeaveInbox: new ListLeaveInboxController(new ListLeaveInbox(leave, staff)),
       decideLeave: new DecideLeaveController(new DecideLeave(leave, staff, clock)),
       listAllLeave: new ListAllLeaveController(new ListAllLeave(leave, staff)),
+      getAvailability: new GetAvailabilityController(
+        new GetAvailability(availabilityRepositories, clock),
+      ),
+      quoteBooking: new QuoteBookingController(quoteBooking),
+      bookAppointment: new BookAppointmentController(
+        new BookAppointment(availabilityRepositories, quoteBooking, appointmentEmails, clock),
+      ),
+      listMyAppointments: new ListMyAppointmentsController(
+        new ListMyAppointments(appointments, settings, clock),
+      ),
+      getAppointment: new GetAppointmentController(
+        new GetAppointment(appointments, settings, clock),
+      ),
+      cancelAppointment: new CancelAppointmentController(
+        new CancelAppointment(appointments, settings, appointmentEmails, clock),
+      ),
+      listAppointments: new ListAppointmentsController(
+        new ListAppointments(appointments, settings, clock),
+      ),
+      acceptAppointment: new DecideAppointmentController(
+        new DecideAppointment(appointments, settings, appointmentEmails, clock),
+        "accept",
+      ),
+      rejectAppointment: new DecideAppointmentController(
+        new DecideAppointment(appointments, settings, appointmentEmails, clock),
+        "reject",
+      ),
+      proposeNewTime: new ProposeNewTimeController(
+        new ProposeNewTime(availabilityRepositories, appointmentEmails, clock),
+      ),
+      answerProposal: new AnswerProposalController(
+        new AnswerProposal(availabilityRepositories, appointmentEmails, clock),
+      ),
     },
     middlewares: {
       authenticate: new Authenticate(authenticateRequest),

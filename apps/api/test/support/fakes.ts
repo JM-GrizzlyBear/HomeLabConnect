@@ -17,6 +17,11 @@ import type {
 } from "../../src/application/ports/AccountEmails.js";
 import type { Clock } from "../../src/application/ports/Clock.js";
 import type { PasswordHasher } from "../../src/application/ports/PasswordHasher.js";
+import type {
+  AppointmentEmails,
+  AppointmentNotice,
+} from "../../src/application/ports/AppointmentEmails.js";
+import type { Appointment } from "../../src/domain/appointments/appointment.js";
 import type { PhotoStorage, PhotoUpload } from "../../src/application/ports/PhotoStorage.js";
 import type { StoredPhoto } from "../../src/domain/media/photo.js";
 import type { SessionRepository } from "../../src/domain/identity/SessionRepository.js";
@@ -109,6 +114,15 @@ export class FakeAccountEmails implements AccountEmails {
   private record(kind: "welcome" | "reissued", email: TemporaryPasswordEmail): void {
     if (this.failing) throw new Error("SMTP unavailable");
     this.sent.push({ kind, ...email });
+  }
+}
+
+/** Records which appointment emails would have gone out. */
+export class FakeAppointmentEmails implements AppointmentEmails {
+  readonly sent: { notice: AppointmentNotice; code: string; to: string }[] = [];
+
+  async send(notice: AppointmentNotice, appointment: Appointment): Promise<void> {
+    this.sent.push({ notice, code: appointment.code, to: appointment.patientEmail });
   }
 }
 

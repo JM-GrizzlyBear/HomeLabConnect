@@ -11,6 +11,7 @@ import { createDatabase, type Database } from "../../../src/infrastructure/db/cl
 import { SESSION_COOKIE } from "../../../src/infrastructure/http/session.js";
 import {
   FakeAccountEmails,
+  FakeAppointmentEmails,
   FakePhotoStorage,
   FakeTemporaryPasswordGenerator,
   FixedClock,
@@ -59,6 +60,7 @@ export async function buildTestApp({ databaseReachable = true } = {}) {
   const emails = new FakeAccountEmails();
   const passwords = new FakeTemporaryPasswordGenerator();
   const photos = new FakePhotoStorage();
+  const appointmentEmails = new FakeAppointmentEmails();
   const unreachable: DatabaseHealthProbe = { isReachable: async () => false };
 
   const app = buildApp({
@@ -68,6 +70,7 @@ export async function buildTestApp({ databaseReachable = true } = {}) {
     passwordHasher: new BcryptPasswordHasher(4),
     temporaryPasswords: passwords,
     accountEmails: emails,
+    appointmentEmails,
     sessionSecret: "test-secret-that-is-at-least-32-characters-long",
     sessionTtlMinutes: 60,
     secureCookie: false,
@@ -76,7 +79,7 @@ export async function buildTestApp({ databaseReachable = true } = {}) {
     healthProbe: databaseReachable ? undefined : unreachable,
   });
 
-  return { app, db, clock, emails, passwords, photos, given: new Given(db) };
+  return { app, db, clock, emails, appointmentEmails, passwords, photos, given: new Given(db) };
 }
 
 /** Signs in and returns the session cookie header that makes later requests count as that user. */

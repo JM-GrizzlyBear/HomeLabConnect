@@ -1,4 +1,14 @@
 import { Router } from "express";
+import type { GetAvailabilityController } from "../../interface/http/controllers/GetAvailabilityController.js";
+import type { QuoteBookingController } from "../../interface/http/controllers/QuoteBookingController.js";
+import type { BookAppointmentController } from "../../interface/http/controllers/BookAppointmentController.js";
+import type { ListMyAppointmentsController } from "../../interface/http/controllers/ListMyAppointmentsController.js";
+import type { GetAppointmentController } from "../../interface/http/controllers/GetAppointmentController.js";
+import type { CancelAppointmentController } from "../../interface/http/controllers/CancelAppointmentController.js";
+import type { ListAppointmentsController } from "../../interface/http/controllers/ListAppointmentsController.js";
+import type { DecideAppointmentController } from "../../interface/http/controllers/DecideAppointmentController.js";
+import type { ProposeNewTimeController } from "../../interface/http/controllers/ProposeNewTimeController.js";
+import type { AnswerProposalController } from "../../interface/http/controllers/AnswerProposalController.js";
 import { rateLimit } from "express-rate-limit";
 import type { AssignCustomRoleController } from "../../interface/http/controllers/AssignCustomRoleController.js";
 import type { CreateCustomRoleController } from "../../interface/http/controllers/CreateCustomRoleController.js";
@@ -118,6 +128,17 @@ export interface Controllers {
   listLeaveInbox: ListLeaveInboxController;
   decideLeave: DecideLeaveController;
   listAllLeave: ListAllLeaveController;
+  getAvailability: GetAvailabilityController;
+  quoteBooking: QuoteBookingController;
+  bookAppointment: BookAppointmentController;
+  listMyAppointments: ListMyAppointmentsController;
+  getAppointment: GetAppointmentController;
+  cancelAppointment: CancelAppointmentController;
+  listAppointments: ListAppointmentsController;
+  acceptAppointment: DecideAppointmentController;
+  rejectAppointment: DecideAppointmentController;
+  proposeNewTime: ProposeNewTimeController;
+  answerProposal: AnswerProposalController;
 }
 
 export interface Middlewares {
@@ -280,6 +301,40 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.get("/leave/inbox", adapt(controllers.listLeaveInbox, middlewares.authenticate));
   router.post("/leave/:id/decision", adapt(controllers.decideLeave, middlewares.authenticate));
   router.get("/leave", adapt(controllers.listAllLeave, ...can("leave.view")));
+
+  router.get(
+    "/appointments/availability",
+    adapt(controllers.getAvailability, ...can("appointments.book")),
+  );
+  router.get("/appointments/quote", adapt(controllers.quoteBooking, ...can("appointments.book")));
+  router.post("/appointments", adapt(controllers.bookAppointment, ...can("appointments.book")));
+  router.get(
+    "/appointments/mine",
+    adapt(controllers.listMyAppointments, ...can("appointments.view_own")),
+  );
+  router.get("/appointments", adapt(controllers.listAppointments, ...can("appointments.view_all")));
+  // Patients see their own, staff with appointments.view_all any: the use case decides (404 otherwise).
+  router.get("/appointments/:id", adapt(controllers.getAppointment, middlewares.authenticate));
+  router.patch(
+    "/appointments/:id/cancel",
+    adapt(controllers.cancelAppointment, ...can("appointments.cancel")),
+  );
+  router.post(
+    "/appointments/:id/accept",
+    adapt(controllers.acceptAppointment, ...can("appointments.accept")),
+  );
+  router.post(
+    "/appointments/:id/reject",
+    adapt(controllers.rejectAppointment, ...can("appointments.reject")),
+  );
+  router.post(
+    "/appointments/:id/reschedule",
+    adapt(controllers.proposeNewTime, ...can("appointments.reschedule")),
+  );
+  router.post(
+    "/appointments/:id/proposal",
+    adapt(controllers.answerProposal, ...can("appointments.view_own")),
+  );
 
   return router;
 }

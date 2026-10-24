@@ -3,6 +3,7 @@ import { BcryptPasswordHasher } from "../auth/BcryptPasswordHasher.js";
 import { createDatabase } from "./client.js";
 import { readDatabaseUrl } from "./databaseUrl.js";
 import { employees, patients, users } from "./schema/index.js";
+import { seedAppointments } from "./seedAppointments.js";
 import { seedBaseRoles } from "./seedBaseRoles.js";
 import { seedCatalog } from "./seedCatalog.js";
 import { seedCustomRoles } from "./seedCustomRoles.js";
@@ -108,12 +109,13 @@ try {
   const holidaysAdded = await seedHolidays(db);
   const teamsAdded = await seedTeams(db, EMAIL_DOMAIN);
   const staffWithShifts = await seedShifts(db);
+  const appointmentsAdded = await seedAppointments(db, EMAIL_DOMAIN);
 
   console.log(
     `Seeded ${baseRoleCount} base roles, ${customRoleIds.size} custom roles, ${permissionCount} permissions and ${created} new accounts (password: ${SEED_PASSWORD}).`,
   );
   console.log(
-    `Added ${proceduresAdded} new lab procedures, ${promotionsAdded} promotions, ${holidaysAdded} holidays, ${teamsAdded} med teams, and shifts for ${staffWithShifts} staff.`,
+    `Added ${proceduresAdded} new lab procedures, ${promotionsAdded} promotions, ${holidaysAdded} holidays, ${teamsAdded} med teams, shifts for ${staffWithShifts} staff, and ${appointmentsAdded} sample appointments.`,
   );
 } finally {
   await pool.end();

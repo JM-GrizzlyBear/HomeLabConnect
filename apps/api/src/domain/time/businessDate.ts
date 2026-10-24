@@ -20,6 +20,11 @@ export function weekdayOf(date: string): number {
   return new Date(`${date}T00:00:00Z`).getUTCDay();
 }
 
+/** The moment a business date and "HH:MM" time happen, e.g. a visit's start. */
+export function businessDateTime(date: string, time: string): Date {
+  return new Date(Date.parse(`${date}T${time}:00Z`) - BUSINESS_UTC_OFFSET_MS);
+}
+
 /** "MM-DD" of a "YYYY-MM-DD" date, for yearly matches. */
 export function monthDay(date: string): string {
   return date.slice(5);

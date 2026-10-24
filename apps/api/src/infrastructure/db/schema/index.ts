@@ -9,3 +9,4 @@ export * from "./access.js";
 export * from "./catalog.js";
 export * from "./settings.js";
 export * from "./scheduling.js";
+export * from "./appointments.js";

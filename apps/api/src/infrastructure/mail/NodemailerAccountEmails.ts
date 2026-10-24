@@ -1,19 +1,9 @@
-import { createTransport, type Transporter } from "nodemailer";
+import type { Transporter } from "nodemailer";
 import type {
   AccountEmails,
   TemporaryPasswordEmail,
 } from "../../application/ports/AccountEmails.js";
-
-export interface MailOptions {
-  smtpHost: string;
-  smtpPort: number;
-  /** Login for a real mail provider (Brevo, Resend); Mailpit needs none. */
-  smtpUser?: string;
-  smtpPass?: string;
-  from: string;
-  /** The client's base URL, for the sign-in link. */
-  appUrl: string;
-}
+import { createMailTransport, escapeHtml, type MailOptions } from "./mailTransport.js";
 
 const expiryFormat = new Intl.DateTimeFormat("en-PH", {
   dateStyle: "long",
@@ -21,29 +11,12 @@ const expiryFormat = new Intl.DateTimeFormat("en-PH", {
   timeZone: "Asia/Manila",
 });
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
 /** Sends account emails over SMTP (Mailpit locally: http://localhost:8025). */
 export class NodemailerAccountEmails implements AccountEmails {
   private readonly transport: Transporter;
 
   constructor(private readonly options: MailOptions) {
-    this.transport = createTransport({
-      host: options.smtpHost,
-      port: options.smtpPort,
-      // Port 465 speaks TLS from the start; 587 and 2525 upgrade with STARTTLS
-      secure: options.smtpPort === 465,
-      auth:
-        options.smtpUser && options.smtpPass
-          ? { user: options.smtpUser, pass: options.smtpPass }
-          : undefined,
-    });
+    this.transport = createMailTransport(options);
   }
 
   sendStaffWelcome(email: TemporaryPasswordEmail): Promise<void> {

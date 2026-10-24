@@ -5,11 +5,21 @@ import { CryptoTemporaryPasswordGenerator } from "./infrastructure/auth/CryptoTe
 import { loadConfig } from "./infrastructure/config.js";
 import { createDatabase } from "./infrastructure/db/client.js";
 import { NodemailerAccountEmails } from "./infrastructure/mail/NodemailerAccountEmails.js";
+import { NodemailerAppointmentEmails } from "./infrastructure/mail/NodemailerAppointmentEmails.js";
 import { SystemClock } from "./infrastructure/SystemClock.js";
 import { createPhotoStorage } from "./infrastructure/storage/createPhotoStorage.js";
 
 const config = loadConfig();
 const { db, pool } = createDatabase(config.databaseUrl);
+
+const mail = {
+  smtpHost: config.smtpHost,
+  smtpPort: config.smtpPort,
+  smtpUser: config.smtpUser,
+  smtpPass: config.smtpPass,
+  from: config.mailFrom,
+  appUrl: config.appUrl,
+};
 
 const app = buildApp({
   db,
@@ -17,14 +27,8 @@ const app = buildApp({
   clock: new SystemClock(),
   passwordHasher: new BcryptPasswordHasher(),
   temporaryPasswords: new CryptoTemporaryPasswordGenerator(),
-  accountEmails: new NodemailerAccountEmails({
-    smtpHost: config.smtpHost,
-    smtpPort: config.smtpPort,
-    smtpUser: config.smtpUser,
-    smtpPass: config.smtpPass,
-    from: config.mailFrom,
-    appUrl: config.appUrl,
-  }),
+  accountEmails: new NodemailerAccountEmails(mail),
+  appointmentEmails: new NodemailerAppointmentEmails(mail),
   sessionSecret: config.sessionSecret,
   sessionTtlMinutes: config.sessionTtlMinutes,
   secureCookie: config.secureCookie,
