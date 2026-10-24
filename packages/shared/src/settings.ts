@@ -7,7 +7,7 @@ export const teamAssignmentSchema = z.enum(["manual", "auto"]);
 export const SLOT_LENGTHS = [30, 60, 90] as const;
 
 /** "06:00" or "06:30": visit hours go in half-hour steps. */
-const halfHourSchema = z.string().regex(/^([01]\d|2[0-3]):(00|30)$/, "Choose a time.");
+export const halfHourSchema = z.string().regex(/^([01]\d|2[0-3]):(00|30)$/, "Choose a time.");
 
 const minutesOf = (time: string) => {
   const [hours = "0", minutes = "0"] = time.split(":");
