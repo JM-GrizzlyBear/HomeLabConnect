@@ -1,5 +1,5 @@
 import type { ClosedDay } from "../../domain/settings/closedDay.js";
-import type { ClosedDayRepository } from "../ports/closedDayRepository.js";
+import type { ClosedDayRepository } from "../../domain/settings/ClosedDayRepository.js";
 
 export interface ListClosedDaysInput {
   /** One-time closed days in this year, plus every yearly one. null: all of them. */

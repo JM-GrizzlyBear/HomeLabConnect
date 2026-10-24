@@ -1,5 +1,5 @@
 import { rosterParamsSchema, rosterRequestSchema } from "@homelabconnect/shared";
-import type { SaveRoster } from "../../../application/use-cases/saveRoster.js";
+import type { SaveRoster } from "../../../application/scheduling/SaveRoster.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentNoContent } from "../presenters/authPresenter.js";
 import { parseRequest } from "../requestValidation.js";

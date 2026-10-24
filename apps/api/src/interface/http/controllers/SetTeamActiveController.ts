@@ -1,5 +1,5 @@
 import { teamIdParamsSchema, teamStatusRequestSchema } from "@homelabconnect/shared";
-import type { SetTeamActive } from "../../../application/use-cases/setTeamActive.js";
+import type { SetTeamActive } from "../../../application/scheduling/SetTeamActive.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentTeam } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";

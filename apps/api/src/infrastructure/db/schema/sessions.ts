@@ -1,20 +1,15 @@
-import { index, pgTable, text, uuid } from "drizzle-orm/pg-core";
-import { timestamptz } from "./columns.js";
-import { users } from "./users.js";
+import { index, json, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 
-/** One row per sign-in. Tokens carry the session id, so revoking the row signs the token out. */
-export const sessions = pgTable(
-  "sessions",
+/**
+ * Signed-in browsers: connect-pg-simple's table, read and written by express-session.
+ * `sess` holds the cookie settings and `userId`. Deleting a row signs that browser out.
+ */
+export const session = pgTable(
+  "session",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamptz("created_at").notNull().defaultNow(),
-    expiresAt: timestamptz("expires_at").notNull(),
-    revokedAt: timestamptz("revoked_at"),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
+    sid: varchar("sid").primaryKey(),
+    sess: json("sess").$type<{ userId?: string }>().notNull(),
+    expire: timestamp("expire", { precision: 6 }).notNull(),
   },
-  (table) => [index("sessions_user_id_idx").on(table.userId)],
+  (table) => [index("session_expire_idx").on(table.expire)],
 );

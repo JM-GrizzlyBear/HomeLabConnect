@@ -1,5 +1,5 @@
 import { labProcedureRequestSchema } from "@homelabconnect/shared";
-import type { CreateLabProcedure } from "../../../application/use-cases/createLabProcedure.js";
+import type { CreateLabProcedure } from "../../../application/catalog/CreateLabProcedure.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentProcedure } from "../presenters/catalogPresenter.js";
 import { parseRequest } from "../requestValidation.js";

@@ -1,4 +1,4 @@
-import type { ListProcedureCategories } from "../../../application/use-cases/listProcedureCategories.js";
+import type { ListProcedureCategories } from "../../../application/catalog/ListProcedureCategories.js";
 import type { Controller, HttpResponse } from "../httpTypes.js";
 import { presentCategoryList } from "../presenters/catalogPresenter.js";
 

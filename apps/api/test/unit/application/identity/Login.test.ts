@@ -3,45 +3,35 @@ import {
   AccountDeactivated,
   InvalidCredentials,
   TemporaryPasswordExpired,
-} from "../../../src/domain/identity/identityErrors.js";
+} from "../../../../src/domain/identity/identityErrors.js";
 import {
   FakePasswordHasher,
-  FakeTokenService,
   FixedClock,
   InMemoryAccessRepository,
-  InMemorySessionRepository,
   InMemoryUserRepository,
-} from "../../support/fakes.js";
-import { Login } from "../../../src/application/use-cases/login.js";
-import { Logout } from "../../../src/application/use-cases/logout.js";
-import { ResolvePermissions } from "../../../src/application/use-cases/resolvePermissions.js";
+} from "../../../support/fakes.js";
+import { Login } from "../../../../src/application/identity/Login.js";
+import { ResolvePermissions } from "../../../../src/application/access/ResolvePermissions.js";
 
 function setup() {
   const clock = new FixedClock();
   const users = new InMemoryUserRepository();
-  const sessions = new InMemorySessionRepository(clock);
-  const tokens = new FakeTokenService();
   const permissions = new ResolvePermissions(new InMemoryAccessRepository(), clock);
-  const login = new Login(users, sessions, new FakePasswordHasher(), tokens, clock, permissions, {
-    sessionTtlMinutes: 60,
-  });
-  return { clock, users, sessions, tokens, login, logout: new Logout(sessions, clock) };
+  const login = new Login(users, new FakePasswordHasher(), clock, permissions);
+  return { clock, users, login };
 }
 
-const credentials = { password: "Password123", ipAddress: "127.0.0.1", userAgent: "vitest" };
+const credentials = { password: "Password123" };
 
 describe("Login", () => {
-  it("opens a session and returns a token tied to it", async () => {
-    const { clock, users, sessions, tokens, login } = setup();
-    const user = users.add({ email: "juan@example.com" });
+  it("returns the user and their permissions, and records the sign-in", async () => {
+    const { clock, users, login } = setup();
+    const user = users.add({ email: "juan@example.com", role: "support" });
 
     const output = await login.execute({ ...credentials, email: "JUAN@example.com" });
 
     expect(output.user.id).toBe(user.id);
-    expect(output.expiresAt).toEqual(new Date(clock.now().getTime() + 60 * 60_000));
-    const claims = tokens.verify(output.token);
-    expect(claims?.userId).toBe(user.id);
-    expect(sessions.sessions.get(claims!.sessionId)).toMatchObject({ userId: user.id });
+    expect(output.user.permissions).toContain("users.view");
     expect(users.lastSignIn.get(user.id)).toEqual(clock.now());
   });
 
@@ -50,7 +40,7 @@ describe("Login", () => {
     users.add({ email: "juan@example.com" });
 
     await expect(
-      login.execute({ ...credentials, email: "juan@example.com", password: "Wrong123" }),
+      login.execute({ email: "juan@example.com", password: "Wrong123" }),
     ).rejects.toThrow(InvalidCredentials);
   });
 
@@ -65,18 +55,18 @@ describe("Login", () => {
     );
   });
 
-  it("rejects a deactivated account and opens no session", async () => {
-    const { users, sessions, login } = setup();
-    users.add({ email: "juan@example.com", isActive: false });
+  it("rejects a deactivated account without recording a sign-in", async () => {
+    const { users, login } = setup();
+    const user = users.add({ email: "juan@example.com", isActive: false });
 
     await expect(login.execute({ ...credentials, email: "juan@example.com" })).rejects.toThrow(
       AccountDeactivated,
     );
-    expect(sessions.sessions.size).toBe(0);
+    expect(users.lastSignIn.has(user.id)).toBe(false);
   });
 
   it("rejects an expired temporary password, but only once the password matches", async () => {
-    const { clock, users, sessions, login } = setup();
+    const { clock, users, login } = setup();
     users.add({
       email: "new@example.com",
       role: "support",
@@ -87,10 +77,9 @@ describe("Login", () => {
     await expect(login.execute({ ...credentials, email: "new@example.com" })).rejects.toThrow(
       TemporaryPasswordExpired,
     );
-    await expect(
-      login.execute({ ...credentials, email: "new@example.com", password: "Wrong123" }),
-    ).rejects.toThrow(InvalidCredentials);
-    expect(sessions.sessions.size).toBe(0);
+    await expect(login.execute({ email: "new@example.com", password: "Wrong123" })).rejects.toThrow(
+      InvalidCredentials,
+    );
   });
 
   it("accepts a temporary password before it expires", async () => {
@@ -105,18 +94,5 @@ describe("Login", () => {
     const output = await login.execute({ ...credentials, email: "new@example.com" });
 
     expect(output.user.mustChangePassword).toBe(true);
-  });
-});
-
-describe("Logout", () => {
-  it("revokes the session", async () => {
-    const { clock, users, sessions, tokens, login, logout } = setup();
-    users.add({ email: "juan@example.com" });
-    const { token } = await login.execute({ ...credentials, email: "juan@example.com" });
-    const sessionId = tokens.verify(token)!.sessionId;
-
-    await logout.execute({ sessionId });
-
-    expect(sessions.sessions.get(sessionId)?.revokedAt).toEqual(clock.now());
   });
 });

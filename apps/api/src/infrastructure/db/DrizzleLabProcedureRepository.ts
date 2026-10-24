@@ -4,7 +4,7 @@ import type {
   LabProcedureListQuery,
   LabProcedureRecord,
   LabProcedureRepository,
-} from "../../application/ports/labProcedureRepository.js";
+} from "../../domain/catalog/LabProcedureRepository.js";
 import { ProcedureCodeTaken, ProcedureNameTaken } from "../../domain/catalog/catalogErrors.js";
 import type { LabProcedure, LabProcedureDetails } from "../../domain/catalog/labProcedure.js";
 import type { Database } from "./client.js";

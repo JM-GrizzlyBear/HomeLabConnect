@@ -4,9 +4,9 @@ import {
   type ClosedDay,
   closesOn,
   isBookableDate,
-} from "../../../src/domain/settings/closedDay.js";
-import { ClosedDayExists } from "../../../src/domain/settings/settingsErrors.js";
-import { DEFAULT_SETTINGS } from "../../../src/domain/settings/systemSettings.js";
+} from "../../../../src/domain/settings/closedDay.js";
+import { ClosedDayExists } from "../../../../src/domain/settings/settingsErrors.js";
+import { DEFAULT_SETTINGS } from "../../../../src/domain/settings/systemSettings.js";
 
 const christmas: ClosedDay = {
   id: "c",

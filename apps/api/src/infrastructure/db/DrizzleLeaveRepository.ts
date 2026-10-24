@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
-import type { LeaveRepository, NewLeaveRequest } from "../../application/ports/leaveRepository.js";
+import type { LeaveRepository, NewLeaveRequest } from "../../domain/scheduling/LeaveRepository.js";
 import type { LeaveRequest, LeaveStatus } from "../../domain/scheduling/leave.js";
 import type { LeaveDays } from "../../domain/scheduling/shift.js";
 import type { Database } from "./client.js";

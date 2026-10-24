@@ -1,6 +1,6 @@
 import { UserNotFound } from "../../domain/identity/identityErrors.js";
-import type { UserRepository } from "../ports/userRepository.js";
-import type { ResolvePermissions } from "./resolvePermissions.js";
+import type { UserRepository } from "../../domain/identity/UserRepository.js";
+import type { ResolvePermissions } from "../access/ResolvePermissions.js";
 import { type SessionUserOutput, toUserOutput } from "./userOutput.js";
 
 export interface GetCurrentUserInput {

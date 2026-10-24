@@ -1,5 +1,5 @@
 import { and, asc, eq, ne } from "drizzle-orm";
-import type { StaffDirectory, StaffMember } from "../../application/ports/staffDirectory.js";
+import type { StaffDirectory, StaffMember } from "../../domain/scheduling/StaffDirectory.js";
 import { type BaseRole, isBaseRole } from "../../domain/identity/baseRole.js";
 import type { Database } from "./client.js";
 import { users } from "./schema/index.js";

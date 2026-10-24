@@ -1,5 +1,5 @@
 import { medTeamRequestSchema } from "@homelabconnect/shared";
-import type { CreateTeam } from "../../../application/use-cases/createTeam.js";
+import type { CreateTeam } from "../../../application/scheduling/CreateTeam.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentTeam } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";

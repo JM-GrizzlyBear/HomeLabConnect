@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import type { DatabaseHealthProbe } from "../../application/ports/databaseHealthProbe.js";
+import type { DatabaseHealthProbe } from "../../application/ports/DatabaseHealthProbe.js";
 import type { Database } from "./client.js";
 
 export class DrizzleDatabaseHealthProbe implements DatabaseHealthProbe {

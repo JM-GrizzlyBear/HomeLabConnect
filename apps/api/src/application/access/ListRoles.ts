@@ -1,4 +1,8 @@
-import type { BaseRoleRecord, CustomRoleRecord, RoleRepository } from "../ports/roleRepository.js";
+import type {
+  BaseRoleRecord,
+  CustomRoleRecord,
+  RoleRepository,
+} from "../../domain/access/RoleRepository.js";
 
 export interface RoleListOutput {
   baseRoles: BaseRoleRecord[];

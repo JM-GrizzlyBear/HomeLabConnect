@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { GetProfile } from "../../../src/application/use-cases/getProfile.js";
-import { UpdateProfile } from "../../../src/application/use-cases/updateProfile.js";
+import { GetProfile } from "../../../../src/application/identity/GetProfile.js";
+import { UpdateProfile } from "../../../../src/application/identity/UpdateProfile.js";
 import {
   PatientDetailsNotAllowed,
   PhoneRequired,
-} from "../../../src/domain/identity/identityErrors.js";
-import { InMemoryUserRepository } from "../../support/fakes.js";
+} from "../../../../src/domain/identity/identityErrors.js";
+import { InMemoryUserRepository } from "../../../support/fakes.js";
 
 function setup() {
   const users = new InMemoryUserRepository();

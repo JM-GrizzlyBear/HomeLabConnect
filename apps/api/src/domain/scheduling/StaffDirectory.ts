@@ -1,4 +1,4 @@
-import type { BaseRole } from "../../domain/identity/baseRole.js";
+import type { BaseRole } from "../identity/baseRole.js";
 
 export interface StaffMember {
   id: string;

@@ -2,7 +2,7 @@ import { and, desc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import type {
   PromotionRecord,
   PromotionRepository,
-} from "../../application/ports/promotionRepository.js";
+} from "../../domain/catalog/PromotionRepository.js";
 import { PromotionNameTaken } from "../../domain/catalog/catalogErrors.js";
 import type { Promotion, PromotionDetails } from "../../domain/catalog/promotion.js";
 import type { Database } from "./client.js";

@@ -1,6 +1,6 @@
 import { CustomRoleNotFound } from "../../domain/access/accessErrors.js";
 import { assertRoleUnused } from "../../domain/access/customRole.js";
-import type { RoleRepository } from "../ports/roleRepository.js";
+import type { RoleRepository } from "../../domain/access/RoleRepository.js";
 
 export interface DeleteCustomRoleInput {
   id: string;

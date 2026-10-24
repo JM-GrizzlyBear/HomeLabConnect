@@ -1,8 +1,8 @@
 import { Email } from "../../domain/identity/email.js";
 import { EmailAlreadyTaken } from "../../domain/identity/identityErrors.js";
 import { assertPasswordIsStrong } from "../../domain/identity/passwordPolicy.js";
-import type { PasswordHasher } from "../ports/passwordHasher.js";
-import type { UserRepository } from "../ports/userRepository.js";
+import type { PasswordHasher } from "../ports/PasswordHasher.js";
+import type { UserRepository } from "../../domain/identity/UserRepository.js";
 import { toUserOutput, type UserOutput } from "./userOutput.js";
 
 export interface RegisterPatientInput {

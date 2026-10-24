@@ -1,51 +1,19 @@
-import { and, eq, isNull, ne } from "drizzle-orm";
-import type { NewSession, SessionRepository } from "../../application/ports/sessionRepository.js";
-import type { Session } from "../../domain/identity/session.js";
+import { and, ne, sql } from "drizzle-orm";
+import type { SessionRepository } from "../../domain/identity/SessionRepository.js";
 import type { Database } from "./client.js";
-import { sessions } from "./schema/index.js";
+import { session } from "./schema/index.js";
 
-type SessionRow = typeof sessions.$inferSelect;
-
-function toSession(row: SessionRow): Session {
-  return {
-    id: row.id,
-    userId: row.userId,
-    createdAt: row.createdAt,
-    expiresAt: row.expiresAt,
-    revokedAt: row.revokedAt,
-  };
-}
-
+/** Revokes sessions by deleting their rows from express-session's table. */
 export class DrizzleSessionRepository implements SessionRepository {
   constructor(private readonly db: Database) {}
 
-  async create(session: NewSession): Promise<Session> {
-    const [row] = await this.db.insert(sessions).values(session).returning();
-    if (!row) throw new Error("Insert into sessions returned no row.");
-    return toSession(row);
-  }
-
-  async findById(id: string): Promise<Session | null> {
-    const [row] = await this.db.select().from(sessions).where(eq(sessions.id, id));
-    return row ? toSession(row) : null;
-  }
-
-  async revoke(id: string, at: Date): Promise<void> {
+  async revokeAllForUser(userId: string, exceptSessionId?: string): Promise<void> {
     await this.db
-      .update(sessions)
-      .set({ revokedAt: at })
-      .where(and(eq(sessions.id, id), isNull(sessions.revokedAt)));
-  }
-
-  async revokeAllForUser(userId: string, at: Date, exceptSessionId?: string): Promise<void> {
-    await this.db
-      .update(sessions)
-      .set({ revokedAt: at })
+      .delete(session)
       .where(
         and(
-          eq(sessions.userId, userId),
-          isNull(sessions.revokedAt),
-          exceptSessionId ? ne(sessions.id, exceptSessionId) : undefined,
+          sql`${session.sess}->>'userId' = ${userId}`,
+          exceptSessionId ? ne(session.sid, exceptSessionId) : undefined,
         ),
       );
   }

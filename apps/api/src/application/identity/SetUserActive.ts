@@ -1,7 +1,6 @@
 import { CannotDeactivateSelf, UserNotFound } from "../../domain/identity/identityErrors.js";
-import type { Clock } from "../ports/clock.js";
-import type { SessionRepository } from "../ports/sessionRepository.js";
-import type { UserRepository } from "../ports/userRepository.js";
+import type { SessionRepository } from "../../domain/identity/SessionRepository.js";
+import type { UserRepository } from "../../domain/identity/UserRepository.js";
 import { toUserSummaryOutput, type UserSummaryOutput } from "./userSummaryOutput.js";
 
 export interface SetUserActiveInput {
@@ -19,7 +18,6 @@ export class SetUserActive {
   constructor(
     private readonly users: UserRepository,
     private readonly sessions: SessionRepository,
-    private readonly clock: Clock,
   ) {}
 
   async execute({ actorId, userId, isActive }: SetUserActiveInput): Promise<UserSummaryOutput> {
@@ -27,7 +25,7 @@ export class SetUserActive {
     if (!(await this.users.findById(userId))) throw new UserNotFound();
 
     await this.users.setActive(userId, isActive);
-    if (!isActive) await this.sessions.revokeAllForUser(userId, this.clock.now());
+    if (!isActive) await this.sessions.revokeAllForUser(userId);
 
     const item = await this.users.findListItem(userId);
     if (!item) throw new UserNotFound();

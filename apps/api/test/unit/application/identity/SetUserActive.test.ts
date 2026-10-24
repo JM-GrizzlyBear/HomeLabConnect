@@ -1,36 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { SetUserActive } from "../../../src/application/use-cases/setUserActive.js";
-import { CannotDeactivateSelf, UserNotFound } from "../../../src/domain/identity/identityErrors.js";
+import { SetUserActive } from "../../../../src/application/identity/SetUserActive.js";
+import {
+  CannotDeactivateSelf,
+  UserNotFound,
+} from "../../../../src/domain/identity/identityErrors.js";
 import {
   FixedClock,
   InMemorySessionRepository,
   InMemoryUserRepository,
-} from "../../support/fakes.js";
+} from "../../../support/fakes.js";
 
 function setup() {
   const clock = new FixedClock();
   const users = new InMemoryUserRepository();
-  const sessions = new InMemorySessionRepository(clock);
+  const sessions = new InMemorySessionRepository();
   const admin = users.add({ email: "admin@example.com", role: "admin" });
   return {
     clock,
     users,
     sessions,
     admin,
-    setUserActive: new SetUserActive(users, sessions, clock),
+    setUserActive: new SetUserActive(users, sessions),
   };
 }
 
 describe("SetUserActive", () => {
   it("deactivates a user and signs them out everywhere", async () => {
-    const { clock, users, sessions, admin, setUserActive } = setup();
+    const { users, sessions, admin, setUserActive } = setup();
     const user = users.add({ email: "juan@example.com" });
-    const session = await sessions.create({
-      userId: user.id,
-      expiresAt: new Date("2026-02-01T00:00:00Z"),
-      ipAddress: null,
-      userAgent: null,
-    });
+    const session = sessions.add(user.id);
 
     const output = await setUserActive.execute({
       actorId: admin.id,
@@ -40,7 +38,7 @@ describe("SetUserActive", () => {
 
     expect(output.isActive).toBe(false);
     expect(users.users.get(user.id)?.isActive).toBe(false);
-    expect(sessions.sessions.get(session.id)?.revokedAt).toEqual(clock.now());
+    expect(sessions.isOpen(session)).toBe(false);
   });
 
   it("reactivates a user", async () => {

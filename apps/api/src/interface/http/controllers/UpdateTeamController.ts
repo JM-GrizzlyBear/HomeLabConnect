@@ -1,5 +1,5 @@
 import { medTeamRequestSchema, teamIdParamsSchema } from "@homelabconnect/shared";
-import type { UpdateTeam } from "../../../application/use-cases/updateTeam.js";
+import type { UpdateTeam } from "../../../application/scheduling/UpdateTeam.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentTeam } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";

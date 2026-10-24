@@ -1,7 +1,7 @@
 import { catalogIdParamsSchema } from "@homelabconnect/shared";
-import type { GetLabProcedure } from "../../../application/use-cases/getLabProcedure.js";
+import type { GetLabProcedure } from "../../../application/catalog/GetLabProcedure.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentProcedure } from "../presenters/catalogPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

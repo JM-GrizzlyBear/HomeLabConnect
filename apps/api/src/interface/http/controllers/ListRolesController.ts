@@ -1,4 +1,4 @@
-import type { ListRoles } from "../../../application/use-cases/listRoles.js";
+import type { ListRoles } from "../../../application/access/ListRoles.js";
 import type { Controller, HttpResponse } from "../httpTypes.js";
 import { presentRoleList } from "../presenters/rolePresenter.js";
 

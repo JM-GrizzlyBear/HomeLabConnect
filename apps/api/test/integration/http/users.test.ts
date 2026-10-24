@@ -1,20 +1,12 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../support/testApp.js";
-
-type TestApp = ReturnType<typeof buildTestApp>;
-
-async function loginAs(app: TestApp["app"], email: string, password = "Password123") {
-  const res = await request(app).post("/api/auth/login").send({ email, password });
-  return res.body.token as string;
-}
+import { buildTestApp, sessionCookie, signIn } from "../support/testApp.js";
 
 /** A test app with a signed-in admin. */
 async function asAdmin() {
-  const testApp = buildTestApp();
-  const admin = testApp.users.add({ email: "admin@example.com", role: "admin" });
-  const token = await loginAs(testApp.app, "admin@example.com");
-  const auth = { Authorization: `Bearer ${token}` };
+  const testApp = await buildTestApp();
+  const admin = await testApp.given.user({ email: "admin@example.com", role: "admin" });
+  const auth = await signIn(testApp.app, "admin@example.com");
   return { ...testApp, admin, auth };
 }
 
@@ -34,48 +26,53 @@ describe("permission checks", () => {
     ["patch", "/api/users/00000000-0000-4000-8000-000000000000/status"],
     ["post", "/api/users/00000000-0000-4000-8000-000000000000/temporary-password"],
   ] as const)(
-    "%s %s returns 401 without a token and 403 without the permission",
+    "%s %s returns 401 without a auth and 403 without the permission",
     async (method, path) => {
-      const { app, users } = buildTestApp();
-      users.add({ email: "doc@example.com", role: "doctor" });
-      const token = await loginAs(app, "doc@example.com");
+      const { app, given } = await buildTestApp();
+      await given.user({ email: "doc@example.com", role: "doctor" });
+      const auth = await signIn(app, "doc@example.com");
 
       expect((await request(app)[method](path)).status).toBe(401);
-      const res = await request(app)[method](path).set("Authorization", `Bearer ${token}`);
+      const res = await request(app)[method](path).set(auth);
       expect(res.status).toBe(403);
       expect(res.body.error.code).toBe("forbidden");
     },
   );
 
   it("lets support list users (users.view) but not create staff (users.create)", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "support@example.com", role: "support" });
-    const auth = { Authorization: `Bearer ${await loginAs(app, "support@example.com")}` };
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "support@example.com", role: "support" });
+    const auth = await signIn(app, "support@example.com");
 
     expect((await request(app).get("/api/users").set(auth)).status).toBe(200);
     expect((await request(app).post("/api/users/staff").set(auth).send(newStaff)).status).toBe(403);
   });
 
-  it("applies an override on the user's next request, without signing in again", async () => {
-    const { app, users, access } = buildTestApp();
-    const support = users.add({ email: "support@example.com", role: "support" });
-    const auth = { Authorization: `Bearer ${await loginAs(app, "support@example.com")}` };
+  it("applies a permission change on the user's next request, without signing in again", async () => {
+    const { app, given } = await buildTestApp();
+    const support = await given.user({ email: "support@example.com", role: "support" });
+    const auth = await signIn(app, "support@example.com");
     expect((await request(app).post("/api/users/staff").set(auth).send(newStaff)).status).toBe(403);
 
-    access.overrides.set(support.id, [{ key: "users.create", effect: "grant", expiresAt: null }]);
+    const creator = await given.customRole({
+      name: "Staff Creator",
+      baseRole: "support",
+      entries: [{ key: "users.create", effect: "grant" }],
+    });
+    await given.assignCustomRole(support.id, creator.id);
 
     expect((await request(app).post("/api/users/staff").set(auth).send(newStaff)).status).toBe(201);
   });
 
   it("returns the user's permissions from login and /auth/me", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "support@example.com", role: "support" });
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "support@example.com", role: "support" });
     const login = await request(app)
       .post("/api/auth/login")
       .send({ email: "support@example.com", password: "Password123" });
     const me = await request(app)
       .get("/api/auth/me")
-      .set("Authorization", `Bearer ${login.body.token}`);
+      .set("Cookie", sessionCookie(login.headers["set-cookie"]));
 
     expect(login.body.user.permissions).toContain("users.view");
     expect(login.body.user.permissions).not.toContain("users.create");
@@ -85,9 +82,9 @@ describe("permission checks", () => {
 
 describe("GET /api/users", () => {
   it("lists users with filters and paging", async () => {
-    const { app, users, auth } = await asAdmin();
-    users.add({ email: "juan@example.com" });
-    users.add({ email: "ana@example.com", role: "support", isActive: false });
+    const { app, given, auth } = await asAdmin();
+    await given.user({ email: "juan@example.com" });
+    await given.user({ email: "ana@example.com", role: "support", isActive: false });
 
     const res = await request(app)
       .get("/api/users")
@@ -135,10 +132,8 @@ describe("POST /api/users/staff", () => {
     const { app, auth } = await asAdmin();
     await request(app).post("/api/users/staff").set(auth).send(newStaff);
 
-    const token = await loginAs(app, "ana@example.com", "Temp0001");
-    const profile = await request(app)
-      .get("/api/users/me/profile")
-      .set("Authorization", `Bearer ${token}`);
+    const anaAuth = await signIn(app, "ana@example.com", "Temp0001");
+    const profile = await request(app).get("/api/users/me/profile").set(anaAuth);
 
     expect(profile.body.error.code).toBe("password_change_required");
   });
@@ -154,8 +149,8 @@ describe("POST /api/users/staff", () => {
   });
 
   it("returns 409 for an email that's already registered", async () => {
-    const { app, users, auth } = await asAdmin();
-    users.add({ email: "ana@example.com" });
+    const { app, given, auth } = await asAdmin();
+    await given.user({ email: "ana@example.com" });
 
     const res = await request(app).post("/api/users/staff").set(auth).send(newStaff);
 
@@ -178,9 +173,9 @@ describe("POST /api/users/staff", () => {
 
 describe("PATCH /api/users/:id/status", () => {
   it("deactivates a user and their open session stops working at once", async () => {
-    const { app, users, auth } = await asAdmin();
-    const user = users.add({ email: "juan@example.com" });
-    const userToken = await loginAs(app, "juan@example.com");
+    const { app, given, auth } = await asAdmin();
+    const user = await given.user({ email: "juan@example.com" });
+    const juanAuth = await signIn(app, "juan@example.com");
 
     const res = await request(app)
       .patch(`/api/users/${user.id}/status`)
@@ -189,7 +184,7 @@ describe("PATCH /api/users/:id/status", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ id: user.id, isActive: false });
-    const me = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${userToken}`);
+    const me = await request(app).get("/api/auth/me").set(juanAuth);
     expect(me.status).toBe(401);
     const login = await request(app)
       .post("/api/auth/login")
@@ -198,12 +193,13 @@ describe("PATCH /api/users/:id/status", () => {
   });
 
   it("reactivates a user so they can sign in again", async () => {
-    const { app, users, auth } = await asAdmin();
-    const user = users.add({ email: "juan@example.com", isActive: false });
+    const { app, given, auth } = await asAdmin();
+    const user = await given.user({ email: "juan@example.com", isActive: false });
 
     await request(app).patch(`/api/users/${user.id}/status`).set(auth).send({ isActive: true });
 
-    expect(await loginAs(app, "juan@example.com")).toEqual(expect.any(String));
+    // Throws if the sign-in is refused
+    await signIn(app, "juan@example.com");
   });
 
   it("returns 400 when an admin tries to deactivate themselves", async () => {
@@ -237,8 +233,8 @@ describe("PATCH /api/users/:id/status", () => {
 
 describe("POST /api/users/:id/temporary-password", () => {
   it("replaces an expired temporary password so the user can sign in again", async () => {
-    const { app, users, clock, auth } = await asAdmin();
-    const user = users.add({
+    const { app, given, clock, auth } = await asAdmin();
+    const user = await given.user({
       email: "ana@example.com",
       role: "support",
       mustChangePassword: true,
@@ -258,12 +254,13 @@ describe("POST /api/users/:id/temporary-password", () => {
       temporaryPasswordExpiresAt: "2026-01-22T08:00:00.000Z",
       emailSent: true,
     });
-    expect(await loginAs(app, "ana@example.com", "Temp0001")).toEqual(expect.any(String));
+    // Throws if the sign-in is refused
+    await signIn(app, "ana@example.com", "Temp0001");
   });
 
   it("returns 403 for a deactivated user", async () => {
-    const { app, users, auth } = await asAdmin();
-    const user = users.add({ email: "ana@example.com", isActive: false });
+    const { app, given, auth } = await asAdmin();
+    const user = await given.user({ email: "ana@example.com", isActive: false });
 
     const res = await request(app).post(`/api/users/${user.id}/temporary-password`).set(auth);
 

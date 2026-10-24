@@ -2,7 +2,7 @@ import { ProcedureNotFound } from "../../domain/catalog/catalogErrors.js";
 import type {
   LabProcedureRecord,
   LabProcedureRepository,
-} from "../ports/labProcedureRepository.js";
+} from "../../domain/catalog/LabProcedureRepository.js";
 
 export interface SetLabProcedureActiveInput {
   id: string;

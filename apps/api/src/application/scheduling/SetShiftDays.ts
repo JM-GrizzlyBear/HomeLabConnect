@@ -1,7 +1,7 @@
 import { StaffNotFound } from "../../domain/scheduling/schedulingErrors.js";
 import { checkHours, checkShiftDates, type ShiftHours } from "../../domain/scheduling/shift.js";
-import type { ShiftRepository } from "../ports/shiftRepository.js";
-import type { StaffDirectory } from "../ports/staffDirectory.js";
+import type { ShiftRepository } from "../../domain/scheduling/ShiftRepository.js";
+import type { StaffDirectory } from "../../domain/scheduling/StaffDirectory.js";
 
 export interface SetShiftDaysInput {
   userId: string;

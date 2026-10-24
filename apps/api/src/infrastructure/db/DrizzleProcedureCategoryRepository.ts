@@ -2,7 +2,7 @@ import { asc, count, eq, sql } from "drizzle-orm";
 import type {
   ProcedureCategoryRecord,
   ProcedureCategoryRepository,
-} from "../../application/ports/procedureCategoryRepository.js";
+} from "../../domain/catalog/ProcedureCategoryRepository.js";
 import { CategoryNameTaken } from "../../domain/catalog/catalogErrors.js";
 import type { ProcedureCategory } from "../../domain/catalog/procedureCategory.js";
 import type { Database } from "./client.js";

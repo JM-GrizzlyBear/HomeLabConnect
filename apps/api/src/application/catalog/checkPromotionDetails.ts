@@ -1,7 +1,7 @@
 import { InvalidPromotion, PromotionNameTaken } from "../../domain/catalog/catalogErrors.js";
 import { checkPromotionDetails, type PromotionDetails } from "../../domain/catalog/promotion.js";
-import type { LabProcedureRepository } from "../ports/labProcedureRepository.js";
-import type { PromotionRepository } from "../ports/promotionRepository.js";
+import type { LabProcedureRepository } from "../../domain/catalog/LabProcedureRepository.js";
+import type { PromotionRepository } from "../../domain/catalog/PromotionRepository.js";
 
 /**
  * Shared by create and update: the domain rules, a name no other promotion

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   PatientDetailsNotAllowed,
   PhoneRequired,
-} from "../../../src/domain/identity/identityErrors.js";
-import { assertProfileFitsRole } from "../../../src/domain/identity/profile.js";
+} from "../../../../src/domain/identity/identityErrors.js";
+import { assertProfileFitsRole } from "../../../../src/domain/identity/profile.js";
 
 const changes = { firstName: "Juan", lastName: "Cruz", phone: "09171234567", patient: null };
 

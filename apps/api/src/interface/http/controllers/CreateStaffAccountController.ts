@@ -1,8 +1,8 @@
 import { createStaffRequestSchema } from "@homelabconnect/shared";
-import type { CreateStaffAccount } from "../../../application/use-cases/createStaffAccount.js";
+import type { CreateStaffAccount } from "../../../application/identity/CreateStaffAccount.js";
 import { PermissionDenied } from "../../../domain/access/accessErrors.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentTemporaryPassword } from "../presenters/userAdminPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

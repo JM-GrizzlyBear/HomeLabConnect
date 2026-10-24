@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { TemporaryPasswordExpired } from "../../../src/domain/identity/identityErrors.js";
-import { temporaryPasswordExpiry } from "../../../src/domain/identity/temporaryPassword.js";
-import { User, type UserProps } from "../../../src/domain/identity/user.js";
+import { TemporaryPasswordExpired } from "../../../../src/domain/identity/identityErrors.js";
+import { temporaryPasswordExpiry } from "../../../../src/domain/identity/temporaryPassword.js";
+import { User, type UserProps } from "../../../../src/domain/identity/user.js";
 
 const now = new Date("2026-01-15T08:00:00Z");
 
@@ -18,6 +18,8 @@ function user(overrides: Partial<UserProps>): User {
     temporaryPasswordExpiresAt: null,
     customRoleId: null,
     isActive: true,
+    photoUrl: null,
+    photoStorageKey: null,
     ...overrides,
   });
 }

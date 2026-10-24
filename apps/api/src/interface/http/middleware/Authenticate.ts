@@ -1,7 +1,7 @@
 import type {
   AuthContext,
   AuthenticateRequest,
-} from "../../../application/use-cases/authenticateRequest.js";
+} from "../../../application/identity/AuthenticateRequest.js";
 import {
   PasswordChangeRequired,
   Unauthenticated,
@@ -13,9 +13,7 @@ export interface AuthenticateOptions {
   allowPendingPasswordChange?: boolean;
 }
 
-const BEARER = /^Bearer\s+(\S+)$/i;
-
-/** Reads the bearer token and attaches the AuthContext to the request. */
+/** Reads who is signed in from the session cookie and attaches the AuthContext to the request. */
 export class Authenticate implements Middleware {
   constructor(
     private readonly authenticateRequest: AuthenticateRequest,
@@ -23,11 +21,10 @@ export class Authenticate implements Middleware {
   ) {}
 
   async handle(request: HttpRequest): Promise<HttpRequest> {
-    const header = request.headers.authorization;
-    const token = typeof header === "string" ? BEARER.exec(header)?.[1] : undefined;
-    if (!token) throw new Unauthenticated();
+    const { userId, id: sessionId } = request.session;
+    if (!userId) throw new Unauthenticated();
 
-    const auth = await this.authenticateRequest.execute({ token });
+    const auth = await this.authenticateRequest.execute({ userId, sessionId });
     if (auth.mustChangePassword && !this.options.allowPendingPasswordChange) {
       throw new PasswordChangeRequired();
     }

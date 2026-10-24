@@ -1,6 +1,6 @@
 import type { PromotionStatus } from "../../domain/catalog/promotion.js";
-import type { Clock } from "../ports/clock.js";
-import type { PromotionRepository } from "../ports/promotionRepository.js";
+import type { Clock } from "../ports/Clock.js";
+import type { PromotionRepository } from "../../domain/catalog/PromotionRepository.js";
 import { type PromotionOutput, toPromotionOutput } from "./promotionOutput.js";
 
 export interface ListPromotionsInput {

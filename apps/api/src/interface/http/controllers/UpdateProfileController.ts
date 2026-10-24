@@ -1,7 +1,7 @@
 import { updateProfileRequestSchema } from "@homelabconnect/shared";
-import type { UpdateProfile } from "../../../application/use-cases/updateProfile.js";
+import type { UpdateProfile } from "../../../application/identity/UpdateProfile.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentProfile } from "../presenters/profilePresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

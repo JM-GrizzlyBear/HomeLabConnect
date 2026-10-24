@@ -1,5 +1,5 @@
 import { periodParamsSchema } from "@homelabconnect/shared";
-import type { CopyPreviousRosters } from "../../../application/use-cases/copyPreviousRosters.js";
+import type { CopyPreviousRosters } from "../../../application/scheduling/CopyPreviousRosters.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentCopiedRosters } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";

@@ -4,7 +4,7 @@ import {
   type ClosedDay,
   type ClosedDayDetails,
 } from "../../domain/settings/closedDay.js";
-import type { ClosedDayRepository } from "../ports/closedDayRepository.js";
+import type { ClosedDayRepository } from "../../domain/settings/ClosedDayRepository.js";
 
 export interface AddClosedDayInput extends ClosedDayDetails {
   actorId: string;

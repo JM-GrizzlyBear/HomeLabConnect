@@ -1,5 +1,5 @@
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
-import type { ShiftRepository } from "../../application/ports/shiftRepository.js";
+import type { ShiftRepository } from "../../domain/scheduling/ShiftRepository.js";
 import type { ShiftDay, ShiftHours } from "../../domain/scheduling/shift.js";
 import type { Database } from "./client.js";
 import { employeeShiftDays } from "./schema/index.js";

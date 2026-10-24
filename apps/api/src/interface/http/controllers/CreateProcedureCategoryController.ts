@@ -1,5 +1,5 @@
 import { categoryRequestSchema } from "@homelabconnect/shared";
-import type { CreateProcedureCategory } from "../../../application/use-cases/createProcedureCategory.js";
+import type { CreateProcedureCategory } from "../../../application/catalog/CreateProcedureCategory.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentCategory } from "../presenters/catalogPresenter.js";
 import { parseRequest } from "../requestValidation.js";

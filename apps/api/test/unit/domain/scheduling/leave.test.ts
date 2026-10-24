@@ -8,13 +8,13 @@ import {
   checkLeaveDetails,
   decide,
   type LeaveRequest,
-} from "../../../src/domain/scheduling/leave.js";
+} from "../../../../src/domain/scheduling/leave.js";
 import {
   InvalidLeave,
   LeaveNotCancellable,
   LeaveOverlap,
   NotYourLeaveStep,
-} from "../../../src/domain/scheduling/schedulingErrors.js";
+} from "../../../../src/domain/scheduling/schedulingErrors.js";
 
 const TODAY = "2026-10-01";
 const vacation = {

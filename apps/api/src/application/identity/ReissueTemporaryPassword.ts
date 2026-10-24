@@ -1,12 +1,12 @@
 import { AccountDeactivated, UserNotFound } from "../../domain/identity/identityErrors.js";
 import { assertPasswordIsStrong } from "../../domain/identity/passwordPolicy.js";
 import { temporaryPasswordExpiry } from "../../domain/identity/temporaryPassword.js";
-import type { AccountEmails } from "../ports/accountEmails.js";
-import type { Clock } from "../ports/clock.js";
-import type { PasswordHasher } from "../ports/passwordHasher.js";
-import type { SessionRepository } from "../ports/sessionRepository.js";
-import type { TemporaryPasswordGenerator } from "../ports/temporaryPasswordGenerator.js";
-import type { UserRepository } from "../ports/userRepository.js";
+import type { AccountEmails } from "../ports/AccountEmails.js";
+import type { Clock } from "../ports/Clock.js";
+import type { PasswordHasher } from "../ports/PasswordHasher.js";
+import type { SessionRepository } from "../../domain/identity/SessionRepository.js";
+import type { TemporaryPasswordGenerator } from "../ports/TemporaryPasswordGenerator.js";
+import type { UserRepository } from "../../domain/identity/UserRepository.js";
 import {
   deliverTemporaryPassword,
   type TemporaryPasswordOutput,
@@ -45,7 +45,7 @@ export class ReissueTemporaryPassword {
       await this.hasher.hash(temporaryPassword),
       expiresAt,
     );
-    await this.sessions.revokeAllForUser(user.id, now);
+    await this.sessions.revokeAllForUser(user.id);
 
     const updated = await this.users.findById(user.id);
     if (!updated) throw new UserNotFound();

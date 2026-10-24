@@ -1,5 +1,5 @@
 import { registerPatientRequestSchema } from "@homelabconnect/shared";
-import type { RegisterPatient } from "../../../application/use-cases/registerPatient.js";
+import type { RegisterPatient } from "../../../application/identity/RegisterPatient.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentUser } from "../presenters/authPresenter.js";
 import { parseRequest } from "../requestValidation.js";

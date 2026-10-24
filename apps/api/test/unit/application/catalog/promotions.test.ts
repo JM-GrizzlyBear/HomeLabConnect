@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { CreatePromotion } from "../../../src/application/use-cases/createPromotion.js";
-import { GetPromotion } from "../../../src/application/use-cases/getPromotion.js";
-import { ListLabProcedures } from "../../../src/application/use-cases/listLabProcedures.js";
-import { ListPromotions } from "../../../src/application/use-cases/listPromotions.js";
-import { SetPromotionActive } from "../../../src/application/use-cases/setPromotionActive.js";
-import { UpdatePromotion } from "../../../src/application/use-cases/updatePromotion.js";
+import { CreatePromotion } from "../../../../src/application/catalog/CreatePromotion.js";
+import { GetPromotion } from "../../../../src/application/catalog/GetPromotion.js";
+import { ListLabProcedures } from "../../../../src/application/catalog/ListLabProcedures.js";
+import { ListPromotions } from "../../../../src/application/catalog/ListPromotions.js";
+import { SetPromotionActive } from "../../../../src/application/catalog/SetPromotionActive.js";
+import { UpdatePromotion } from "../../../../src/application/catalog/UpdatePromotion.js";
 import {
   InvalidPromotion,
   PromotionNameTaken,
   PromotionNotFound,
-} from "../../../src/domain/catalog/catalogErrors.js";
+} from "../../../../src/domain/catalog/catalogErrors.js";
 import {
   FixedClock,
   InMemoryLabProcedureRepository,
   InMemoryProcedureCategoryRepository,
   InMemoryPromotionRepository,
-} from "../../support/fakes.js";
+} from "../../../support/fakes.js";
 
 // FixedClock: 2026-01-15, 16:00 in Manila.
 function setup() {

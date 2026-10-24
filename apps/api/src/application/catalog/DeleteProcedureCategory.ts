@@ -1,6 +1,6 @@
 import { CategoryNotFound } from "../../domain/catalog/catalogErrors.js";
 import { assertCategoryEmpty } from "../../domain/catalog/procedureCategory.js";
-import type { ProcedureCategoryRepository } from "../ports/procedureCategoryRepository.js";
+import type { ProcedureCategoryRepository } from "../../domain/catalog/ProcedureCategoryRepository.js";
 
 export interface DeleteProcedureCategoryInput {
   id: string;

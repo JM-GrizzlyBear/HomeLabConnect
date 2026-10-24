@@ -1,4 +1,4 @@
-import type { GetSystemSettings } from "../../../application/use-cases/getSystemSettings.js";
+import type { GetSystemSettings } from "../../../application/settings/GetSystemSettings.js";
 import type { Controller, HttpResponse } from "../httpTypes.js";
 import { presentSettings } from "../presenters/settingsPresenter.js";
 

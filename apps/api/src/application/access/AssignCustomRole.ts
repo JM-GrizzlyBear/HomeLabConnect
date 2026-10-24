@@ -1,9 +1,9 @@
 import { CustomRoleNotFound } from "../../domain/access/accessErrors.js";
 import { assertNotOwnRole, assertRoleFitsUser } from "../../domain/access/customRole.js";
 import { UserNotFound } from "../../domain/identity/identityErrors.js";
-import type { RoleRepository } from "../ports/roleRepository.js";
-import type { UserRepository } from "../ports/userRepository.js";
-import { toUserSummaryOutput, type UserSummaryOutput } from "./userSummaryOutput.js";
+import type { RoleRepository } from "../../domain/access/RoleRepository.js";
+import type { UserRepository } from "../../domain/identity/UserRepository.js";
+import { toUserSummaryOutput, type UserSummaryOutput } from "../identity/userSummaryOutput.js";
 
 export interface AssignCustomRoleInput {
   /** The admin making the change. */

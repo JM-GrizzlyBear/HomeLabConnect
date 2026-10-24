@@ -1,5 +1,8 @@
 import { checkSettings, type SystemSettings } from "../../domain/settings/systemSettings.js";
-import type { SettingsRecord, SettingsRepository } from "../ports/settingsRepository.js";
+import type {
+  SettingsRecord,
+  SettingsRepository,
+} from "../../domain/settings/SettingsRepository.js";
 
 export interface UpdateSystemSettingsInput {
   actorId: string;

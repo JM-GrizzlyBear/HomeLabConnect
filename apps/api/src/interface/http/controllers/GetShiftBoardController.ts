@@ -1,5 +1,5 @@
 import { scheduleRangeQuerySchema } from "@homelabconnect/shared";
-import type { GetShiftBoard } from "../../../application/use-cases/getShiftBoard.js";
+import type { GetShiftBoard } from "../../../application/scheduling/GetShiftBoard.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentShiftBoard } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";

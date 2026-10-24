@@ -1,7 +1,7 @@
 import { checkRoster, type Roster } from "../../domain/scheduling/roster.js";
 import { InvalidRoster, TeamNotFound } from "../../domain/scheduling/schedulingErrors.js";
-import type { MedTeamRepository } from "../ports/medTeamRepository.js";
-import { fullName, type StaffDirectory } from "../ports/staffDirectory.js";
+import type { MedTeamRepository } from "../../domain/scheduling/MedTeamRepository.js";
+import { fullName, type StaffDirectory } from "../../domain/scheduling/StaffDirectory.js";
 
 /**
  * A team lead or admin sets who is on a team, and who leads it, for one

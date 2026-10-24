@@ -7,8 +7,8 @@ import {
   checkProcedureDetails,
   type LabProcedureDetails,
 } from "../../domain/catalog/labProcedure.js";
-import type { LabProcedureRepository } from "../ports/labProcedureRepository.js";
-import type { ProcedureCategoryRepository } from "../ports/procedureCategoryRepository.js";
+import type { LabProcedureRepository } from "../../domain/catalog/LabProcedureRepository.js";
+import type { ProcedureCategoryRepository } from "../../domain/catalog/ProcedureCategoryRepository.js";
 
 /**
  * Shared by create and update: the domain rules, an existing category, and a

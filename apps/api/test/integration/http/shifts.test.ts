@@ -1,30 +1,23 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../support/testApp.js";
-
-type TestApp = ReturnType<typeof buildTestApp>;
-
-async function loginAs(app: TestApp["app"], email: string) {
-  const res = await request(app).post("/api/auth/login").send({ email, password: "Password123" });
-  return { Authorization: `Bearer ${res.body.token as string}` };
-}
+import { buildTestApp, signIn } from "../support/testApp.js";
 
 async function setup() {
-  const testApp = buildTestApp();
-  testApp.users.add({ email: "admin@example.com", role: "admin" });
-  const juan = testApp.users.add({
+  const testApp = await buildTestApp();
+  await testApp.given.user({ email: "admin@example.com", role: "admin" });
+  const juan = await testApp.given.user({
     email: "juan@example.com",
     role: "med_team",
     firstName: "Juan",
     lastName: "Dela Cruz",
   });
-  testApp.users.add({ email: "patient@example.com", role: "patient" });
+  await testApp.given.user({ email: "patient@example.com", role: "patient" });
   return {
     ...testApp,
     juan,
-    admin: await loginAs(testApp.app, "admin@example.com"),
-    medTeam: await loginAs(testApp.app, "juan@example.com"),
-    patient: await loginAs(testApp.app, "patient@example.com"),
+    admin: await signIn(testApp.app, "admin@example.com"),
+    medTeam: await signIn(testApp.app, "juan@example.com"),
+    patient: await signIn(testApp.app, "patient@example.com"),
   };
 }
 
@@ -42,8 +35,8 @@ const statuses = (days: { status: string }[]) => days.map((day) => day.status);
 
 describe("/api/shifts", () => {
   it("gives picked days the same hours, which the person then sees", async () => {
-    const { app, admin, medTeam, juan, closedDays } = await setup();
-    closedDays.add({ date: "2025-10-09", name: "Company outing", repeatsYearly: true });
+    const { app, admin, medTeam, juan, given } = await setup();
+    await given.closedDay({ date: "2025-10-09", name: "Company outing", repeatsYearly: true });
 
     const set = await request(app)
       .put(`/api/shifts/${juan.id}/days`)
@@ -67,8 +60,8 @@ describe("/api/shifts", () => {
   });
 
   it("takes picked days off, and changes the hours of others", async () => {
-    const { app, admin, medTeam, juan, shifts } = await setup();
-    shifts.add(juan.id, week.slice(0, 6), "06:00", "14:00");
+    const { app, admin, medTeam, juan, given } = await setup();
+    await given.shifts(juan.id, week.slice(0, 6), "06:00", "14:00");
 
     await request(app)
       .put(`/api/shifts/${juan.id}/days`)
@@ -95,8 +88,8 @@ describe("/api/shifts", () => {
   });
 
   it("shows everyone's days on the board, by role", async () => {
-    const { app, admin, juan, shifts } = await setup();
-    shifts.add(juan.id, [week[0]!]);
+    const { app, admin, juan, given } = await setup();
+    await given.shifts(juan.id, [week[0]!]);
 
     const board = await request(app)
       .get(`/api/shifts?from=${week[0]}&to=${week[6]}&role=med_team`)

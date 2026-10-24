@@ -1,5 +1,5 @@
 import type { ApprovalStep, LeaveDecision, LeaveRequest } from "../../domain/scheduling/leave.js";
-import { fullName, type StaffDirectory } from "../ports/staffDirectory.js";
+import { fullName, type StaffDirectory } from "../../domain/scheduling/StaffDirectory.js";
 
 export interface LeaveDecisionView extends LeaveDecision {
   approverName: string;

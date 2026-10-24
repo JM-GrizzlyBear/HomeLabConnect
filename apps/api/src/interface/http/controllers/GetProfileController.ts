@@ -1,6 +1,6 @@
-import type { GetProfile } from "../../../application/use-cases/getProfile.js";
+import type { GetProfile } from "../../../application/identity/GetProfile.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentProfile } from "../presenters/profilePresenter.js";
 
 export class GetProfileController implements Controller {

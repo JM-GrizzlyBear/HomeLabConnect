@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { InvalidShift } from "../../../src/domain/scheduling/schedulingErrors.js";
+import { InvalidShift } from "../../../../src/domain/scheduling/schedulingErrors.js";
 import {
   checkHours,
   checkShiftDates,
   effectiveDay,
   type ScheduleSources,
-} from "../../../src/domain/scheduling/shift.js";
+} from "../../../../src/domain/scheduling/shift.js";
 
 const sources: ScheduleSources = {
   shifts: [

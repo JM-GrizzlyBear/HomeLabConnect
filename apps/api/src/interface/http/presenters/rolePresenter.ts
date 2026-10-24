@@ -1,6 +1,6 @@
 import type { CustomRole, PermissionKey, RoleList } from "@homelabconnect/shared";
-import type { CustomRoleRecord } from "../../../application/ports/roleRepository.js";
-import type { RoleListOutput } from "../../../application/use-cases/listRoles.js";
+import type { CustomRoleRecord } from "../../../domain/access/RoleRepository.js";
+import type { RoleListOutput } from "../../../application/access/ListRoles.js";
 import type { HttpResponse } from "../httpTypes.js";
 
 function toCustomRole(role: CustomRoleRecord): CustomRole {

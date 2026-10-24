@@ -1,4 +1,7 @@
-import type { SettingsRecord, SettingsRepository } from "../ports/settingsRepository.js";
+import type {
+  SettingsRecord,
+  SettingsRepository,
+} from "../../domain/settings/SettingsRepository.js";
 
 export class GetSystemSettings {
   constructor(private readonly settings: SettingsRepository) {}

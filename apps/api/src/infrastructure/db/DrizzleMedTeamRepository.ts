@@ -1,5 +1,5 @@
 import { and, asc, eq, sql } from "drizzle-orm";
-import type { MedTeamRepository } from "../../application/ports/medTeamRepository.js";
+import type { MedTeamRepository } from "../../domain/scheduling/MedTeamRepository.js";
 import type { MedTeam, MedTeamDetails } from "../../domain/scheduling/medTeam.js";
 import type { Roster } from "../../domain/scheduling/roster.js";
 import { TeamNameTaken } from "../../domain/scheduling/schedulingErrors.js";

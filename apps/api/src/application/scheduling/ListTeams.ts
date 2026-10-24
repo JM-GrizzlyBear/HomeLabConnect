@@ -1,9 +1,9 @@
 import type { MedTeam } from "../../domain/scheduling/medTeam.js";
 import { rosterPeriodEnd, rosterPeriodOf } from "../../domain/scheduling/roster.js";
 import { businessDate } from "../../domain/time/businessDate.js";
-import type { Clock } from "../ports/clock.js";
-import type { MedTeamRepository } from "../ports/medTeamRepository.js";
-import { fullName, type StaffDirectory } from "../ports/staffDirectory.js";
+import type { Clock } from "../ports/Clock.js";
+import type { MedTeamRepository } from "../../domain/scheduling/MedTeamRepository.js";
+import { fullName, type StaffDirectory } from "../../domain/scheduling/StaffDirectory.js";
 
 export interface Person {
   id: string;

@@ -1,5 +1,5 @@
 import { listUsersQuerySchema } from "@homelabconnect/shared";
-import type { ListUsers } from "../../../application/use-cases/listUsers.js";
+import type { ListUsers } from "../../../application/identity/ListUsers.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentUserList } from "../presenters/userAdminPresenter.js";
 import { parseRequest } from "../requestValidation.js";

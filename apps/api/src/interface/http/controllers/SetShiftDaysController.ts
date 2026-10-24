@@ -1,5 +1,5 @@
 import { shiftDaysRequestSchema, shiftUserParamsSchema } from "@homelabconnect/shared";
-import type { SetShiftDays } from "../../../application/use-cases/setShiftDays.js";
+import type { SetShiftDays } from "../../../application/scheduling/SetShiftDays.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentChangedDays } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";

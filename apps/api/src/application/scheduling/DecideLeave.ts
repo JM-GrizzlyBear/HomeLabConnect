@@ -1,8 +1,8 @@
 import { type Approver, decide } from "../../domain/scheduling/leave.js";
 import { LeaveNotFound } from "../../domain/scheduling/schedulingErrors.js";
-import type { Clock } from "../ports/clock.js";
-import type { LeaveRepository } from "../ports/leaveRepository.js";
-import type { StaffDirectory } from "../ports/staffDirectory.js";
+import type { Clock } from "../ports/Clock.js";
+import type { LeaveRepository } from "../../domain/scheduling/LeaveRepository.js";
+import type { StaffDirectory } from "../../domain/scheduling/StaffDirectory.js";
 import { type LeaveView, toLeaveViews } from "./leaveView.js";
 
 export interface DecideLeaveInput {

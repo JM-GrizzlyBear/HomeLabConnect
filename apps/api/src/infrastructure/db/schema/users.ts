@@ -20,6 +20,9 @@ export const users = pgTable("users", {
   /** Optional custom role on top of role_id. A role can't be deleted while users hold it. */
   customRoleId: uuid("custom_role_id").references(() => customRoles.id, { onDelete: "restrict" }),
   isActive: boolean("is_active").notNull().default(true),
+  /** Profile photo link (Cloudinary, or /api/uploads locally), and the key to delete it. */
+  photoUrl: text("photo_url"),
+  photoStorageKey: text("photo_storage_key"),
   lastLoginAt: timestamptz("last_login_at"),
   ...timestamps,
 });

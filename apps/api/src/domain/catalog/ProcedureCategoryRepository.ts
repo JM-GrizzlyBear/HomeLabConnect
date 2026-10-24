@@ -1,4 +1,4 @@
-import type { ProcedureCategory } from "../../domain/catalog/procedureCategory.js";
+import type { ProcedureCategory } from "./procedureCategory.js";
 
 export interface ProcedureCategoryRecord extends ProcedureCategory {
   /** Active and inactive procedures in the category. */

@@ -1,7 +1,7 @@
 import { assignCustomRoleRequestSchema, userIdParamsSchema } from "@homelabconnect/shared";
-import type { AssignCustomRole } from "../../../application/use-cases/assignCustomRole.js";
+import type { AssignCustomRole } from "../../../application/access/AssignCustomRole.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentUserSummary } from "../presenters/userAdminPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

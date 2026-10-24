@@ -1,6 +1,6 @@
 import type { MedTeam } from "../../domain/scheduling/medTeam.js";
 import { TeamNotFound } from "../../domain/scheduling/schedulingErrors.js";
-import type { MedTeamRepository } from "../ports/medTeamRepository.js";
+import type { MedTeamRepository } from "../../domain/scheduling/MedTeamRepository.js";
 
 export interface SetTeamActiveInput {
   id: string;

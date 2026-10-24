@@ -1,293 +1,34 @@
-// Composition root: the only place that creates concrete classes and wires
-// them together. Everything else receives its dependencies via constructors.
-import { AssignCustomRole } from "./application/use-cases/assignCustomRole.js";
-import { CreateCustomRole } from "./application/use-cases/createCustomRole.js";
-import { DeleteCustomRole } from "./application/use-cases/deleteCustomRole.js";
-import { GetCustomRole } from "./application/use-cases/getCustomRole.js";
-import { ListRoles } from "./application/use-cases/listRoles.js";
-import { UpdateCustomRole } from "./application/use-cases/updateCustomRole.js";
-import { AuthenticateRequest } from "./application/use-cases/authenticateRequest.js";
-import { ChangePassword } from "./application/use-cases/changePassword.js";
-import { CheckSystemHealth } from "./application/use-cases/checkSystemHealth.js";
-import { CreateStaffAccount } from "./application/use-cases/createStaffAccount.js";
-import { GetCurrentUser } from "./application/use-cases/getCurrentUser.js";
-import { GetProfile } from "./application/use-cases/getProfile.js";
-import { ListUsers } from "./application/use-cases/listUsers.js";
-import { Login } from "./application/use-cases/login.js";
-import { Logout } from "./application/use-cases/logout.js";
-import { RegisterPatient } from "./application/use-cases/registerPatient.js";
-import { ResolvePermissions } from "./application/use-cases/resolvePermissions.js";
-import { ReissueTemporaryPassword } from "./application/use-cases/reissueTemporaryPassword.js";
-import { SetUserActive } from "./application/use-cases/setUserActive.js";
-import { UpdateProfile } from "./application/use-cases/updateProfile.js";
-import { CreateLabProcedure } from "./application/use-cases/createLabProcedure.js";
-import { CreateProcedureCategory } from "./application/use-cases/createProcedureCategory.js";
-import { DeleteProcedureCategory } from "./application/use-cases/deleteProcedureCategory.js";
-import { GetLabProcedure } from "./application/use-cases/getLabProcedure.js";
-import { ListLabProcedures } from "./application/use-cases/listLabProcedures.js";
-import { ListProcedureCategories } from "./application/use-cases/listProcedureCategories.js";
-import { RenameProcedureCategory } from "./application/use-cases/renameProcedureCategory.js";
-import { SetLabProcedureActive } from "./application/use-cases/setLabProcedureActive.js";
-import { UpdateLabProcedure } from "./application/use-cases/updateLabProcedure.js";
-import { CreatePromotion } from "./application/use-cases/createPromotion.js";
-import { GetPromotion } from "./application/use-cases/getPromotion.js";
-import { ListPromotions } from "./application/use-cases/listPromotions.js";
-import { SetPromotionActive } from "./application/use-cases/setPromotionActive.js";
-import { UpdatePromotion } from "./application/use-cases/updatePromotion.js";
-import { AddClosedDay } from "./application/use-cases/addClosedDay.js";
-import { GetSystemSettings } from "./application/use-cases/getSystemSettings.js";
-import { ListClosedDays } from "./application/use-cases/listClosedDays.js";
-import { RemoveClosedDay } from "./application/use-cases/removeClosedDay.js";
-import { UpdateClosedDay } from "./application/use-cases/updateClosedDay.js";
-import { UpdateSystemSettings } from "./application/use-cases/updateSystemSettings.js";
-import { CopyPreviousRosters } from "./application/use-cases/copyPreviousRosters.js";
-import { CreateTeam } from "./application/use-cases/createTeam.js";
-import { ListStaff } from "./application/use-cases/listStaff.js";
-import { ListTeams } from "./application/use-cases/listTeams.js";
-import { SaveRoster } from "./application/use-cases/saveRoster.js";
-import { SetTeamActive } from "./application/use-cases/setTeamActive.js";
-import { UpdateTeam } from "./application/use-cases/updateTeam.js";
-import { GetMySchedule } from "./application/use-cases/getMySchedule.js";
-import { GetShiftBoard } from "./application/use-cases/getShiftBoard.js";
-import { SetShiftDays } from "./application/use-cases/setShiftDays.js";
-import { CancelLeave } from "./application/use-cases/cancelLeave.js";
-import { DecideLeave } from "./application/use-cases/decideLeave.js";
-import { ListAllLeave } from "./application/use-cases/listAllLeave.js";
-import { ListLeaveInbox } from "./application/use-cases/listLeaveInbox.js";
-import { ListMyLeave } from "./application/use-cases/listMyLeave.js";
-import { RequestLeave } from "./application/use-cases/requestLeave.js";
-import { BcryptPasswordHasher } from "./infrastructure/auth/bcryptPasswordHasher.js";
-import { CryptoTemporaryPasswordGenerator } from "./infrastructure/auth/cryptoTemporaryPasswordGenerator.js";
-import { JwtTokenService } from "./infrastructure/auth/jwtTokenService.js";
+// Starts the API: reads the settings, connects to Postgres and wires the app with the real services.
+import { buildApp } from "./buildApp.js";
+import { BcryptPasswordHasher } from "./infrastructure/auth/BcryptPasswordHasher.js";
+import { CryptoTemporaryPasswordGenerator } from "./infrastructure/auth/CryptoTemporaryPasswordGenerator.js";
 import { loadConfig } from "./infrastructure/config.js";
 import { createDatabase } from "./infrastructure/db/client.js";
-import { DrizzleAccessRepository } from "./infrastructure/db/drizzleAccessRepository.js";
-import { DrizzleRoleRepository } from "./infrastructure/db/drizzleRoleRepository.js";
-import { DrizzleDatabaseHealthProbe } from "./infrastructure/db/drizzleDatabaseHealthProbe.js";
-import { DrizzleSessionRepository } from "./infrastructure/db/drizzleSessionRepository.js";
-import { DrizzleUserRepository } from "./infrastructure/db/drizzleUserRepository.js";
-import { DrizzleLabProcedureRepository } from "./infrastructure/db/drizzleLabProcedureRepository.js";
-import { DrizzleProcedureCategoryRepository } from "./infrastructure/db/drizzleProcedureCategoryRepository.js";
-import { DrizzlePromotionRepository } from "./infrastructure/db/drizzlePromotionRepository.js";
-import { DrizzleClosedDayRepository } from "./infrastructure/db/drizzleClosedDayRepository.js";
-import { DrizzleSettingsRepository } from "./infrastructure/db/drizzleSettingsRepository.js";
-import { DrizzleMedTeamRepository } from "./infrastructure/db/drizzleMedTeamRepository.js";
-import { DrizzleStaffDirectory } from "./infrastructure/db/drizzleStaffDirectory.js";
-import { DrizzleShiftRepository } from "./infrastructure/db/drizzleShiftRepository.js";
-import { DrizzleLeaveRepository } from "./infrastructure/db/drizzleLeaveRepository.js";
-import { createApp } from "./infrastructure/http/app.js";
-import { NodemailerAccountEmails } from "./infrastructure/mail/nodemailerAccountEmails.js";
-import { SystemClock } from "./infrastructure/systemClock.js";
-import { AssignCustomRoleController } from "./interface/http/controllers/assignCustomRoleController.js";
-import { CreateCustomRoleController } from "./interface/http/controllers/createCustomRoleController.js";
-import { DeleteCustomRoleController } from "./interface/http/controllers/deleteCustomRoleController.js";
-import { GetCustomRoleController } from "./interface/http/controllers/getCustomRoleController.js";
-import { ListRolesController } from "./interface/http/controllers/listRolesController.js";
-import { UpdateCustomRoleController } from "./interface/http/controllers/updateCustomRoleController.js";
-import { ChangePasswordController } from "./interface/http/controllers/changePasswordController.js";
-import { CreateStaffAccountController } from "./interface/http/controllers/createStaffAccountController.js";
-import { GetCurrentUserController } from "./interface/http/controllers/getCurrentUserController.js";
-import { GetProfileController } from "./interface/http/controllers/getProfileController.js";
-import { HealthController } from "./interface/http/controllers/healthController.js";
-import { ListUsersController } from "./interface/http/controllers/listUsersController.js";
-import { LoginController } from "./interface/http/controllers/loginController.js";
-import { LogoutController } from "./interface/http/controllers/logoutController.js";
-import { RegisterPatientController } from "./interface/http/controllers/registerPatientController.js";
-import { ReissueTemporaryPasswordController } from "./interface/http/controllers/reissueTemporaryPasswordController.js";
-import { SetUserActiveController } from "./interface/http/controllers/setUserActiveController.js";
-import { UpdateProfileController } from "./interface/http/controllers/updateProfileController.js";
-import { CreateLabProcedureController } from "./interface/http/controllers/createLabProcedureController.js";
-import { CreateProcedureCategoryController } from "./interface/http/controllers/createProcedureCategoryController.js";
-import { DeleteProcedureCategoryController } from "./interface/http/controllers/deleteProcedureCategoryController.js";
-import { GetLabProcedureController } from "./interface/http/controllers/getLabProcedureController.js";
-import { ListLabProceduresController } from "./interface/http/controllers/listLabProceduresController.js";
-import { ListProcedureCategoriesController } from "./interface/http/controllers/listProcedureCategoriesController.js";
-import { RenameProcedureCategoryController } from "./interface/http/controllers/renameProcedureCategoryController.js";
-import { SetLabProcedureActiveController } from "./interface/http/controllers/setLabProcedureActiveController.js";
-import { UpdateLabProcedureController } from "./interface/http/controllers/updateLabProcedureController.js";
-import { CreatePromotionController } from "./interface/http/controllers/createPromotionController.js";
-import { GetPromotionController } from "./interface/http/controllers/getPromotionController.js";
-import { ListPromotionsController } from "./interface/http/controllers/listPromotionsController.js";
-import { SetPromotionActiveController } from "./interface/http/controllers/setPromotionActiveController.js";
-import { UpdatePromotionController } from "./interface/http/controllers/updatePromotionController.js";
-import { AddClosedDayController } from "./interface/http/controllers/addClosedDayController.js";
-import { GetSystemSettingsController } from "./interface/http/controllers/getSystemSettingsController.js";
-import { ListClosedDaysController } from "./interface/http/controllers/listClosedDaysController.js";
-import { RemoveClosedDayController } from "./interface/http/controllers/removeClosedDayController.js";
-import { UpdateClosedDayController } from "./interface/http/controllers/updateClosedDayController.js";
-import { UpdateSystemSettingsController } from "./interface/http/controllers/updateSystemSettingsController.js";
-import { CopyPreviousRostersController } from "./interface/http/controllers/copyPreviousRostersController.js";
-import { CreateTeamController } from "./interface/http/controllers/createTeamController.js";
-import { ListStaffController } from "./interface/http/controllers/listStaffController.js";
-import { ListTeamsController } from "./interface/http/controllers/listTeamsController.js";
-import { SaveRosterController } from "./interface/http/controllers/saveRosterController.js";
-import { SetTeamActiveController } from "./interface/http/controllers/setTeamActiveController.js";
-import { UpdateTeamController } from "./interface/http/controllers/updateTeamController.js";
-import { GetMyScheduleController } from "./interface/http/controllers/getMyScheduleController.js";
-import { GetShiftBoardController } from "./interface/http/controllers/getShiftBoardController.js";
-import { SetShiftDaysController } from "./interface/http/controllers/setShiftDaysController.js";
-import { CancelLeaveController } from "./interface/http/controllers/cancelLeaveController.js";
-import { DecideLeaveController } from "./interface/http/controllers/decideLeaveController.js";
-import { ListAllLeaveController } from "./interface/http/controllers/listAllLeaveController.js";
-import { ListLeaveInboxController } from "./interface/http/controllers/listLeaveInboxController.js";
-import { ListMyLeaveController } from "./interface/http/controllers/listMyLeaveController.js";
-import { RequestLeaveController } from "./interface/http/controllers/requestLeaveController.js";
-import { Authenticate } from "./interface/http/middleware/authenticate.js";
+import { NodemailerAccountEmails } from "./infrastructure/mail/NodemailerAccountEmails.js";
+import { SystemClock } from "./infrastructure/SystemClock.js";
+import { createPhotoStorage } from "./infrastructure/storage/createPhotoStorage.js";
 
 const config = loadConfig();
 const { db, pool } = createDatabase(config.databaseUrl);
 
-// Adapters
-const clock = new SystemClock();
-const users = new DrizzleUserRepository(db);
-const sessions = new DrizzleSessionRepository(db);
-const hasher = new BcryptPasswordHasher();
-const tokens = new JwtTokenService(config.jwtSecret);
-const access = new DrizzleAccessRepository(db);
-const roles = new DrizzleRoleRepository(db);
-const categories = new DrizzleProcedureCategoryRepository(db);
-const procedures = new DrizzleLabProcedureRepository(db);
-const promotions = new DrizzlePromotionRepository(db);
-const settings = new DrizzleSettingsRepository(db);
-const closedDays = new DrizzleClosedDayRepository(db);
-const teams = new DrizzleMedTeamRepository(db);
-const staff = new DrizzleStaffDirectory(db);
-const shifts = new DrizzleShiftRepository(db);
-const leave = new DrizzleLeaveRepository(db);
-const scheduleRepositories = { shifts, closedDays, leave };
-const temporaryPasswords = new CryptoTemporaryPasswordGenerator();
-const accountEmails = new NodemailerAccountEmails({
-  smtpHost: config.smtpHost,
-  smtpPort: config.smtpPort,
-  from: config.mailFrom,
-  appUrl: config.appUrl,
-});
-
-// Use cases
-const checkSystemHealth = new CheckSystemHealth(new DrizzleDatabaseHealthProbe(db));
-const resolvePermissions = new ResolvePermissions(access, clock);
-const registerPatient = new RegisterPatient(users, hasher);
-const login = new Login(users, sessions, hasher, tokens, clock, resolvePermissions, {
+const app = buildApp({
+  db,
+  pool,
+  clock: new SystemClock(),
+  passwordHasher: new BcryptPasswordHasher(),
+  temporaryPasswords: new CryptoTemporaryPasswordGenerator(),
+  accountEmails: new NodemailerAccountEmails({
+    smtpHost: config.smtpHost,
+    smtpPort: config.smtpPort,
+    from: config.mailFrom,
+    appUrl: config.appUrl,
+  }),
+  sessionSecret: config.sessionSecret,
   sessionTtlMinutes: config.sessionTtlMinutes,
-});
-const logout = new Logout(sessions, clock);
-const getCurrentUser = new GetCurrentUser(users, resolvePermissions);
-const changePassword = new ChangePassword(users, sessions, hasher, clock, resolvePermissions);
-const getProfile = new GetProfile(users);
-const updateProfile = new UpdateProfile(users);
-const authenticateRequest = new AuthenticateRequest(
-  tokens,
-  sessions,
-  users,
-  clock,
-  resolvePermissions,
-);
-const listUsers = new ListUsers(users);
-const createStaffAccount = new CreateStaffAccount(
-  users,
-  hasher,
-  temporaryPasswords,
-  accountEmails,
-  clock,
-  roles,
-);
-const setUserActive = new SetUserActive(users, sessions, clock);
-const reissueTemporaryPassword = new ReissueTemporaryPassword(
-  users,
-  sessions,
-  hasher,
-  temporaryPasswords,
-  accountEmails,
-  clock,
-);
-
-// HTTP
-const app = createApp({
-  corsOrigin: config.appUrl,
-  controllers: {
-    health: new HealthController(checkSystemHealth),
-    registerPatient: new RegisterPatientController(registerPatient),
-    login: new LoginController(login),
-    logout: new LogoutController(logout),
-    getCurrentUser: new GetCurrentUserController(getCurrentUser),
-    changePassword: new ChangePasswordController(changePassword),
-    getProfile: new GetProfileController(getProfile),
-    updateProfile: new UpdateProfileController(updateProfile),
-    listUsers: new ListUsersController(listUsers),
-    createStaffAccount: new CreateStaffAccountController(createStaffAccount),
-    setUserActive: new SetUserActiveController(setUserActive),
-    reissueTemporaryPassword: new ReissueTemporaryPasswordController(reissueTemporaryPassword),
-    listRoles: new ListRolesController(new ListRoles(roles)),
-    getCustomRole: new GetCustomRoleController(new GetCustomRole(roles)),
-    createCustomRole: new CreateCustomRoleController(new CreateCustomRole(roles)),
-    updateCustomRole: new UpdateCustomRoleController(new UpdateCustomRole(roles)),
-    deleteCustomRole: new DeleteCustomRoleController(new DeleteCustomRole(roles)),
-    assignCustomRole: new AssignCustomRoleController(new AssignCustomRole(users, roles)),
-    listProcedureCategories: new ListProcedureCategoriesController(
-      new ListProcedureCategories(categories),
-    ),
-    createProcedureCategory: new CreateProcedureCategoryController(
-      new CreateProcedureCategory(categories),
-    ),
-    renameProcedureCategory: new RenameProcedureCategoryController(
-      new RenameProcedureCategory(categories),
-    ),
-    deleteProcedureCategory: new DeleteProcedureCategoryController(
-      new DeleteProcedureCategory(categories),
-    ),
-    listLabProcedures: new ListLabProceduresController(
-      new ListLabProcedures(procedures, promotions, clock),
-    ),
-    getLabProcedure: new GetLabProcedureController(
-      new GetLabProcedure(procedures, promotions, clock),
-    ),
-    createLabProcedure: new CreateLabProcedureController(
-      new CreateLabProcedure(procedures, categories),
-    ),
-    updateLabProcedure: new UpdateLabProcedureController(
-      new UpdateLabProcedure(procedures, categories),
-    ),
-    setLabProcedureActive: new SetLabProcedureActiveController(
-      new SetLabProcedureActive(procedures),
-    ),
-    listPromotions: new ListPromotionsController(new ListPromotions(promotions, clock)),
-    getPromotion: new GetPromotionController(new GetPromotion(promotions, clock)),
-    createPromotion: new CreatePromotionController(
-      new CreatePromotion(promotions, procedures, clock),
-    ),
-    updatePromotion: new UpdatePromotionController(
-      new UpdatePromotion(promotions, procedures, clock),
-    ),
-    setPromotionActive: new SetPromotionActiveController(new SetPromotionActive(promotions, clock)),
-    getSystemSettings: new GetSystemSettingsController(new GetSystemSettings(settings)),
-    updateSystemSettings: new UpdateSystemSettingsController(new UpdateSystemSettings(settings)),
-    listClosedDays: new ListClosedDaysController(new ListClosedDays(closedDays)),
-    addClosedDay: new AddClosedDayController(new AddClosedDay(closedDays)),
-    updateClosedDay: new UpdateClosedDayController(new UpdateClosedDay(closedDays)),
-    removeClosedDay: new RemoveClosedDayController(new RemoveClosedDay(closedDays)),
-    listTeams: new ListTeamsController(new ListTeams(teams, staff, clock)),
-    createTeam: new CreateTeamController(new CreateTeam(teams)),
-    updateTeam: new UpdateTeamController(new UpdateTeam(teams)),
-    setTeamActive: new SetTeamActiveController(new SetTeamActive(teams)),
-    saveRoster: new SaveRosterController(new SaveRoster(teams, staff)),
-    copyPreviousRosters: new CopyPreviousRostersController(new CopyPreviousRosters(teams, staff)),
-    listStaff: new ListStaffController(new ListStaff(staff)),
-    getMySchedule: new GetMyScheduleController(new GetMySchedule(scheduleRepositories)),
-    getShiftBoard: new GetShiftBoardController(new GetShiftBoard(scheduleRepositories, staff)),
-    setShiftDays: new SetShiftDaysController(new SetShiftDays(shifts, staff)),
-    requestLeave: new RequestLeaveController(new RequestLeave(leave, teams, staff, clock)),
-    listMyLeave: new ListMyLeaveController(new ListMyLeave(leave, staff)),
-    cancelLeave: new CancelLeaveController(new CancelLeave(leave, staff, clock)),
-    listLeaveInbox: new ListLeaveInboxController(new ListLeaveInbox(leave, staff)),
-    decideLeave: new DecideLeaveController(new DecideLeave(leave, staff, clock)),
-    listAllLeave: new ListAllLeaveController(new ListAllLeave(leave, staff)),
-  },
-  middlewares: {
-    authenticate: new Authenticate(authenticateRequest),
-    authenticateAllowingPasswordChange: new Authenticate(authenticateRequest, {
-      allowPendingPasswordChange: true,
-    }),
-  },
+  secureCookie: config.secureCookie,
+  trustProxy: config.trustProxy,
+  photoStorage: createPhotoStorage(config),
+  uploadsDir: config.photoStorage === "local" ? config.uploadsDir : undefined,
 });
 
 const server = app.listen(config.port, () => {

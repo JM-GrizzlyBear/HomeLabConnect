@@ -1,7 +1,7 @@
 import { listLabProceduresQuerySchema } from "@homelabconnect/shared";
-import type { ListLabProcedures } from "../../../application/use-cases/listLabProcedures.js";
+import type { ListLabProcedures } from "../../../application/catalog/ListLabProcedures.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentProcedureList } from "../presenters/catalogPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

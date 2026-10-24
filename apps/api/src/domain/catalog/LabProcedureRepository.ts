@@ -1,5 +1,5 @@
-import type { LabProcedure, LabProcedureDetails } from "../../domain/catalog/labProcedure.js";
-import type { ProcedureCategory } from "../../domain/catalog/procedureCategory.js";
+import type { LabProcedure, LabProcedureDetails } from "./labProcedure.js";
+import type { ProcedureCategory } from "./procedureCategory.js";
 
 /** A procedure with its category's name, for lists and detail pages. */
 export interface LabProcedureRecord extends LabProcedure {

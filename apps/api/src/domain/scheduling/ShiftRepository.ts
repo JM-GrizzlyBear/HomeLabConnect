@@ -1,4 +1,4 @@
-import type { ShiftDay, ShiftHours } from "../../domain/scheduling/shift.js";
+import type { ShiftDay, ShiftHours } from "./shift.js";
 
 /** Port: the days each staff member works, and the hours. */
 export interface ShiftRepository {

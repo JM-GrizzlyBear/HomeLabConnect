@@ -1,5 +1,5 @@
 import { catalogIdParamsSchema, categoryRequestSchema } from "@homelabconnect/shared";
-import type { RenameProcedureCategory } from "../../../application/use-cases/renameProcedureCategory.js";
+import type { RenameProcedureCategory } from "../../../application/catalog/RenameProcedureCategory.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentCategory } from "../presenters/catalogPresenter.js";
 import { parseRequest } from "../requestValidation.js";

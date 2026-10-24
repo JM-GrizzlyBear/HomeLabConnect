@@ -1,7 +1,7 @@
 import { leaveRequestBodySchema } from "@homelabconnect/shared";
-import type { RequestLeave } from "../../../application/use-cases/requestLeave.js";
+import type { RequestLeave } from "../../../application/scheduling/RequestLeave.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentLeave } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

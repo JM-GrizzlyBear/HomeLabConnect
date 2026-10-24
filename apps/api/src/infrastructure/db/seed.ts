@@ -1,8 +1,9 @@
 import type { BaseRole } from "../../domain/identity/baseRole.js";
-import { BcryptPasswordHasher } from "../auth/bcryptPasswordHasher.js";
-import { loadConfig } from "../config.js";
+import { BcryptPasswordHasher } from "../auth/BcryptPasswordHasher.js";
 import { createDatabase } from "./client.js";
-import { employees, patients, roles, users } from "./schema/index.js";
+import { readDatabaseUrl } from "./databaseUrl.js";
+import { employees, patients, users } from "./schema/index.js";
+import { seedBaseRoles } from "./seedBaseRoles.js";
 import { seedCatalog } from "./seedCatalog.js";
 import { seedCustomRoles } from "./seedCustomRoles.js";
 import { seedHolidays } from "./seedHolidays.js";
@@ -15,14 +16,6 @@ import { syncPermissionCatalog } from "./seedPermissions.js";
 // Safe to run repeatedly: existing rows are left untouched.
 const SEED_PASSWORD = "Password123";
 const EMAIL_DOMAIN = "homelabconnect.local";
-
-const baseRoles: { id: BaseRole; name: string }[] = [
-  { id: "patient", name: "Patient" },
-  { id: "med_team", name: "Med Team" },
-  { id: "doctor", name: "Doctor" },
-  { id: "support", name: "Support" },
-  { id: "admin", name: "Admin" },
-];
 
 interface SeedAccount {
   local: string;
@@ -74,11 +67,10 @@ const patientAccounts: SeedAccount[] = Array.from({ length: 20 }, (_, i) => {
   };
 });
 
-const config = loadConfig();
-const { db, pool } = createDatabase(config.databaseUrl);
+const { db, pool } = createDatabase(readDatabaseUrl());
 
 try {
-  await db.insert(roles).values(baseRoles).onConflictDoNothing();
+  const baseRoleCount = await seedBaseRoles(db);
   const permissionCount = await syncPermissionCatalog(db);
   const customRoleIds = await seedCustomRoles(db);
 
@@ -118,7 +110,7 @@ try {
   const staffWithShifts = await seedShifts(db);
 
   console.log(
-    `Seeded ${baseRoles.length} base roles, ${customRoleIds.size} custom roles, ${permissionCount} permissions and ${created} new accounts (password: ${SEED_PASSWORD}).`,
+    `Seeded ${baseRoleCount} base roles, ${customRoleIds.size} custom roles, ${permissionCount} permissions and ${created} new accounts (password: ${SEED_PASSWORD}).`,
   );
   console.log(
     `Added ${proceduresAdded} new lab procedures, ${promotionsAdded} promotions, ${holidaysAdded} holidays, ${teamsAdded} med teams, and shifts for ${staffWithShifts} staff.`,

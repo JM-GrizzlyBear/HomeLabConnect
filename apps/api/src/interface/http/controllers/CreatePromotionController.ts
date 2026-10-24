@@ -1,5 +1,5 @@
 import { promotionRequestSchema } from "@homelabconnect/shared";
-import type { CreatePromotion } from "../../../application/use-cases/createPromotion.js";
+import type { CreatePromotion } from "../../../application/catalog/CreatePromotion.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentPromotion } from "../presenters/catalogPresenter.js";
 import { parseRequest } from "../requestValidation.js";

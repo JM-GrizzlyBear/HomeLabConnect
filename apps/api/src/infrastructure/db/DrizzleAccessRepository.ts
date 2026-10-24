@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import type { AccessRepository } from "../../application/ports/accessRepository.js";
+import type { AccessRepository } from "../../domain/access/AccessRepository.js";
 import type { AccessData } from "../../domain/access/resolveAccess.js";
 import type { BaseRole } from "../../domain/identity/baseRole.js";
 import type { Database } from "./client.js";

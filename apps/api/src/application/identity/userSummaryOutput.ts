@@ -1,5 +1,5 @@
 import type { BaseRole } from "../../domain/identity/baseRole.js";
-import type { UserListItem } from "../ports/userRepository.js";
+import type { UserListItem } from "../../domain/identity/UserRepository.js";
 
 /** A row in the admin user list: never the password hash. */
 export interface UserSummaryOutput {

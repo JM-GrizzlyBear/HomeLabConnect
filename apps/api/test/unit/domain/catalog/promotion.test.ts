@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { InvalidPromotion } from "../../../src/domain/catalog/catalogErrors.js";
+import { InvalidPromotion } from "../../../../src/domain/catalog/catalogErrors.js";
 import {
   bestPromotion,
   checkPromotionDetails,
@@ -7,7 +7,7 @@ import {
   type Promotion,
   type PromotionDetails,
   promotionStatus,
-} from "../../../src/domain/catalog/promotion.js";
+} from "../../../../src/domain/catalog/promotion.js";
 
 const seniorWeek: PromotionDetails = {
   name: "Senior Week",

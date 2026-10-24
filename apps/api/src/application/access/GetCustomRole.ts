@@ -1,5 +1,5 @@
 import { CustomRoleNotFound } from "../../domain/access/accessErrors.js";
-import type { CustomRoleRecord, RoleRepository } from "../ports/roleRepository.js";
+import type { CustomRoleRecord, RoleRepository } from "../../domain/access/RoleRepository.js";
 
 export interface GetCustomRoleInput {
   id: string;

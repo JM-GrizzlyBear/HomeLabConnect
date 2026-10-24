@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { CreateLabProcedure } from "../../../src/application/use-cases/createLabProcedure.js";
-import { CreateProcedureCategory } from "../../../src/application/use-cases/createProcedureCategory.js";
-import { DeleteProcedureCategory } from "../../../src/application/use-cases/deleteProcedureCategory.js";
-import { GetLabProcedure } from "../../../src/application/use-cases/getLabProcedure.js";
-import { ListLabProcedures } from "../../../src/application/use-cases/listLabProcedures.js";
-import { RenameProcedureCategory } from "../../../src/application/use-cases/renameProcedureCategory.js";
-import { SetLabProcedureActive } from "../../../src/application/use-cases/setLabProcedureActive.js";
-import { UpdateLabProcedure } from "../../../src/application/use-cases/updateLabProcedure.js";
+import { CreateLabProcedure } from "../../../../src/application/catalog/CreateLabProcedure.js";
+import { CreateProcedureCategory } from "../../../../src/application/catalog/CreateProcedureCategory.js";
+import { DeleteProcedureCategory } from "../../../../src/application/catalog/DeleteProcedureCategory.js";
+import { GetLabProcedure } from "../../../../src/application/catalog/GetLabProcedure.js";
+import { ListLabProcedures } from "../../../../src/application/catalog/ListLabProcedures.js";
+import { RenameProcedureCategory } from "../../../../src/application/catalog/RenameProcedureCategory.js";
+import { SetLabProcedureActive } from "../../../../src/application/catalog/SetLabProcedureActive.js";
+import { UpdateLabProcedure } from "../../../../src/application/catalog/UpdateLabProcedure.js";
 import {
   CategoryInUse,
   CategoryNameTaken,
@@ -14,13 +14,13 @@ import {
   ProcedureCodeTaken,
   ProcedureNameTaken,
   ProcedureNotFound,
-} from "../../../src/domain/catalog/catalogErrors.js";
+} from "../../../../src/domain/catalog/catalogErrors.js";
 import {
   FixedClock,
   InMemoryLabProcedureRepository,
   InMemoryProcedureCategoryRepository,
   InMemoryPromotionRepository,
-} from "../../support/fakes.js";
+} from "../../../support/fakes.js";
 
 function setup() {
   const categories = new InMemoryProcedureCategoryRepository();

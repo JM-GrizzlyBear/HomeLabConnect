@@ -1,5 +1,5 @@
-import type { MedTeam, MedTeamDetails } from "../../domain/scheduling/medTeam.js";
-import type { Roster } from "../../domain/scheduling/roster.js";
+import type { MedTeam, MedTeamDetails } from "./medTeam.js";
+import type { Roster } from "./roster.js";
 
 /** Port: med teams and their two-week rosters. */
 export interface MedTeamRepository {

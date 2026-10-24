@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { AddClosedDay } from "../../../src/application/use-cases/addClosedDay.js";
-import { GetSystemSettings } from "../../../src/application/use-cases/getSystemSettings.js";
-import { RemoveClosedDay } from "../../../src/application/use-cases/removeClosedDay.js";
-import { UpdateClosedDay } from "../../../src/application/use-cases/updateClosedDay.js";
-import { UpdateSystemSettings } from "../../../src/application/use-cases/updateSystemSettings.js";
+import { AddClosedDay } from "../../../../src/application/settings/AddClosedDay.js";
+import { GetSystemSettings } from "../../../../src/application/settings/GetSystemSettings.js";
+import { RemoveClosedDay } from "../../../../src/application/settings/RemoveClosedDay.js";
+import { UpdateClosedDay } from "../../../../src/application/settings/UpdateClosedDay.js";
+import { UpdateSystemSettings } from "../../../../src/application/settings/UpdateSystemSettings.js";
 import {
   ClosedDayExists,
   ClosedDayNotFound,
   InvalidClosedDay,
   InvalidSettings,
-} from "../../../src/domain/settings/settingsErrors.js";
-import { DEFAULT_SETTINGS } from "../../../src/domain/settings/systemSettings.js";
+} from "../../../../src/domain/settings/settingsErrors.js";
+import { DEFAULT_SETTINGS } from "../../../../src/domain/settings/systemSettings.js";
 import {
   FixedClock,
   InMemoryClosedDayRepository,
   InMemorySettingsRepository,
   InMemoryUserRepository,
-} from "../../support/fakes.js";
+} from "../../../support/fakes.js";
 
 describe("system settings", () => {
   it("starts from the defaults and records who saved a change", async () => {

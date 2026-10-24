@@ -1,46 +1,39 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../support/testApp.js";
-
-type App = ReturnType<typeof buildTestApp>["app"];
-
-async function loginAs(app: App, email: string, password = "Password123") {
-  const res = await request(app).post("/api/auth/login").send({ email, password });
-  return res.body.token as string;
-}
+import { buildTestApp, signIn } from "../support/testApp.js";
 
 describe("PUT /api/auth/password", () => {
   it("changes the password, keeps this session and signs out the others", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com" });
-    const token = await loginAs(app, "juan@example.com");
-    const otherToken = await loginAs(app, "juan@example.com");
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com" });
+    const auth = await signIn(app, "juan@example.com");
+    const otherAuth = await signIn(app, "juan@example.com");
 
     const res = await request(app)
       .put("/api/auth/password")
-      .set("Authorization", `Bearer ${token}`)
+      .set(auth)
       .send({ currentPassword: "Password123", newPassword: "NewPassword456" });
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ email: "juan@example.com", mustChangePassword: false });
-    const me = (t: string) => request(app).get("/api/auth/me").set("Authorization", `Bearer ${t}`);
-    expect((await me(token)).status).toBe(200);
-    expect((await me(otherToken)).status).toBe(401);
-    expect(await loginAs(app, "juan@example.com", "NewPassword456")).toEqual(expect.any(String));
+    const me = (t: Record<string, string>) => request(app).get("/api/auth/me").set(t);
+    expect((await me(auth)).status).toBe(200);
+    expect((await me(otherAuth)).status).toBe(401);
+    // Throws if the new password is refused
+    await signIn(app, "juan@example.com", "NewPassword456");
   });
 
   it("is allowed with a temporary password and unlocks the other routes", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "new@example.com", role: "support", mustChangePassword: true });
-    const token = await loginAs(app, "new@example.com");
-    const profile = () =>
-      request(app).get("/api/users/me/profile").set("Authorization", `Bearer ${token}`);
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "new@example.com", role: "support", mustChangePassword: true });
+    const auth = await signIn(app, "new@example.com");
+    const profile = () => request(app).get("/api/users/me/profile").set(auth);
 
     expect((await profile()).body.error.code).toBe("password_change_required");
 
     const res = await request(app)
       .put("/api/auth/password")
-      .set("Authorization", `Bearer ${token}`)
+      .set(auth)
       .send({ currentPassword: "Password123", newPassword: "NewPassword456" });
 
     expect(res.body.mustChangePassword).toBe(false);
@@ -48,13 +41,13 @@ describe("PUT /api/auth/password", () => {
   });
 
   it("returns 400 for a wrong current password", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com" });
-    const token = await loginAs(app, "juan@example.com");
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com" });
+    const auth = await signIn(app, "juan@example.com");
 
     const res = await request(app)
       .put("/api/auth/password")
-      .set("Authorization", `Bearer ${token}`)
+      .set(auth)
       .send({ currentPassword: "Wrong1234", newPassword: "NewPassword456" });
 
     expect(res.status).toBe(400);
@@ -62,21 +55,21 @@ describe("PUT /api/auth/password", () => {
   });
 
   it("returns 400 for a weak new password", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com" });
-    const token = await loginAs(app, "juan@example.com");
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com" });
+    const auth = await signIn(app, "juan@example.com");
 
     const res = await request(app)
       .put("/api/auth/password")
-      .set("Authorization", `Bearer ${token}`)
+      .set(auth)
       .send({ currentPassword: "Password123", newPassword: "short" });
 
     expect(res.status).toBe(400);
     expect(res.body.error.issues[0].path).toBe("newPassword");
   });
 
-  it("returns 401 without a token", async () => {
-    const res = await request(buildTestApp().app)
+  it("returns 401 when nobody is signed in", async () => {
+    const res = await request((await buildTestApp()).app)
       .put("/api/auth/password")
       .send({ currentPassword: "Password123", newPassword: "NewPassword456" });
     expect(res.status).toBe(401);
@@ -85,16 +78,14 @@ describe("PUT /api/auth/password", () => {
 
 describe("/api/users/me/profile", () => {
   it("returns and updates a patient's profile", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com", firstName: "Juan", phone: "09171234567" });
-    const token = await loginAs(app, "juan@example.com");
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com", firstName: "Juan", phone: "09171234567" });
+    const auth = await signIn(app, "juan@example.com");
 
-    const before = await request(app)
-      .get("/api/users/me/profile")
-      .set("Authorization", `Bearer ${token}`);
+    const before = await request(app).get("/api/users/me/profile").set(auth);
     const after = await request(app)
       .patch("/api/users/me/profile")
-      .set("Authorization", `Bearer ${token}`)
+      .set(auth)
       .send({
         firstName: "Juanito",
         lastName: "Cruz",
@@ -118,13 +109,13 @@ describe("/api/users/me/profile", () => {
   });
 
   it("returns 400 when staff send patient details", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "doc@example.com", role: "doctor" });
-    const token = await loginAs(app, "doc@example.com");
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "doc@example.com", role: "doctor" });
+    const auth = await signIn(app, "doc@example.com");
 
     const res = await request(app)
       .patch("/api/users/me/profile")
-      .set("Authorization", `Bearer ${token}`)
+      .set(auth)
       .send({
         firstName: "Doc",
         lastName: "Reyes",
@@ -137,13 +128,13 @@ describe("/api/users/me/profile", () => {
   });
 
   it("returns 400 with the failing fields for an invalid body", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com", phone: "09171234567" });
-    const token = await loginAs(app, "juan@example.com");
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com", phone: "09171234567" });
+    const auth = await signIn(app, "juan@example.com");
 
     const res = await request(app)
       .patch("/api/users/me/profile")
-      .set("Authorization", `Bearer ${token}`)
+      .set(auth)
       .send({ firstName: "", lastName: "Cruz", phone: "123" });
 
     expect(res.status).toBe(400);
@@ -152,8 +143,8 @@ describe("/api/users/me/profile", () => {
     );
   });
 
-  it("returns 401 without a token", async () => {
-    const res = await request(buildTestApp().app).get("/api/users/me/profile");
+  it("returns 401 when nobody is signed in", async () => {
+    const res = await request((await buildTestApp()).app).get("/api/users/me/profile");
     expect(res.status).toBe(401);
   });
 });

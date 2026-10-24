@@ -1,4 +1,4 @@
-import type { CheckSystemHealth } from "../../../application/use-cases/checkSystemHealth.js";
+import type { CheckSystemHealth } from "../../../application/health/CheckSystemHealth.js";
 import type { Controller, HttpResponse } from "../httpTypes.js";
 import { presentHealth } from "../presenters/healthPresenter.js";
 

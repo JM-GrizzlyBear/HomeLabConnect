@@ -1,6 +1,7 @@
-import type { BaseRole, StaffRole } from "../../domain/identity/baseRole.js";
-import type { PatientDetails, ProfileChanges } from "../../domain/identity/profile.js";
-import type { User } from "../../domain/identity/user.js";
+import type { BaseRole, StaffRole } from "./baseRole.js";
+import type { PatientDetails, ProfileChanges } from "./profile.js";
+import type { StoredPhoto } from "../media/photo.js";
+import type { User } from "./user.js";
 
 export interface NewPatientAccount {
   email: string;
@@ -75,4 +76,6 @@ export interface UserRepository {
   setCustomRole(userId: string, customRoleId: string | null): Promise<void>;
   /** Saves the user's fields and, when `changes.patient` is set, their patient details. */
   updateProfile(userId: string, changes: ProfileChanges): Promise<void>;
+  /** Sets or (with null) clears the profile photo. */
+  setPhoto(userId: string, photo: StoredPhoto | null): Promise<void>;
 }

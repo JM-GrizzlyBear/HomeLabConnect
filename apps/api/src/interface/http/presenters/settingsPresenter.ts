@@ -1,5 +1,5 @@
 import type { ClosedDay, SettingsResponse } from "@homelabconnect/shared";
-import type { SettingsRecord } from "../../../application/ports/settingsRepository.js";
+import type { SettingsRecord } from "../../../domain/settings/SettingsRepository.js";
 import type { ClosedDay as DomainClosedDay } from "../../../domain/settings/closedDay.js";
 import type { HttpResponse } from "../httpTypes.js";
 

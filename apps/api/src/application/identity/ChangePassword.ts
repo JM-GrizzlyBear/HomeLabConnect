@@ -4,11 +4,11 @@ import {
   UserNotFound,
 } from "../../domain/identity/identityErrors.js";
 import { assertPasswordIsStrong } from "../../domain/identity/passwordPolicy.js";
-import type { Clock } from "../ports/clock.js";
-import type { PasswordHasher } from "../ports/passwordHasher.js";
-import type { SessionRepository } from "../ports/sessionRepository.js";
-import type { UserRepository } from "../ports/userRepository.js";
-import type { ResolvePermissions } from "./resolvePermissions.js";
+import type { Clock } from "../ports/Clock.js";
+import type { PasswordHasher } from "../ports/PasswordHasher.js";
+import type { SessionRepository } from "../../domain/identity/SessionRepository.js";
+import type { UserRepository } from "../../domain/identity/UserRepository.js";
+import type { ResolvePermissions } from "../access/ResolvePermissions.js";
 import { type SessionUserOutput, toUserOutput } from "./userOutput.js";
 
 export interface ChangePasswordInput {
@@ -43,7 +43,7 @@ export class ChangePassword {
     if (input.newPassword === input.currentPassword) throw new PasswordUnchanged();
 
     await this.users.updatePassword(user.id, await this.hasher.hash(input.newPassword));
-    await this.sessions.revokeAllForUser(user.id, this.clock.now(), input.sessionId);
+    await this.sessions.revokeAllForUser(user.id, input.sessionId);
 
     const updated = await this.users.findById(user.id);
     if (!updated) throw new UserNotFound();

@@ -1,4 +1,4 @@
-import type { ClosedDay, ClosedDayDetails } from "../../domain/settings/closedDay.js";
+import type { ClosedDay, ClosedDayDetails } from "./closedDay.js";
 
 /** Port: holidays and special days off. There are only a few dozen, so no paging. */
 export interface ClosedDayRepository {

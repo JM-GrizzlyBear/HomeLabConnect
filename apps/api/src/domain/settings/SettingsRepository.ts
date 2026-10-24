@@ -1,4 +1,4 @@
-import type { SystemSettings } from "../../domain/settings/systemSettings.js";
+import type { SystemSettings } from "./systemSettings.js";
 
 export interface SettingsRecord {
   settings: SystemSettings;

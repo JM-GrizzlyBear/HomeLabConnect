@@ -1,7 +1,7 @@
 import { closedDayRequestSchema } from "@homelabconnect/shared";
-import type { AddClosedDay } from "../../../application/use-cases/addClosedDay.js";
+import type { AddClosedDay } from "../../../application/settings/AddClosedDay.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentClosedDay } from "../presenters/settingsPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

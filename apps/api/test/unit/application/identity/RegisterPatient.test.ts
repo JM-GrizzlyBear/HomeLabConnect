@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { EmailAlreadyTaken, WeakPassword } from "../../../src/domain/identity/identityErrors.js";
-import { FakePasswordHasher, InMemoryUserRepository } from "../../support/fakes.js";
+import { EmailAlreadyTaken, WeakPassword } from "../../../../src/domain/identity/identityErrors.js";
+import { FakePasswordHasher, InMemoryUserRepository } from "../../../support/fakes.js";
 import {
   RegisterPatient,
   type RegisterPatientInput,
-} from "../../../src/application/use-cases/registerPatient.js";
+} from "../../../../src/application/identity/RegisterPatient.js";
 
 const input: RegisterPatientInput = {
   email: "Juan@Example.com",

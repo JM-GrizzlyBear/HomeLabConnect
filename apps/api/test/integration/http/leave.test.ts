@@ -1,47 +1,45 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../support/testApp.js";
-
-type TestApp = ReturnType<typeof buildTestApp>;
-
-async function loginAs(app: TestApp["app"], email: string) {
-  const res = await request(app).post("/api/auth/login").send({ email, password: "Password123" });
-  return { Authorization: `Bearer ${res.body.token as string}` };
-}
+import { buildTestApp, signIn } from "../support/testApp.js";
 
 // FixedClock: Thursday 2026-01-15; the roster period starts Monday 2026-01-05.
 async function setup() {
-  const testApp = buildTestApp();
-  const { users, teams, shifts } = testApp;
-  users.add({ email: "admin@example.com", role: "admin", firstName: "System", lastName: "Admin" });
-  const juan = users.add({
+  const testApp = await buildTestApp();
+  const { given } = testApp;
+  await given.user({
+    email: "admin@example.com",
+    role: "admin",
+    firstName: "System",
+    lastName: "Admin",
+  });
+  const juan = await given.user({
     email: "juan@example.com",
     role: "med_team",
     firstName: "Juan",
     lastName: "Dela Cruz",
   });
-  const paolo = users.add({
+  const paolo = await given.user({
     email: "paolo@example.com",
     role: "med_team",
     firstName: "Paolo",
     lastName: "Garcia",
   });
-  users.add({
+  await given.user({
     email: "doctor@example.com",
     role: "doctor",
     firstName: "Maria",
     lastName: "Santos",
   });
-  const makati = teams.add({ name: "Team Makati" });
-  teams.rosters.push({
+  const makati = await given.team({ name: "Team Makati" });
+  await given.roster({
     teamId: makati.id,
     periodStart: "2026-01-05",
     leadUserId: juan.id,
     memberIds: [juan.id, paolo.id],
   });
   // Thu–Sat Jan 15–17, 2026: leave on Fri and Sat should show over these shifts.
-  shifts.add(paolo.id, ["2026-01-15", "2026-01-16", "2026-01-17"]);
-  const as = (email: string) => loginAs(testApp.app, email);
+  await given.shifts(paolo.id, ["2026-01-15", "2026-01-16", "2026-01-17"]);
+  const as = (email: string) => signIn(testApp.app, email);
   return {
     ...testApp,
     juan,

@@ -1,7 +1,7 @@
 import type {
   ProcedureCategoryRecord,
   ProcedureCategoryRepository,
-} from "../ports/procedureCategoryRepository.js";
+} from "../../domain/catalog/ProcedureCategoryRepository.js";
 
 export class ListProcedureCategories {
   constructor(private readonly categories: ProcedureCategoryRepository) {}

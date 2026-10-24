@@ -1,5 +1,5 @@
 import type { Profile } from "@homelabconnect/shared";
-import type { ProfileOutput } from "../../../application/use-cases/profileOutput.js";
+import type { ProfileOutput } from "../../../application/identity/profileOutput.js";
 import type { HttpResponse } from "../httpTypes.js";
 
 export function presentProfile(output: ProfileOutput): HttpResponse<Profile> {

@@ -5,8 +5,8 @@ import {
 } from "../../domain/scheduling/roster.js";
 import { InvalidRoster, RosterPeriodNotEmpty } from "../../domain/scheduling/schedulingErrors.js";
 import { addDays } from "../../domain/time/businessDate.js";
-import type { MedTeamRepository } from "../ports/medTeamRepository.js";
-import type { StaffDirectory } from "../ports/staffDirectory.js";
+import type { MedTeamRepository } from "../../domain/scheduling/MedTeamRepository.js";
+import type { StaffDirectory } from "../../domain/scheduling/StaffDirectory.js";
 
 export interface CopyPreviousRostersInput {
   periodStart: string;

@@ -7,10 +7,10 @@ import {
 import { rosterOf, rosterPeriodOf } from "../../domain/scheduling/roster.js";
 import { StaffNotFound } from "../../domain/scheduling/schedulingErrors.js";
 import { businessDate } from "../../domain/time/businessDate.js";
-import type { Clock } from "../ports/clock.js";
-import type { LeaveRepository } from "../ports/leaveRepository.js";
-import type { MedTeamRepository } from "../ports/medTeamRepository.js";
-import type { StaffDirectory } from "../ports/staffDirectory.js";
+import type { Clock } from "../ports/Clock.js";
+import type { LeaveRepository } from "../../domain/scheduling/LeaveRepository.js";
+import type { MedTeamRepository } from "../../domain/scheduling/MedTeamRepository.js";
+import type { StaffDirectory } from "../../domain/scheduling/StaffDirectory.js";
 import { type LeaveView, toLeaveViews } from "./leaveView.js";
 
 export interface RequestLeaveInput extends LeaveDetails {

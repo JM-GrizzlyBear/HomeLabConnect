@@ -1,6 +1,6 @@
-import type { CustomRole } from "../../domain/access/customRole.js";
-import type { PermissionEntry } from "../../domain/access/resolveAccess.js";
-import type { BaseRole } from "../../domain/identity/baseRole.js";
+import type { CustomRole } from "./customRole.js";
+import type { PermissionEntry } from "./resolveAccess.js";
+import type { BaseRole } from "../identity/baseRole.js";
 
 export interface BaseRoleRecord {
   id: BaseRole;

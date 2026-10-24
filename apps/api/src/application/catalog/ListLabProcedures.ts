@@ -1,6 +1,6 @@
-import type { Clock } from "../ports/clock.js";
-import type { LabProcedureRepository } from "../ports/labProcedureRepository.js";
-import type { PromotionRepository } from "../ports/promotionRepository.js";
+import type { Clock } from "../ports/Clock.js";
+import type { LabProcedureRepository } from "../../domain/catalog/LabProcedureRepository.js";
+import type { PromotionRepository } from "../../domain/catalog/PromotionRepository.js";
 import { type PricedProcedure, priceProcedures } from "./priceProcedures.js";
 
 export interface ListLabProceduresInput {

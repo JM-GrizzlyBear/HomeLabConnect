@@ -1,5 +1,5 @@
 import { catalogIdParamsSchema, labProcedureRequestSchema } from "@homelabconnect/shared";
-import type { UpdateLabProcedure } from "../../../application/use-cases/updateLabProcedure.js";
+import type { UpdateLabProcedure } from "../../../application/catalog/UpdateLabProcedure.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentProcedure } from "../presenters/catalogPresenter.js";
 import { parseRequest } from "../requestValidation.js";

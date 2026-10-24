@@ -1,7 +1,7 @@
 import { systemSettingsSchema } from "@homelabconnect/shared";
-import type { UpdateSystemSettings } from "../../../application/use-cases/updateSystemSettings.js";
+import type { UpdateSystemSettings } from "../../../application/settings/UpdateSystemSettings.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentSettings } from "../presenters/settingsPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

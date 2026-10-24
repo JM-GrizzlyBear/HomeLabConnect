@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { CreateStaffAccount } from "../../../src/application/use-cases/createStaffAccount.js";
-import { CustomRoleMismatch, CustomRoleNotFound } from "../../../src/domain/access/accessErrors.js";
-import { EmailAlreadyTaken, NotAStaffRole } from "../../../src/domain/identity/identityErrors.js";
+import { CreateStaffAccount } from "../../../../src/application/identity/CreateStaffAccount.js";
+import {
+  CustomRoleMismatch,
+  CustomRoleNotFound,
+} from "../../../../src/domain/access/accessErrors.js";
+import {
+  EmailAlreadyTaken,
+  NotAStaffRole,
+} from "../../../../src/domain/identity/identityErrors.js";
 import {
   FakeAccountEmails,
   FakePasswordHasher,
@@ -9,7 +15,7 @@ import {
   FixedClock,
   InMemoryRoleRepository,
   InMemoryUserRepository,
-} from "../../support/fakes.js";
+} from "../../../support/fakes.js";
 
 function setup() {
   const clock = new FixedClock();

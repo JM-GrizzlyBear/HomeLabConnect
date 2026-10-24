@@ -3,7 +3,7 @@ import {
   type AccessData,
   decidePermission,
   effectivePermissions,
-} from "../../../src/domain/access/resolveAccess.js";
+} from "../../../../src/domain/access/resolveAccess.js";
 
 const now = new Date("2026-01-15T08:00:00Z");
 const later = new Date("2026-01-16T08:00:00Z");

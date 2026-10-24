@@ -1,7 +1,7 @@
 import { leaveIdParamsSchema } from "@homelabconnect/shared";
-import type { CancelLeave } from "../../../application/use-cases/cancelLeave.js";
+import type { CancelLeave } from "../../../application/scheduling/CancelLeave.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentLeave } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

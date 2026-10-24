@@ -1,5 +1,9 @@
 import { CustomRoleNameTaken } from "../../domain/access/accessErrors.js";
-import type { CustomRoleRecord, NewCustomRole, RoleRepository } from "../ports/roleRepository.js";
+import type {
+  CustomRoleRecord,
+  NewCustomRole,
+  RoleRepository,
+} from "../../domain/access/RoleRepository.js";
 
 /** An admin creates a role on top of a base role, granting or denying single permissions. */
 export class CreateCustomRole {

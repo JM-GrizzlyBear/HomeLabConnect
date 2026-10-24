@@ -1,5 +1,5 @@
 import type { BaseRole } from "../../domain/identity/baseRole.js";
-import type { UserRepository } from "../ports/userRepository.js";
+import type { UserRepository } from "../../domain/identity/UserRepository.js";
 import { toUserSummaryOutput, type UserSummaryOutput } from "./userSummaryOutput.js";
 
 export interface ListUsersInput {

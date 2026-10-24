@@ -1,6 +1,6 @@
 import type { BaseRole } from "../../domain/identity/baseRole.js";
 import type { PatientDetails } from "../../domain/identity/profile.js";
-import type { UserProfile } from "../ports/userRepository.js";
+import type { UserProfile } from "../../domain/identity/UserRepository.js";
 
 /** What profile use cases return: never the password hash. */
 export interface ProfileOutput {

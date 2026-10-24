@@ -1,6 +1,6 @@
 import type { ComponentStatus } from "../../domain/health/systemHealth.js";
 import { SystemHealth } from "../../domain/health/systemHealth.js";
-import type { DatabaseHealthProbe } from "../ports/databaseHealthProbe.js";
+import type { DatabaseHealthProbe } from "../ports/DatabaseHealthProbe.js";
 
 export interface CheckSystemHealthOutput {
   overall: ComponentStatus;

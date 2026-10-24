@@ -1,8 +1,8 @@
 import { type AppliedPromotion, bestPromotion } from "../../domain/catalog/promotion.js";
 import { businessDate } from "../../domain/time/businessDate.js";
-import type { Clock } from "../ports/clock.js";
-import type { LabProcedureRecord } from "../ports/labProcedureRepository.js";
-import type { PromotionRepository } from "../ports/promotionRepository.js";
+import type { Clock } from "../ports/Clock.js";
+import type { LabProcedureRecord } from "../../domain/catalog/LabProcedureRepository.js";
+import type { PromotionRepository } from "../../domain/catalog/PromotionRepository.js";
 
 /** A procedure with today's best promotion, if one lowers its price. */
 export interface PricedProcedure extends LabProcedureRecord {

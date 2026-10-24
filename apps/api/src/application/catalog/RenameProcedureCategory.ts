@@ -2,7 +2,7 @@ import { CategoryNameTaken, CategoryNotFound } from "../../domain/catalog/catalo
 import type {
   ProcedureCategoryRecord,
   ProcedureCategoryRepository,
-} from "../ports/procedureCategoryRepository.js";
+} from "../../domain/catalog/ProcedureCategoryRepository.js";
 
 export interface RenameProcedureCategoryInput {
   id: string;

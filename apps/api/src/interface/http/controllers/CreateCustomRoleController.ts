@@ -1,5 +1,5 @@
 import { createCustomRoleRequestSchema } from "@homelabconnect/shared";
-import type { CreateCustomRole } from "../../../application/use-cases/createCustomRole.js";
+import type { CreateCustomRole } from "../../../application/access/CreateCustomRole.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentCustomRole } from "../presenters/rolePresenter.js";
 import { parseRequest } from "../requestValidation.js";

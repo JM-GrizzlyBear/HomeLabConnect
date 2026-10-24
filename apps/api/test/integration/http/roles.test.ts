@@ -1,18 +1,11 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../support/testApp.js";
-
-type TestApp = ReturnType<typeof buildTestApp>;
-
-async function loginAs(app: TestApp["app"], email: string) {
-  const res = await request(app).post("/api/auth/login").send({ email, password: "Password123" });
-  return { Authorization: `Bearer ${res.body.token as string}` };
-}
+import { buildTestApp, signIn } from "../support/testApp.js";
 
 async function asAdmin() {
-  const testApp = buildTestApp();
-  testApp.users.add({ email: "admin@example.com", role: "admin" });
-  return { ...testApp, auth: await loginAs(testApp.app, "admin@example.com") };
+  const testApp = await buildTestApp();
+  await testApp.given.user({ email: "admin@example.com", role: "admin" });
+  return { ...testApp, auth: await signIn(testApp.app, "admin@example.com") };
 }
 
 const frontDesk = {
@@ -52,9 +45,9 @@ describe("/api/roles", () => {
   });
 
   it("returns 409 for a duplicate name and for deleting a role in use", async () => {
-    const { app, users, roles, auth } = await asAdmin();
-    const role = roles.add({ name: "Front Desk", baseRole: "support" });
-    users.add({ email: "ana@example.com", role: "support", customRoleId: role.id });
+    const { app, given, auth } = await asAdmin();
+    const role = await given.customRole({ name: "Front Desk", baseRole: "support" });
+    await given.user({ email: "ana@example.com", role: "support", customRoleId: role.id });
 
     const duplicate = await request(app).post("/api/roles").set(auth).send(frontDesk);
     const inUse = await request(app).delete(`/api/roles/${role.id}`).set(auth);
@@ -78,9 +71,9 @@ describe("/api/roles", () => {
   });
 
   it("needs roles.view to read and roles.manage to change", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "support@example.com", role: "support" });
-    const auth = await loginAs(app, "support@example.com");
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "support@example.com", role: "support" });
+    const auth = await signIn(app, "support@example.com");
 
     expect((await request(app).get("/api/roles").set(auth)).status).toBe(403);
     expect((await request(app).post("/api/roles").set(auth).send(frontDesk)).status).toBe(403);
@@ -89,14 +82,14 @@ describe("/api/roles", () => {
 
 describe("PUT /api/users/:id/role", () => {
   it("gives a user their custom role's permissions on the next request", async () => {
-    const { app, users, roles, auth } = await asAdmin();
-    const role = roles.add({
+    const { app, given, auth } = await asAdmin();
+    const role = await given.customRole({
       name: "Front Desk",
       baseRole: "support",
       entries: [{ key: "users.create", effect: "grant" }],
     });
-    const ana = users.add({ email: "ana@example.com", role: "support" });
-    const anaAuth = await loginAs(app, "ana@example.com");
+    const ana = await given.user({ email: "ana@example.com", role: "support" });
+    const anaAuth = await signIn(app, "ana@example.com");
     const me = () => request(app).get("/api/auth/me").set(anaAuth);
     expect((await me()).body.permissions).not.toContain("users.create");
 
@@ -111,9 +104,9 @@ describe("PUT /api/users/:id/role", () => {
   });
 
   it("returns 400 for a role built on another base role", async () => {
-    const { app, users, roles, auth } = await asAdmin();
-    const medTech = roles.add({ name: "Senior Med Tech", baseRole: "med_team" });
-    const ana = users.add({ email: "ana@example.com", role: "support" });
+    const { app, given, auth } = await asAdmin();
+    const medTech = await given.customRole({ name: "Senior Med Tech", baseRole: "med_team" });
+    const ana = await given.user({ email: "ana@example.com", role: "support" });
 
     const res = await request(app)
       .put(`/api/users/${ana.id}/role`)
@@ -137,8 +130,8 @@ describe("POST /api/users/staff with a custom role", () => {
   });
 
   it("creates the account on the custom role", async () => {
-    const { app, roles, auth } = await asAdmin();
-    const role = roles.add({ name: "Front Desk", baseRole: "support" });
+    const { app, given, auth } = await asAdmin();
+    const role = await given.customRole({ name: "Front Desk", baseRole: "support" });
 
     const res = await request(app).post("/api/users/staff").set(auth).send(staff(role.id));
 
@@ -146,11 +139,15 @@ describe("POST /api/users/staff with a custom role", () => {
   });
 
   it("needs roles.assign as well as users.create", async () => {
-    const { app, users, roles, access } = buildTestApp();
-    const role = roles.add({ name: "Front Desk", baseRole: "support" });
-    const creator = users.add({ email: "support@example.com", role: "support" });
-    access.overrides.set(creator.id, [{ key: "users.create", effect: "grant", expiresAt: null }]);
-    const auth = await loginAs(app, "support@example.com");
+    const { app, given } = await buildTestApp();
+    const role = await given.customRole({ name: "Front Desk", baseRole: "support" });
+    const creator = await given.customRole({
+      name: "Staff Creator",
+      baseRole: "support",
+      entries: [{ key: "users.create", effect: "grant" }],
+    });
+    await given.user({ email: "support@example.com", role: "support", customRoleId: creator.id });
+    const auth = await signIn(app, "support@example.com");
 
     const res = await request(app).post("/api/users/staff").set(auth).send(staff(role.id));
 

@@ -1,5 +1,5 @@
 import { userIdParamsSchema } from "@homelabconnect/shared";
-import type { ReissueTemporaryPassword } from "../../../application/use-cases/reissueTemporaryPassword.js";
+import type { ReissueTemporaryPassword } from "../../../application/identity/ReissueTemporaryPassword.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentTemporaryPassword } from "../presenters/userAdminPresenter.js";
 import { parseRequest } from "../requestValidation.js";

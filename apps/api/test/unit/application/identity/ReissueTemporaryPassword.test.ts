@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ReissueTemporaryPassword } from "../../../src/application/use-cases/reissueTemporaryPassword.js";
-import { AccountDeactivated, UserNotFound } from "../../../src/domain/identity/identityErrors.js";
+import { ReissueTemporaryPassword } from "../../../../src/application/identity/ReissueTemporaryPassword.js";
+import {
+  AccountDeactivated,
+  UserNotFound,
+} from "../../../../src/domain/identity/identityErrors.js";
 import {
   FakeAccountEmails,
   FakePasswordHasher,
@@ -8,12 +11,12 @@ import {
   FixedClock,
   InMemorySessionRepository,
   InMemoryUserRepository,
-} from "../../support/fakes.js";
+} from "../../../support/fakes.js";
 
 function setup() {
   const clock = new FixedClock();
   const users = new InMemoryUserRepository();
-  const sessions = new InMemorySessionRepository(clock);
+  const sessions = new InMemorySessionRepository();
   const emails = new FakeAccountEmails();
   const reissue = new ReissueTemporaryPassword(
     users,
@@ -64,18 +67,13 @@ describe("ReissueTemporaryPassword", () => {
   });
 
   it("signs the user out everywhere", async () => {
-    const { clock, users, sessions, reissue } = setup();
+    const { users, sessions, reissue } = setup();
     const user = users.add({ email: "ana@example.com", role: "support" });
-    const session = await sessions.create({
-      userId: user.id,
-      expiresAt: new Date("2026-02-01T00:00:00Z"),
-      ipAddress: null,
-      userAgent: null,
-    });
+    const session = sessions.add(user.id);
 
     await reissue.execute({ userId: user.id });
 
-    expect(sessions.sessions.get(session.id)?.revokedAt).toEqual(clock.now());
+    expect(sessions.isOpen(session)).toBe(false);
   });
 
   it("returns the password to the admin when the email fails", async () => {

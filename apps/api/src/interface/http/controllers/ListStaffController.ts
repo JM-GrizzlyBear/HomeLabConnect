@@ -1,5 +1,5 @@
 import { listStaffQuerySchema } from "@homelabconnect/shared";
-import type { ListStaff } from "../../../application/use-cases/listStaff.js";
+import type { ListStaff } from "../../../application/scheduling/ListStaff.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentStaffList } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";

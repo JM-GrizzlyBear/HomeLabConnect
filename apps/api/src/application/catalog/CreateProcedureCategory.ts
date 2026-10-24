@@ -2,7 +2,7 @@ import { CategoryNameTaken } from "../../domain/catalog/catalogErrors.js";
 import type {
   ProcedureCategoryRecord,
   ProcedureCategoryRepository,
-} from "../ports/procedureCategoryRepository.js";
+} from "../../domain/catalog/ProcedureCategoryRepository.js";
 
 export interface CreateProcedureCategoryInput {
   name: string;

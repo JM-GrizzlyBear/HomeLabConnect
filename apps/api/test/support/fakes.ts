@@ -1,28 +1,26 @@
 // In-memory stand-ins for the ports, for unit and route tests. Not part of the build.
 import { randomUUID } from "node:crypto";
 import { defaultBaseGrants, PERMISSION_KEYS } from "@homelabconnect/shared";
-import type { AccessRepository } from "../../src/application/ports/accessRepository.js";
+import type { AccessRepository } from "../../src/domain/access/AccessRepository.js";
 import type {
   BaseRoleRecord,
   CustomRoleChanges,
   CustomRoleRecord,
   NewCustomRole,
   RoleRepository,
-} from "../../src/application/ports/roleRepository.js";
+} from "../../src/domain/access/RoleRepository.js";
 import { CustomRoleNameTaken } from "../../src/domain/access/accessErrors.js";
 import type { CustomRole } from "../../src/domain/access/customRole.js";
 import type {
   AccountEmails,
   TemporaryPasswordEmail,
-} from "../../src/application/ports/accountEmails.js";
-import type { Clock } from "../../src/application/ports/clock.js";
-import type { PasswordHasher } from "../../src/application/ports/passwordHasher.js";
-import type {
-  NewSession,
-  SessionRepository,
-} from "../../src/application/ports/sessionRepository.js";
-import type { TemporaryPasswordGenerator } from "../../src/application/ports/temporaryPasswordGenerator.js";
-import type { AccessTokenClaims, TokenService } from "../../src/application/ports/tokenService.js";
+} from "../../src/application/ports/AccountEmails.js";
+import type { Clock } from "../../src/application/ports/Clock.js";
+import type { PasswordHasher } from "../../src/application/ports/PasswordHasher.js";
+import type { PhotoStorage, PhotoUpload } from "../../src/application/ports/PhotoStorage.js";
+import type { StoredPhoto } from "../../src/domain/media/photo.js";
+import type { SessionRepository } from "../../src/domain/identity/SessionRepository.js";
+import type { TemporaryPasswordGenerator } from "../../src/application/ports/TemporaryPasswordGenerator.js";
 import type {
   NewPatientAccount,
   NewStaffAccount,
@@ -31,7 +29,7 @@ import type {
   UserListQuery,
   UserProfile,
   UserRepository,
-} from "../../src/application/ports/userRepository.js";
+} from "../../src/domain/identity/UserRepository.js";
 import type {
   AccessData,
   PermissionEntry,
@@ -40,18 +38,17 @@ import type {
 import type { BaseRole } from "../../src/domain/identity/baseRole.js";
 import { EmailAlreadyTaken } from "../../src/domain/identity/identityErrors.js";
 import type { PatientDetails, ProfileChanges } from "../../src/domain/identity/profile.js";
-import type { Session } from "../../src/domain/identity/session.js";
 import { User, type UserProps } from "../../src/domain/identity/user.js";
 import type {
   LabProcedureListPage,
   LabProcedureListQuery,
   LabProcedureRecord,
   LabProcedureRepository,
-} from "../../src/application/ports/labProcedureRepository.js";
+} from "../../src/domain/catalog/LabProcedureRepository.js";
 import type {
   ProcedureCategoryRecord,
   ProcedureCategoryRepository,
-} from "../../src/application/ports/procedureCategoryRepository.js";
+} from "../../src/domain/catalog/ProcedureCategoryRepository.js";
 import {
   CategoryNameTaken,
   ProcedureCodeTaken,
@@ -62,26 +59,14 @@ import type { ProcedureCategory } from "../../src/domain/catalog/procedureCatego
 import type {
   PromotionRecord,
   PromotionRepository,
-} from "../../src/application/ports/promotionRepository.js";
+} from "../../src/domain/catalog/PromotionRepository.js";
 import { PromotionNameTaken } from "../../src/domain/catalog/catalogErrors.js";
 import type { Promotion, PromotionDetails } from "../../src/domain/catalog/promotion.js";
-import type { ClosedDayRepository } from "../../src/application/ports/closedDayRepository.js";
-import type { MedTeamRepository } from "../../src/application/ports/medTeamRepository.js";
-import type { ShiftRepository } from "../../src/application/ports/shiftRepository.js";
-import type { LeaveDays, ShiftDay, ShiftHours } from "../../src/domain/scheduling/shift.js";
-import type {
-  LeaveRepository,
-  NewLeaveRequest,
-} from "../../src/application/ports/leaveRepository.js";
-import type { LeaveRequest, LeaveStatus } from "../../src/domain/scheduling/leave.js";
-import type { StaffDirectory, StaffMember } from "../../src/application/ports/staffDirectory.js";
-import type { MedTeam, MedTeamDetails } from "../../src/domain/scheduling/medTeam.js";
-import type { Roster } from "../../src/domain/scheduling/roster.js";
-import { TeamNameTaken } from "../../src/domain/scheduling/schedulingErrors.js";
+import type { ClosedDayRepository } from "../../src/domain/settings/ClosedDayRepository.js";
 import type {
   SettingsRecord,
   SettingsRepository,
-} from "../../src/application/ports/settingsRepository.js";
+} from "../../src/domain/settings/SettingsRepository.js";
 import type { ClosedDay, ClosedDayDetails } from "../../src/domain/settings/closedDay.js";
 import { DEFAULT_SETTINGS, type SystemSettings } from "../../src/domain/settings/systemSettings.js";
 
@@ -108,22 +93,6 @@ export class FakePasswordHasher implements PasswordHasher {
   }
 }
 
-/** Tokens are readable JSON; expiry is left to the session, like the real service's `exp`. */
-export class FakeTokenService implements TokenService {
-  issue(claims: AccessTokenClaims): string {
-    return `token:${JSON.stringify(claims)}`;
-  }
-
-  verify(token: string): AccessTokenClaims | null {
-    if (!token.startsWith("token:")) return null;
-    try {
-      return JSON.parse(token.slice("token:".length)) as AccessTokenClaims;
-    } catch {
-      return null;
-    }
-  }
-}
-
 /** Records what would have been emailed. Set `failing` to simulate an SMTP outage. */
 export class FakeAccountEmails implements AccountEmails {
   readonly sent: (TemporaryPasswordEmail & { kind: "welcome" | "reissued" })[] = [];
@@ -140,6 +109,23 @@ export class FakeAccountEmails implements AccountEmails {
   private record(kind: "welcome" | "reissued", email: TemporaryPasswordEmail): void {
     if (this.failing) throw new Error("SMTP unavailable");
     this.sent.push({ kind, ...email });
+  }
+}
+
+/** Keeps "saved" photos in memory: keys photo-1, photo-2, ... */
+export class FakePhotoStorage implements PhotoStorage {
+  readonly saved = new Map<string, PhotoUpload>();
+  readonly deleted: string[] = [];
+
+  async save(photo: PhotoUpload): Promise<StoredPhoto> {
+    const storageKey = `photo-${this.saved.size + this.deleted.length + 1}`;
+    this.saved.set(storageKey, photo);
+    return { storageKey, url: `https://photos.example.com/${storageKey}` };
+  }
+
+  async delete(storageKey: string): Promise<void> {
+    this.saved.delete(storageKey);
+    this.deleted.push(storageKey);
   }
 }
 
@@ -177,6 +163,8 @@ export class InMemoryUserRepository implements UserRepository {
       temporaryPasswordExpiresAt: null,
       customRoleId: null,
       isActive: true,
+      photoUrl: null,
+      photoStorageKey: null,
       ...overrides,
     };
     this.users.set(props.id, props);
@@ -289,6 +277,13 @@ export class InMemoryUserRepository implements UserRepository {
     if (props) this.users.set(userId, { ...props, isActive });
   }
 
+  async setPhoto(userId: string, photo: StoredPhoto | null): Promise<void> {
+    const user = this.users.get(userId);
+    if (!user) return;
+    user.photoUrl = photo?.url ?? null;
+    user.photoStorageKey = photo?.storageKey ?? null;
+  }
+
   async updateProfile(userId: string, { patient, ...fields }: ProfileChanges): Promise<void> {
     const props = this.users.get(userId);
     if (props) this.users.set(userId, { ...props, ...fields });
@@ -296,37 +291,24 @@ export class InMemoryUserRepository implements UserRepository {
   }
 }
 
+/** Signed-in sessions as session id → user id. Revoking deletes them, like the real table. */
 export class InMemorySessionRepository implements SessionRepository {
-  readonly sessions = new Map<string, Session>();
+  readonly sessions = new Map<string, string>();
 
-  constructor(private readonly clock: Clock) {}
-
-  async create(session: NewSession): Promise<Session> {
-    const created: Session = {
-      id: randomUUID(),
-      userId: session.userId,
-      createdAt: this.clock.now(),
-      expiresAt: session.expiresAt,
-      revokedAt: null,
-    };
-    this.sessions.set(created.id, created);
-    return created;
+  /** Opens a session for arranging tests and returns its id. */
+  add(userId: string): string {
+    const id = randomUUID();
+    this.sessions.set(id, userId);
+    return id;
   }
 
-  async findById(id: string): Promise<Session | null> {
-    return this.sessions.get(id) ?? null;
+  isOpen(sessionId: string): boolean {
+    return this.sessions.has(sessionId);
   }
 
-  async revoke(id: string, at: Date): Promise<void> {
-    const session = this.sessions.get(id);
-    if (session && !session.revokedAt) session.revokedAt = at;
-  }
-
-  async revokeAllForUser(userId: string, at: Date, exceptSessionId?: string): Promise<void> {
-    for (const session of this.sessions.values()) {
-      if (session.userId === userId && session.id !== exceptSessionId) {
-        session.revokedAt ??= at;
-      }
+  async revokeAllForUser(userId: string, exceptSessionId?: string): Promise<void> {
+    for (const [id, owner] of this.sessions) {
+      if (owner === userId && id !== exceptSessionId) this.sessions.delete(id);
     }
   }
 }
@@ -705,161 +687,5 @@ export class InMemoryClosedDayRepository implements ClosedDayRepository {
 
   async delete(id: string): Promise<void> {
     this.closedDays.delete(id);
-  }
-}
-
-/** Active staff from the users fake. */
-export class InMemoryStaffDirectory implements StaffDirectory {
-  constructor(private readonly users: InMemoryUserRepository) {}
-
-  async listActive(role: BaseRole | null): Promise<StaffMember[]> {
-    return [...this.users.users.values()]
-      .filter((user) => user.isActive && (role ? user.role === role : user.role !== "patient"))
-      .map((user) => ({
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-      }))
-      .sort(
-        (a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName),
-      );
-  }
-}
-
-/** Med teams and rosters in memory. */
-export class InMemoryMedTeamRepository implements MedTeamRepository {
-  readonly teams = new Map<string, MedTeam>();
-  readonly rosters: Roster[] = [];
-
-  /** Adds a team directly, for arranging tests. */
-  add(team: Partial<MedTeam> & { name: string }): MedTeam {
-    const created: MedTeam = { id: randomUUID(), area: null, isActive: true, ...team };
-    this.teams.set(created.id, created);
-    return created;
-  }
-
-  async list(): Promise<MedTeam[]> {
-    return [...this.teams.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  async findById(id: string): Promise<MedTeam | null> {
-    return this.teams.get(id) ?? null;
-  }
-
-  async findByName(name: string): Promise<MedTeam | null> {
-    return [...this.teams.values()].find((team) => sameText(team.name, name)) ?? null;
-  }
-
-  async create(details: MedTeamDetails): Promise<MedTeam> {
-    if (await this.findByName(details.name)) throw new TeamNameTaken();
-    return this.add(details);
-  }
-
-  async update(id: string, details: MedTeamDetails): Promise<void> {
-    const team = this.teams.get(id);
-    if (team) this.teams.set(id, { ...team, ...details });
-  }
-
-  async setActive(id: string, isActive: boolean): Promise<void> {
-    const team = this.teams.get(id);
-    if (team) this.teams.set(id, { ...team, isActive });
-  }
-
-  async listRosters(periodStart: string): Promise<Roster[]> {
-    return this.rosters.filter((roster) => roster.periodStart === periodStart);
-  }
-
-  async saveRoster(roster: Roster): Promise<void> {
-    const index = this.rosters.findIndex(
-      (other) => other.teamId === roster.teamId && other.periodStart === roster.periodStart,
-    );
-    if (index >= 0) this.rosters.splice(index, 1);
-    if (roster.memberIds.length > 0) this.rosters.push(roster);
-  }
-}
-
-/** Shift days in memory, by user id. */
-export class InMemoryShiftRepository implements ShiftRepository {
-  readonly days = new Map<string, ShiftDay[]>();
-
-  /** Gives someone the same hours on each date, for arranging tests. */
-  add(userId: string, dates: readonly string[], start = "06:00", end = "14:00"): void {
-    this.replace(userId, dates, { start, end });
-  }
-
-  async shiftsFor(
-    userIds: readonly string[],
-    from: string,
-    to: string,
-  ): Promise<Map<string, ShiftDay[]>> {
-    return new Map(
-      userIds.map((id) => [
-        id,
-        (this.days.get(id) ?? [])
-          .filter((day) => day.date >= from && day.date <= to)
-          .sort((a, b) => a.date.localeCompare(b.date)),
-      ]),
-    );
-  }
-
-  async setDays(userId: string, dates: readonly string[], hours: ShiftHours | null): Promise<void> {
-    this.replace(userId, dates, hours);
-  }
-
-  private replace(userId: string, dates: readonly string[], hours: ShiftHours | null): void {
-    const kept = (this.days.get(userId) ?? []).filter((day) => !dates.includes(day.date));
-    const added = hours ? dates.map((date) => ({ date, ...hours })) : [];
-    this.days.set(userId, [...kept, ...added]);
-  }
-}
-
-/** Leave requests in memory. */
-export class InMemoryLeaveRepository implements LeaveRepository {
-  readonly requests: LeaveRequest[] = [];
-
-  async create(request: NewLeaveRequest): Promise<LeaveRequest> {
-    const created: LeaveRequest = { ...request, id: randomUUID(), decisions: [] };
-    // Newest first, like the database's ORDER BY created_at DESC.
-    this.requests.unshift(created);
-    return created;
-  }
-
-  async findById(id: string): Promise<LeaveRequest | null> {
-    return this.requests.find((request) => request.id === id) ?? null;
-  }
-
-  async listForUser(userId: string): Promise<LeaveRequest[]> {
-    return this.requests.filter((request) => request.userId === userId);
-  }
-
-  async list(status: LeaveStatus | null): Promise<LeaveRequest[]> {
-    return this.requests.filter((request) => !status || request.status === status);
-  }
-
-  async update(request: LeaveRequest): Promise<void> {
-    const index = this.requests.findIndex((existing) => existing.id === request.id);
-    if (index >= 0) this.requests[index] = request;
-  }
-
-  async approvedDays(
-    userIds: readonly string[],
-    from: string,
-    to: string,
-  ): Promise<Map<string, LeaveDays[]>> {
-    return new Map(
-      userIds.map((id) => [
-        id,
-        this.requests
-          .filter(
-            (request) =>
-              request.userId === id &&
-              request.status === "approved" &&
-              request.startsOn <= to &&
-              request.endsOn >= from,
-          )
-          .map(({ startsOn, endsOn }) => ({ startsOn, endsOn })),
-      ]),
-    );
   }
 }

@@ -1,5 +1,5 @@
 import { asc, desc, eq } from "drizzle-orm";
-import type { ClosedDayRepository } from "../../application/ports/closedDayRepository.js";
+import type { ClosedDayRepository } from "../../domain/settings/ClosedDayRepository.js";
 import type { ClosedDay, ClosedDayDetails } from "../../domain/settings/closedDay.js";
 import type { Database } from "./client.js";
 import { holidays } from "./schema/index.js";

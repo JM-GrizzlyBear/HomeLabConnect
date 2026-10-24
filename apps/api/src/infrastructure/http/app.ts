@@ -1,22 +1,36 @@
-import cors from "cors";
-import express, { type ErrorRequestHandler, type Express } from "express";
+import express, { type ErrorRequestHandler, type Express, type RequestHandler } from "express";
 import helmet from "helmet";
 import { presentError, presentNotFound } from "../../interface/http/presenters/errorPresenter.js";
 import { type Controllers, createRouter, type Middlewares } from "./routes.js";
 
 export interface AppOptions {
-  corsOrigin: string;
   controllers: Controllers;
   middlewares: Middlewares;
+  /** express-session, backed by Postgres (see session.ts). */
+  session: RequestHandler;
+  /** How many proxies (Netlify, Render) to trust for X-Forwarded-For / -Proto; 0 for none. */
+  trustProxy: number;
+  /** Photos kept on this machine (PHOTO_STORAGE=local), served at /api/uploads. */
+  uploadsDir?: string;
 }
 
-export function createApp({ corsOrigin, controllers, middlewares }: AppOptions): Express {
+// No CORS: the browser always calls the API on its own address
+// (Vite forwards /api in development, Netlify in production).
+export function createApp({
+  controllers,
+  middlewares,
+  session,
+  trustProxy,
+  uploadsDir,
+}: AppOptions): Express {
   const app = express();
 
   app.disable("x-powered-by");
+  if (trustProxy > 0) app.set("trust proxy", trustProxy);
   app.use(helmet());
-  app.use(cors({ origin: corsOrigin, credentials: true }));
   app.use(express.json({ limit: "1mb" }));
+  app.use(session);
+  if (uploadsDir) app.use("/api/uploads", express.static(uploadsDir, { index: false }));
 
   app.use("/api", createRouter(controllers, middlewares));
 

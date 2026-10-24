@@ -1,9 +1,9 @@
 import { effectiveDay, type ScheduleDay } from "../../domain/scheduling/shift.js";
 import { InvalidDateRange } from "../../domain/scheduling/schedulingErrors.js";
 import { addDays } from "../../domain/time/businessDate.js";
-import type { ClosedDayRepository } from "../ports/closedDayRepository.js";
-import type { LeaveRepository } from "../ports/leaveRepository.js";
-import type { ShiftRepository } from "../ports/shiftRepository.js";
+import type { ClosedDayRepository } from "../../domain/settings/ClosedDayRepository.js";
+import type { LeaveRepository } from "../../domain/scheduling/LeaveRepository.js";
+import type { ShiftRepository } from "../../domain/scheduling/ShiftRepository.js";
 
 /** The longest range a schedule request may cover. */
 export const MAX_SCHEDULE_DAYS = 62;

@@ -1,4 +1,4 @@
-import type { Promotion, PromotionDetails } from "../../domain/catalog/promotion.js";
+import type { Promotion, PromotionDetails } from "./promotion.js";
 
 export interface PromotionRecord extends Promotion {
   createdAt: Date;

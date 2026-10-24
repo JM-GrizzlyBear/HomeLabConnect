@@ -1,21 +1,14 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../support/testApp.js";
-
-type TestApp = ReturnType<typeof buildTestApp>;
-
-async function loginAs(app: TestApp["app"], email: string) {
-  const res = await request(app).post("/api/auth/login").send({ email, password: "Password123" });
-  return { Authorization: `Bearer ${res.body.token as string}` };
-}
+import { buildTestApp, signIn } from "../support/testApp.js";
 
 async function setup() {
-  const testApp = buildTestApp();
-  testApp.users.add({ email: "admin@example.com", role: "admin" });
-  testApp.users.add({ email: "patient@example.com", role: "patient" });
-  testApp.users.add({ email: "doctor@example.com", role: "doctor" });
-  const hematology = testApp.categories.add("Hematology");
-  const cbc = testApp.procedures.add({
+  const testApp = await buildTestApp();
+  await testApp.given.user({ email: "admin@example.com", role: "admin" });
+  await testApp.given.user({ email: "patient@example.com", role: "patient" });
+  await testApp.given.user({ email: "doctor@example.com", role: "doctor" });
+  const hematology = await testApp.given.category("Hematology");
+  const cbc = await testApp.given.procedure({
     code: "CBC",
     categoryId: hematology.id,
     priceCentavos: 35_000,
@@ -23,9 +16,9 @@ async function setup() {
   return {
     ...testApp,
     cbc,
-    admin: await loginAs(testApp.app, "admin@example.com"),
-    patient: await loginAs(testApp.app, "patient@example.com"),
-    doctor: await loginAs(testApp.app, "doctor@example.com"),
+    admin: await signIn(testApp.app, "admin@example.com"),
+    patient: await signIn(testApp.app, "patient@example.com"),
+    doctor: await signIn(testApp.app, "doctor@example.com"),
   };
 }
 
@@ -76,14 +69,14 @@ describe("/api/catalog/promotions", () => {
     expect(created.body).toMatchObject({ endsOn: null, status: "running" });
 
     clock.advanceMinutes(5 * 365 * 24 * 60); // five years later, so sign in again
-    const patient = await loginAs(app, "patient@example.com");
+    const patient = await signIn(app, "patient@example.com");
     const res = await request(app).get(`/api/catalog/procedures/${cbc.id}`).set(patient);
     expect(res.body.promotion).toMatchObject({ discountedPriceCentavos: 28_000 });
   });
 
   it("updates a promotion's procedures", async () => {
-    const { app, admin, cbc, promotions } = await setup();
-    const existing = promotions.add({ name: "Senior Week" });
+    const { app, admin, cbc, given } = await setup();
+    const existing = await given.promotion({ name: "Senior Week" });
 
     const res = await request(app)
       .put(`/api/catalog/promotions/${existing.id}`)
@@ -95,9 +88,9 @@ describe("/api/catalog/promotions", () => {
   });
 
   it("shows patients running promotions only, and refuses their changes", async () => {
-    const { app, patient, promotions } = await setup();
-    promotions.add({ name: "January Sale" });
-    const later = promotions.add({
+    const { app, patient, given } = await setup();
+    await given.promotion({ name: "January Sale" });
+    const later = await given.promotion({
       name: "March Sale",
       startsOn: "2026-03-01",
       endsOn: "2026-03-31",
@@ -138,8 +131,8 @@ describe("/api/catalog/promotions", () => {
   });
 
   it("returns 409 promotion_name_taken for a duplicate name", async () => {
-    const { app, admin, promotions } = await setup();
-    promotions.add({ name: "senior week" });
+    const { app, admin, given } = await setup();
+    await given.promotion({ name: "senior week" });
 
     const res = await request(app).post("/api/catalog/promotions").set(admin).send(seniorWeek);
 

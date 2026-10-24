@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type {
   SettingsRecord,
   SettingsRepository,
-} from "../../application/ports/settingsRepository.js";
+} from "../../domain/settings/SettingsRepository.js";
 import { DEFAULT_SETTINGS, type SystemSettings } from "../../domain/settings/systemSettings.js";
 import type { Database } from "./client.js";
 import { systemSettings, users } from "./schema/index.js";

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { CategoryInUse, InvalidProcedure } from "../../../src/domain/catalog/catalogErrors.js";
+import { CategoryInUse, InvalidProcedure } from "../../../../src/domain/catalog/catalogErrors.js";
 import {
   checkProcedureDetails,
   type LabProcedureDetails,
-} from "../../../src/domain/catalog/labProcedure.js";
-import { assertCategoryEmpty } from "../../../src/domain/catalog/procedureCategory.js";
+} from "../../../../src/domain/catalog/labProcedure.js";
+import { assertCategoryEmpty } from "../../../../src/domain/catalog/procedureCategory.js";
 
 const cbc: LabProcedureDetails = {
   code: "CBC",

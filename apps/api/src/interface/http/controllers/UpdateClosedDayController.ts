@@ -1,5 +1,5 @@
 import { catalogIdParamsSchema, closedDayRequestSchema } from "@homelabconnect/shared";
-import type { UpdateClosedDay } from "../../../application/use-cases/updateClosedDay.js";
+import type { UpdateClosedDay } from "../../../application/settings/UpdateClosedDay.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentClosedDay } from "../presenters/settingsPresenter.js";
 import { parseRequest } from "../requestValidation.js";

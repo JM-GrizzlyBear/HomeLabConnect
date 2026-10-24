@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import type { PasswordHasher } from "../../application/ports/passwordHasher.js";
+import type { PasswordHasher } from "../../application/ports/PasswordHasher.js";
 
 export class BcryptPasswordHasher implements PasswordHasher {
   private dummyHash: Promise<string> | undefined;

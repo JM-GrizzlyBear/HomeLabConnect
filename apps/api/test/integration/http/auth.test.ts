@@ -1,6 +1,6 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../support/testApp.js";
+import { buildTestApp, signIn } from "../support/testApp.js";
 
 const registration = {
   email: "juan@example.com",
@@ -10,14 +10,9 @@ const registration = {
   phone: "09171234567",
 };
 
-async function loginAs(app: ReturnType<typeof buildTestApp>["app"], email: string) {
-  const res = await request(app).post("/api/auth/login").send({ email, password: "Password123" });
-  return res.body.token as string;
-}
-
 describe("POST /api/auth/register", () => {
   it("creates a patient account", async () => {
-    const { app } = buildTestApp();
+    const { app } = await buildTestApp();
     const res = await request(app).post("/api/auth/register").send(registration);
 
     expect(res.status).toBe(201);
@@ -26,8 +21,8 @@ describe("POST /api/auth/register", () => {
   });
 
   it("returns 409 for a taken email", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com" });
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com" });
 
     const res = await request(app).post("/api/auth/register").send(registration);
 
@@ -36,7 +31,7 @@ describe("POST /api/auth/register", () => {
   });
 
   it("returns 400 with the failing fields for an invalid body", async () => {
-    const { app } = buildTestApp();
+    const { app } = await buildTestApp();
     const res = await request(app)
       .post("/api/auth/register")
       .send({ ...registration, email: "nope", password: "short" });
@@ -50,23 +45,25 @@ describe("POST /api/auth/register", () => {
 });
 
 describe("POST /api/auth/login", () => {
-  it("returns a token and the user", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com" });
+  it("starts a session in an httpOnly cookie and returns the user", async () => {
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com" });
 
     const res = await request(app)
       .post("/api/auth/login")
       .send({ email: "juan@example.com", password: "Password123" });
 
     expect(res.status).toBe(200);
-    expect(res.body.token).toEqual(expect.any(String));
-    expect(res.body.expiresAt).toBe("2026-01-15T09:00:00.000Z");
-    expect(res.body.user.email).toBe("juan@example.com");
+    expect(res.body).toEqual({ user: expect.objectContaining({ email: "juan@example.com" }) });
+    const cookie = [res.headers["set-cookie"] ?? []].flat().join("; ");
+    expect(cookie).toMatch(/^hlc.sid=/);
+    expect(cookie).toMatch(/HttpOnly/i);
+    expect(cookie).toMatch(/SameSite=Lax/i);
   });
 
   it("returns 401 for wrong credentials", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com" });
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com" });
 
     const res = await request(app)
       .post("/api/auth/login")
@@ -77,8 +74,8 @@ describe("POST /api/auth/login", () => {
   });
 
   it("returns 403 for a deactivated account", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com", isActive: false });
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com", isActive: false });
 
     const res = await request(app)
       .post("/api/auth/login")
@@ -91,44 +88,42 @@ describe("POST /api/auth/login", () => {
 
 describe("GET /api/auth/me", () => {
   it("returns the signed-in user", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com", role: "admin" });
-    const token = await loginAs(app, "juan@example.com");
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com", role: "admin" });
+    const auth = await signIn(app, "juan@example.com");
 
-    const res = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${token}`);
+    const res = await request(app).get("/api/auth/me").set(auth);
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ email: "juan@example.com", role: "admin" });
   });
 
   it("works with a temporary password so the client can prompt for a change", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "new@example.com", role: "support", mustChangePassword: true });
-    const token = await loginAs(app, "new@example.com");
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "new@example.com", role: "support", mustChangePassword: true });
+    const auth = await signIn(app, "new@example.com");
 
-    const res = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${token}`);
+    const res = await request(app).get("/api/auth/me").set(auth);
 
     expect(res.status).toBe(200);
     expect(res.body.mustChangePassword).toBe(true);
   });
 
-  it("returns 401 without a token", async () => {
-    const res = await request(buildTestApp().app).get("/api/auth/me");
+  it("returns 401 when nobody is signed in", async () => {
+    const res = await request((await buildTestApp()).app).get("/api/auth/me");
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe("unauthenticated");
   });
 });
 
 describe("POST /api/auth/logout", () => {
-  it("revokes the session so the token stops working", async () => {
-    const { app, users } = buildTestApp();
-    users.add({ email: "juan@example.com" });
-    const token = await loginAs(app, "juan@example.com");
+  it("ends the session so the cookie stops working", async () => {
+    const { app, given } = await buildTestApp();
+    await given.user({ email: "juan@example.com" });
+    const auth = await signIn(app, "juan@example.com");
 
-    const logout = await request(app)
-      .post("/api/auth/logout")
-      .set("Authorization", `Bearer ${token}`);
-    const me = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${token}`);
+    const logout = await request(app).post("/api/auth/logout").set(auth);
+    const me = await request(app).get("/api/auth/me").set(auth);
 
     expect(logout.status).toBe(204);
     expect(me.status).toBe(401);

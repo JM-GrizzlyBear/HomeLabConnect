@@ -1,7 +1,7 @@
 import { effectivePermissions } from "../../domain/access/resolveAccess.js";
 import type { User } from "../../domain/identity/user.js";
-import type { AccessRepository } from "../ports/accessRepository.js";
-import type { Clock } from "../ports/clock.js";
+import type { AccessRepository } from "../../domain/access/AccessRepository.js";
+import type { Clock } from "../ports/Clock.js";
 
 /**
  * A user's effective permission keys right now. Computed on every request, so

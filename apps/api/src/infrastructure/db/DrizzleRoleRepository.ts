@@ -5,7 +5,7 @@ import type {
   CustomRoleRecord,
   NewCustomRole,
   RoleRepository,
-} from "../../application/ports/roleRepository.js";
+} from "../../domain/access/RoleRepository.js";
 import { CustomRoleNameTaken } from "../../domain/access/accessErrors.js";
 import type { CustomRole } from "../../domain/access/customRole.js";
 import type { PermissionEntry } from "../../domain/access/resolveAccess.js";

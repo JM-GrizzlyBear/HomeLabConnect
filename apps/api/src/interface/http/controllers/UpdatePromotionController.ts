@@ -1,5 +1,5 @@
 import { catalogIdParamsSchema, promotionRequestSchema } from "@homelabconnect/shared";
-import type { UpdatePromotion } from "../../../application/use-cases/updatePromotion.js";
+import type { UpdatePromotion } from "../../../application/catalog/UpdatePromotion.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentPromotion } from "../presenters/catalogPresenter.js";
 import { parseRequest } from "../requestValidation.js";

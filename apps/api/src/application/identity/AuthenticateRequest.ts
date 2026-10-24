@@ -1,17 +1,15 @@
 import type { BaseRole } from "../../domain/identity/baseRole.js";
 import { Unauthenticated } from "../../domain/identity/identityErrors.js";
-import { isSessionActive } from "../../domain/identity/session.js";
-import type { Clock } from "../ports/clock.js";
-import type { SessionRepository } from "../ports/sessionRepository.js";
-import type { TokenService } from "../ports/tokenService.js";
-import type { UserRepository } from "../ports/userRepository.js";
-import type { ResolvePermissions } from "./resolvePermissions.js";
+import type { UserRepository } from "../../domain/identity/UserRepository.js";
+import type { ResolvePermissions } from "../access/ResolvePermissions.js";
 
 export interface AuthenticateRequestInput {
-  token: string;
+  /** The user the session belongs to. */
+  userId: string;
+  sessionId: string;
 }
 
-/** Who is making the request. Role and flags come from the database, not the token. */
+/** Who is making the request. Role and flags come from the database, not the session. */
 export interface AuthContext {
   userId: string;
   sessionId: string;
@@ -22,39 +20,23 @@ export interface AuthContext {
 }
 
 /**
- * Turns a bearer token into an AuthContext. The token alone isn't enough: its
- * session must still be active and its user still active, so logout and
- * deactivation take effect immediately.
+ * Turns a signed-in session into an AuthContext. The user is loaded on every
+ * request, so a deactivation or a permission change applies on their next click.
  */
 export class AuthenticateRequest {
   constructor(
-    private readonly tokens: TokenService,
-    private readonly sessions: SessionRepository,
     private readonly users: UserRepository,
-    private readonly clock: Clock,
     private readonly permissions: ResolvePermissions,
   ) {}
 
   async execute(input: AuthenticateRequestInput): Promise<AuthContext> {
-    const claims = this.tokens.verify(input.token);
-    if (!claims) throw new Unauthenticated();
-
-    const session = await this.sessions.findById(claims.sessionId);
-    if (
-      !session ||
-      session.userId !== claims.userId ||
-      !isSessionActive(session, this.clock.now())
-    ) {
-      throw new Unauthenticated();
-    }
-
-    const user = await this.users.findById(claims.userId);
+    const user = await this.users.findById(input.userId);
     if (!user) throw new Unauthenticated();
     user.assertCanSignIn();
 
     return {
       userId: user.id,
-      sessionId: session.id,
+      sessionId: input.sessionId,
       role: user.role,
       mustChangePassword: user.mustChangePassword,
       permissions: new Set(await this.permissions.execute(user)),

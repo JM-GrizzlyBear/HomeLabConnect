@@ -1,5 +1,5 @@
 import { listLeaveQuerySchema } from "@homelabconnect/shared";
-import type { ListAllLeave } from "../../../application/use-cases/listAllLeave.js";
+import type { ListAllLeave } from "../../../application/scheduling/ListAllLeave.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentLeaveList } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";

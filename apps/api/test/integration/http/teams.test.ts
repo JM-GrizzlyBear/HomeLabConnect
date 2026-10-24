@@ -1,50 +1,43 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../support/testApp.js";
-
-type TestApp = ReturnType<typeof buildTestApp>;
-
-async function loginAs(app: TestApp["app"], email: string) {
-  const res = await request(app).post("/api/auth/login").send({ email, password: "Password123" });
-  return { Authorization: `Bearer ${res.body.token as string}` };
-}
+import { buildTestApp, signIn } from "../support/testApp.js";
 
 // FixedClock is 2026-01-15, so "now" is in the period starting Monday 2026-01-05.
 const THIS_PERIOD = "2026-01-05";
 const NEXT_PERIOD = "2026-01-19";
 
 async function setup() {
-  const testApp = buildTestApp();
-  const { users, roles, teams } = testApp;
-  const seniorMedTech = roles.add({
+  const testApp = await buildTestApp();
+  const { given } = testApp;
+  const seniorMedTech = await given.customRole({
     name: "Senior Med Tech",
     baseRole: "med_team",
     entries: [{ key: "teams.roster", effect: "grant" }],
   });
-  users.add({ email: "admin@example.com", role: "admin" });
-  const juan = users.add({
+  await given.user({ email: "admin@example.com", role: "admin" });
+  const juan = await given.user({
     email: "juan@example.com",
     role: "med_team",
     firstName: "Juan",
     lastName: "Dela Cruz",
   });
-  const paolo = users.add({
+  const paolo = await given.user({
     email: "paolo@example.com",
     role: "med_team",
     firstName: "Paolo",
     lastName: "Garcia",
     customRoleId: seniorMedTech.id,
   });
-  const mia = users.add({
+  const mia = await given.user({
     email: "mia@example.com",
     role: "med_team",
     firstName: "Mia",
     lastName: "Lopez",
   });
-  users.add({ email: "patient@example.com", role: "patient" });
-  const makati = teams.add({ name: "Team Makati", area: "Makati" });
-  const qc = teams.add({ name: "Team Quezon City" });
-  const as = (email: string) => loginAs(testApp.app, email);
+  await given.user({ email: "patient@example.com", role: "patient" });
+  const makati = await given.team({ name: "Team Makati", area: "Makati" });
+  const qc = await given.team({ name: "Team Quezon City" });
+  const as = (email: string) => signIn(testApp.app, email);
   return {
     ...testApp,
     juan,

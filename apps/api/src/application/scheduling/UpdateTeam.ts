@@ -4,7 +4,7 @@ import {
   type MedTeamDetails,
 } from "../../domain/scheduling/medTeam.js";
 import { TeamNameTaken, TeamNotFound } from "../../domain/scheduling/schedulingErrors.js";
-import type { MedTeamRepository } from "../ports/medTeamRepository.js";
+import type { MedTeamRepository } from "../../domain/scheduling/MedTeamRepository.js";
 
 export interface UpdateTeamInput extends MedTeamDetails {
   id: string;

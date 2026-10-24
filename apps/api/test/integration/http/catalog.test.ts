@@ -1,24 +1,17 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { buildTestApp } from "../../support/testApp.js";
-
-type TestApp = ReturnType<typeof buildTestApp>;
-
-async function loginAs(app: TestApp["app"], email: string) {
-  const res = await request(app).post("/api/auth/login").send({ email, password: "Password123" });
-  return { Authorization: `Bearer ${res.body.token as string}` };
-}
+import { buildTestApp, signIn } from "../support/testApp.js";
 
 async function setup() {
-  const testApp = buildTestApp();
-  testApp.users.add({ email: "admin@example.com", role: "admin" });
-  testApp.users.add({ email: "patient@example.com", role: "patient" });
-  const hematology = testApp.categories.add("Hematology");
+  const testApp = await buildTestApp();
+  await testApp.given.user({ email: "admin@example.com", role: "admin" });
+  await testApp.given.user({ email: "patient@example.com", role: "patient" });
+  const hematology = await testApp.given.category("Hematology");
   return {
     ...testApp,
     hematology,
-    admin: await loginAs(testApp.app, "admin@example.com"),
-    patient: await loginAs(testApp.app, "patient@example.com"),
+    admin: await signIn(testApp.app, "admin@example.com"),
+    patient: await signIn(testApp.app, "patient@example.com"),
   };
 }
 
@@ -67,9 +60,9 @@ describe("/api/catalog/procedures", () => {
   });
 
   it("shows patients only active procedures and refuses their changes", async () => {
-    const { app, patient, procedures, hematology } = await setup();
-    procedures.add({ code: "CBC", categoryId: hematology.id });
-    const old = procedures.add({ code: "OLD", categoryId: hematology.id, isActive: false });
+    const { app, patient, given, hematology } = await setup();
+    await given.procedure({ code: "CBC", categoryId: hematology.id });
+    const old = await given.procedure({ code: "OLD", categoryId: hematology.id, isActive: false });
 
     const list = await request(app).get("/api/catalog/procedures?status=inactive").set(patient);
     expect(list.status).toBe(200);
@@ -89,8 +82,8 @@ describe("/api/catalog/procedures", () => {
   });
 
   it("returns 409 procedure_code_taken for a duplicate code", async () => {
-    const { app, admin, procedures, hematology } = await setup();
-    procedures.add({ code: "VIT-D", name: "Something else", categoryId: hematology.id });
+    const { app, admin, given, hematology } = await setup();
+    await given.procedure({ code: "VIT-D", name: "Something else", categoryId: hematology.id });
 
     const res = await request(app)
       .post("/api/catalog/procedures")
@@ -116,8 +109,8 @@ describe("/api/catalog/procedures", () => {
 
 describe("/api/catalog/categories", () => {
   it("lists categories with counts and refuses to delete one in use", async () => {
-    const { app, admin, patient, procedures, hematology } = await setup();
-    procedures.add({ code: "CBC", categoryId: hematology.id });
+    const { app, admin, patient, given, hematology } = await setup();
+    await given.procedure({ code: "CBC", categoryId: hematology.id });
 
     const list = await request(app).get("/api/catalog/categories").set(patient);
     expect(list.body).toEqual([{ id: hematology.id, name: "Hematology", procedureCount: 1 }]);

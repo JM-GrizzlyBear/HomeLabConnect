@@ -15,6 +15,10 @@ export interface UserProps {
   /** A custom role on top of the base role (Module 2), or null. */
   customRoleId: string | null;
   isActive: boolean;
+  /** Profile photo link, or null. */
+  photoUrl: string | null;
+  /** Where the profile photo is stored, so it can be deleted when replaced. */
+  photoStorageKey: string | null;
 }
 
 /** Anyone who can sign in: patients and staff alike. */
@@ -57,6 +61,12 @@ export class User {
   }
   get isActive() {
     return this.props.isActive;
+  }
+  get photoUrl() {
+    return this.props.photoUrl;
+  }
+  get photoStorageKey() {
+    return this.props.photoStorageKey;
   }
 
   /** Business rule: deactivated accounts can't sign in or keep using a session. */

@@ -1,6 +1,6 @@
 import type { BaseRole } from "../../domain/identity/baseRole.js";
 import type { ScheduleDay } from "../../domain/scheduling/shift.js";
-import type { StaffDirectory, StaffMember } from "../ports/staffDirectory.js";
+import type { StaffDirectory, StaffMember } from "../../domain/scheduling/StaffDirectory.js";
 import { buildSchedules, type ScheduleRepositories } from "./buildSchedules.js";
 
 export interface GetShiftBoardInput {

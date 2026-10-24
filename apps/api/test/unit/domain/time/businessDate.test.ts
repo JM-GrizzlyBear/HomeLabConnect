@@ -4,7 +4,7 @@ import {
   businessDate,
   monthDay,
   weekdayOf,
-} from "../../../src/domain/time/businessDate.js";
+} from "../../../../src/domain/time/businessDate.js";
 
 describe("business dates", () => {
   it("use Philippine time, so late evening UTC is already the next day", () => {

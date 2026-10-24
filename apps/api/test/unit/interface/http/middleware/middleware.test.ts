@@ -1,22 +1,20 @@
 import { describe, expect, it } from "vitest";
-import type { AuthContext } from "../../../../src/application/use-cases/authenticateRequest.js";
-import { AuthenticateRequest } from "../../../../src/application/use-cases/authenticateRequest.js";
-import { ResolvePermissions } from "../../../../src/application/use-cases/resolvePermissions.js";
-import { PermissionDenied } from "../../../../src/domain/access/accessErrors.js";
+import type { AuthContext } from "../../../../../src/application/identity/AuthenticateRequest.js";
+import { AuthenticateRequest } from "../../../../../src/application/identity/AuthenticateRequest.js";
+import { ResolvePermissions } from "../../../../../src/application/access/ResolvePermissions.js";
+import { PermissionDenied } from "../../../../../src/domain/access/accessErrors.js";
 import {
   PasswordChangeRequired,
   Unauthenticated,
-} from "../../../../src/domain/identity/identityErrors.js";
+} from "../../../../../src/domain/identity/identityErrors.js";
 import {
-  FakeTokenService,
   FixedClock,
   InMemoryAccessRepository,
-  InMemorySessionRepository,
   InMemoryUserRepository,
-} from "../../../support/fakes.js";
-import type { HttpRequest } from "../../../../src/interface/http/httpTypes.js";
-import { Authenticate } from "../../../../src/interface/http/middleware/authenticate.js";
-import { RequirePermission } from "../../../../src/interface/http/middleware/requirePermission.js";
+} from "../../../../support/fakes.js";
+import type { HttpRequest } from "../../../../../src/interface/http/httpTypes.js";
+import { Authenticate } from "../../../../../src/interface/http/middleware/Authenticate.js";
+import { RequirePermission } from "../../../../../src/interface/http/middleware/RequirePermission.js";
 
 const request = (overrides: Partial<HttpRequest> = {}): HttpRequest => ({
   body: undefined,
@@ -24,55 +22,40 @@ const request = (overrides: Partial<HttpRequest> = {}): HttpRequest => ({
   query: {},
   headers: {},
   ip: null,
+  session: { id: "s1", userId: null },
   ...overrides,
 });
 
-async function signedIn({ mustChangePassword = false } = {}) {
+function signedIn({ mustChangePassword = false } = {}) {
   const clock = new FixedClock();
   const users = new InMemoryUserRepository();
-  const sessions = new InMemorySessionRepository(clock);
-  const tokens = new FakeTokenService();
   const user = users.add({ email: "staff@example.com", role: "support", mustChangePassword });
-  const session = await sessions.create({
-    userId: user.id,
-    expiresAt: new Date(clock.now().getTime() + 60_000),
-    ipAddress: null,
-    userAgent: null,
-  });
   return {
     authenticateRequest: new AuthenticateRequest(
-      tokens,
-      sessions,
       users,
-      clock,
       new ResolvePermissions(new InMemoryAccessRepository(), clock),
     ),
-    authorization: `Bearer ${tokens.issue({ userId: user.id, sessionId: session.id })}`,
+    session: { id: "s1", userId: user.id },
   };
 }
 
 describe("Authenticate", () => {
-  it("attaches the AuthContext for a valid bearer token", async () => {
-    const { authenticateRequest, authorization } = await signedIn();
-    const result = await new Authenticate(authenticateRequest).handle(
-      request({ headers: { authorization } }),
-    );
-    expect(result.auth?.role).toBe("support");
+  it("attaches the AuthContext for a signed-in session", async () => {
+    const { authenticateRequest, session } = signedIn();
+    const result = await new Authenticate(authenticateRequest).handle(request({ session }));
+    expect(result.auth).toMatchObject({ role: "support", sessionId: "s1" });
   });
 
-  it.each([undefined, "", "Basic abc", "Bearer"])(
-    "rejects authorization header %j",
-    async (authorization) => {
-      const { authenticateRequest } = await signedIn();
-      await expect(
-        new Authenticate(authenticateRequest).handle(request({ headers: { authorization } })),
-      ).rejects.toThrow(Unauthenticated);
-    },
-  );
+  it("rejects a session nobody is signed in on", async () => {
+    const { authenticateRequest } = signedIn();
+    await expect(new Authenticate(authenticateRequest).handle(request())).rejects.toThrow(
+      Unauthenticated,
+    );
+  });
 
   it("blocks a temporary password unless the route allows it", async () => {
-    const { authenticateRequest, authorization } = await signedIn({ mustChangePassword: true });
-    const req = request({ headers: { authorization } });
+    const { authenticateRequest, session } = signedIn({ mustChangePassword: true });
+    const req = request({ session });
 
     await expect(new Authenticate(authenticateRequest).handle(req)).rejects.toThrow(
       PasswordChangeRequired,

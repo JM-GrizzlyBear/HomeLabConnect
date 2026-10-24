@@ -4,7 +4,7 @@ import {
   type MedTeamDetails,
 } from "../../domain/scheduling/medTeam.js";
 import { TeamNameTaken } from "../../domain/scheduling/schedulingErrors.js";
-import type { MedTeamRepository } from "../ports/medTeamRepository.js";
+import type { MedTeamRepository } from "../../domain/scheduling/MedTeamRepository.js";
 
 /** An admin adds a med team. Its members are set per period with a roster. */
 export class CreateTeam {

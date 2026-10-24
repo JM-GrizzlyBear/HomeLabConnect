@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { assertPasswordIsStrong } from "../../../src/domain/identity/passwordPolicy.js";
-import { CryptoTemporaryPasswordGenerator } from "../../../src/infrastructure/auth/cryptoTemporaryPasswordGenerator.js";
+import { assertPasswordIsStrong } from "../../../../src/domain/identity/passwordPolicy.js";
+import { CryptoTemporaryPasswordGenerator } from "../../../../src/infrastructure/auth/CryptoTemporaryPasswordGenerator.js";
 
 describe("CryptoTemporaryPasswordGenerator", () => {
   it("makes 12-character passwords that pass the password policy", () => {

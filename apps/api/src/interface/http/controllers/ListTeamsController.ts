@@ -1,7 +1,7 @@
 import { listTeamsQuerySchema } from "@homelabconnect/shared";
-import type { ListTeams } from "../../../application/use-cases/listTeams.js";
+import type { ListTeams } from "../../../application/scheduling/ListTeams.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentTeamBoard } from "../presenters/schedulingPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ListUsers } from "../../../src/application/use-cases/listUsers.js";
-import { InMemoryUserRepository } from "../../support/fakes.js";
+import { ListUsers } from "../../../../src/application/identity/ListUsers.js";
+import { InMemoryUserRepository } from "../../../support/fakes.js";
 
 function setup() {
   const users = new InMemoryUserRepository();

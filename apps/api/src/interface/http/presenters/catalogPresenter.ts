@@ -4,11 +4,11 @@ import type {
   ProcedureCategory,
   Promotion,
 } from "@homelabconnect/shared";
-import type { LabProcedureRecord } from "../../../application/ports/labProcedureRepository.js";
-import type { ProcedureCategoryRecord } from "../../../application/ports/procedureCategoryRepository.js";
-import type { ListLabProceduresOutput } from "../../../application/use-cases/listLabProcedures.js";
-import type { PricedProcedure } from "../../../application/use-cases/priceProcedures.js";
-import type { PromotionOutput } from "../../../application/use-cases/promotionOutput.js";
+import type { LabProcedureRecord } from "../../../domain/catalog/LabProcedureRepository.js";
+import type { ProcedureCategoryRecord } from "../../../domain/catalog/ProcedureCategoryRepository.js";
+import type { ListLabProceduresOutput } from "../../../application/catalog/ListLabProcedures.js";
+import type { PricedProcedure } from "../../../application/catalog/priceProcedures.js";
+import type { PromotionOutput } from "../../../application/catalog/promotionOutput.js";
 import type { HttpResponse } from "../httpTypes.js";
 
 function toCategory(category: ProcedureCategoryRecord): ProcedureCategory {

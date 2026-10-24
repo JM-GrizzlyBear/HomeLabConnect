@@ -1,7 +1,7 @@
 import type { TemporaryPasswordResponse, UserList, UserSummary } from "@homelabconnect/shared";
-import type { ListUsersOutput } from "../../../application/use-cases/listUsers.js";
-import type { TemporaryPasswordOutput } from "../../../application/use-cases/temporaryPasswordOutput.js";
-import type { UserSummaryOutput } from "../../../application/use-cases/userSummaryOutput.js";
+import type { ListUsersOutput } from "../../../application/identity/ListUsers.js";
+import type { TemporaryPasswordOutput } from "../../../application/identity/temporaryPasswordOutput.js";
+import type { UserSummaryOutput } from "../../../application/identity/userSummaryOutput.js";
 import type { HttpResponse } from "../httpTypes.js";
 import { presentUser } from "./authPresenter.js";
 

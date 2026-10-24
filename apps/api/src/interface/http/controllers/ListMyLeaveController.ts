@@ -1,6 +1,6 @@
-import type { ListMyLeave } from "../../../application/use-cases/listMyLeave.js";
+import type { ListMyLeave } from "../../../application/scheduling/ListMyLeave.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentLeaveList } from "../presenters/schedulingPresenter.js";
 
 export class ListMyLeaveController implements Controller {

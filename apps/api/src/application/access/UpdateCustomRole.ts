@@ -3,7 +3,7 @@ import type {
   CustomRoleChanges,
   CustomRoleRecord,
   RoleRepository,
-} from "../ports/roleRepository.js";
+} from "../../domain/access/RoleRepository.js";
 
 export interface UpdateCustomRoleInput extends CustomRoleChanges {
   id: string;

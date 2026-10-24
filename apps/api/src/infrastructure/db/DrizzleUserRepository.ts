@@ -7,7 +7,7 @@ import type {
   UserListQuery,
   UserProfile,
   UserRepository,
-} from "../../application/ports/userRepository.js";
+} from "../../domain/identity/UserRepository.js";
 import { isBaseRole } from "../../domain/identity/baseRole.js";
 import { EmailAlreadyTaken } from "../../domain/identity/identityErrors.js";
 import type { ProfileChanges } from "../../domain/identity/profile.js";
@@ -16,6 +16,7 @@ import type { Database } from "./client.js";
 import { isUniqueViolation } from "./errors.js";
 import { likePattern } from "./likePattern.js";
 import { customRoles, employees, patients, users } from "./schema/index.js";
+import type { StoredPhoto } from "../../domain/media/photo.js";
 
 type UserRow = typeof users.$inferSelect;
 
@@ -33,6 +34,8 @@ function toUser(row: UserRow): User {
     temporaryPasswordExpiresAt: row.temporaryPasswordExpiresAt,
     customRoleId: row.customRoleId,
     isActive: row.isActive,
+    photoUrl: row.photoUrl,
+    photoStorageKey: row.photoStorageKey,
   });
 }
 
@@ -196,6 +199,13 @@ export class DrizzleUserRepository implements UserRepository {
 
   async setCustomRole(userId: string, customRoleId: string | null): Promise<void> {
     await this.db.update(users).set({ customRoleId }).where(eq(users.id, userId));
+  }
+
+  async setPhoto(userId: string, photo: StoredPhoto | null): Promise<void> {
+    await this.db
+      .update(users)
+      .set({ photoUrl: photo?.url ?? null, photoStorageKey: photo?.storageKey ?? null })
+      .where(eq(users.id, userId));
   }
 
   async updateProfile(userId: string, changes: ProfileChanges): Promise<void> {

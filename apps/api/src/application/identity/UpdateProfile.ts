@@ -1,6 +1,6 @@
 import { UserNotFound } from "../../domain/identity/identityErrors.js";
 import { assertProfileFitsRole, type ProfileChanges } from "../../domain/identity/profile.js";
-import type { UserRepository } from "../ports/userRepository.js";
+import type { UserRepository } from "../../domain/identity/UserRepository.js";
 import { toProfileOutput, type ProfileOutput } from "./profileOutput.js";
 
 export interface UpdateProfileInput extends ProfileChanges {

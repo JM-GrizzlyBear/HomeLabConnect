@@ -1,33 +1,30 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "../../../src/domain/settings/systemSettings.js";
-import { buildTestApp } from "../../support/testApp.js";
-
-type TestApp = ReturnType<typeof buildTestApp>;
-
-async function loginAs(app: TestApp["app"], email: string) {
-  const res = await request(app).post("/api/auth/login").send({ email, password: "Password123" });
-  return { Authorization: `Bearer ${res.body.token as string}` };
-}
+import { buildTestApp, signIn } from "../support/testApp.js";
 
 async function setup() {
-  const testApp = buildTestApp();
-  const president = testApp.roles.add({
+  const testApp = await buildTestApp();
+  const president = await testApp.given.customRole({
     name: "President",
     baseRole: "admin",
     entries: [{ key: "settings.manage", effect: "deny" }],
   });
-  testApp.users.add({
+  await testApp.given.user({
     email: "admin@example.com",
     role: "admin",
     firstName: "System",
     lastName: "Admin",
   });
-  testApp.users.add({ email: "president@example.com", role: "admin", customRoleId: president.id });
-  testApp.users.add({ email: "support@example.com", role: "support" });
-  testApp.users.add({ email: "medteam@example.com", role: "med_team" });
-  testApp.users.add({ email: "patient@example.com", role: "patient" });
-  const as = (email: string) => loginAs(testApp.app, email);
+  await testApp.given.user({
+    email: "president@example.com",
+    role: "admin",
+    customRoleId: president.id,
+  });
+  await testApp.given.user({ email: "support@example.com", role: "support" });
+  await testApp.given.user({ email: "medteam@example.com", role: "med_team" });
+  await testApp.given.user({ email: "patient@example.com", role: "patient" });
+  const as = (email: string) => signIn(testApp.app, email);
   return {
     ...testApp,
     admin: await as("admin@example.com"),
@@ -107,10 +104,10 @@ describe("/api/holidays", () => {
   });
 
   it("lists one year's one-time days plus every yearly one", async () => {
-    const { app, admin, closedDays } = await setup();
-    closedDays.add({ date: "2026-12-25", name: "Christmas Day", repeatsYearly: true });
-    closedDays.add({ date: "2026-10-09", name: "Outing 2026" });
-    closedDays.add({ date: "2027-03-01", name: "Outing 2027" });
+    const { app, admin, given } = await setup();
+    await given.closedDay({ date: "2026-12-25", name: "Christmas Day", repeatsYearly: true });
+    await given.closedDay({ date: "2026-10-09", name: "Outing 2026" });
+    await given.closedDay({ date: "2027-03-01", name: "Outing 2027" });
 
     const res = await request(app).get("/api/holidays?year=2027").set(admin);
 
@@ -121,8 +118,8 @@ describe("/api/holidays", () => {
   });
 
   it("refuses a date that's already closed", async () => {
-    const { app, admin, closedDays } = await setup();
-    closedDays.add({ date: "2025-12-25", name: "Christmas Day", repeatsYearly: true });
+    const { app, admin, given } = await setup();
+    await given.closedDay({ date: "2025-12-25", name: "Christmas Day", repeatsYearly: true });
 
     const res = await request(app)
       .post("/api/holidays")

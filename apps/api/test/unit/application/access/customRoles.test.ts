@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { AssignCustomRole } from "../../../src/application/use-cases/assignCustomRole.js";
-import { CreateCustomRole } from "../../../src/application/use-cases/createCustomRole.js";
-import { DeleteCustomRole } from "../../../src/application/use-cases/deleteCustomRole.js";
-import { ListRoles } from "../../../src/application/use-cases/listRoles.js";
-import { UpdateCustomRole } from "../../../src/application/use-cases/updateCustomRole.js";
+import { AssignCustomRole } from "../../../../src/application/access/AssignCustomRole.js";
+import { CreateCustomRole } from "../../../../src/application/access/CreateCustomRole.js";
+import { DeleteCustomRole } from "../../../../src/application/access/DeleteCustomRole.js";
+import { ListRoles } from "../../../../src/application/access/ListRoles.js";
+import { UpdateCustomRole } from "../../../../src/application/access/UpdateCustomRole.js";
 import {
   CannotChangeOwnRole,
   CustomRoleInUse,
   CustomRoleMismatch,
   CustomRoleNameTaken,
   CustomRoleNotFound,
-} from "../../../src/domain/access/accessErrors.js";
-import { InMemoryRoleRepository, InMemoryUserRepository } from "../../support/fakes.js";
+} from "../../../../src/domain/access/accessErrors.js";
+import { InMemoryRoleRepository, InMemoryUserRepository } from "../../../support/fakes.js";
 
 function setup() {
   const users = new InMemoryUserRepository();

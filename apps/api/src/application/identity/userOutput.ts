@@ -9,6 +9,7 @@ export interface UserOutput {
   firstName: string;
   lastName: string;
   mustChangePassword: boolean;
+  photoUrl: string | null;
 }
 
 /** The signed-in user, with what they may do. */
@@ -24,5 +25,6 @@ export function toUserOutput(user: User): UserOutput {
     firstName: user.firstName,
     lastName: user.lastName,
     mustChangePassword: user.mustChangePassword,
+    photoUrl: user.photoUrl,
   };
 }

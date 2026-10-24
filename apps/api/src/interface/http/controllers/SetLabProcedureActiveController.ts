@@ -1,5 +1,5 @@
 import { catalogIdParamsSchema, setCatalogStatusRequestSchema } from "@homelabconnect/shared";
-import type { SetLabProcedureActive } from "../../../application/use-cases/setLabProcedureActive.js";
+import type { SetLabProcedureActive } from "../../../application/catalog/SetLabProcedureActive.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentProcedure } from "../presenters/catalogPresenter.js";
 import { parseRequest } from "../requestValidation.js";

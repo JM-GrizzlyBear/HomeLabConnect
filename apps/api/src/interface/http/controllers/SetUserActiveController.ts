@@ -1,7 +1,7 @@
 import { setUserStatusRequestSchema, userIdParamsSchema } from "@homelabconnect/shared";
-import type { SetUserActive } from "../../../application/use-cases/setUserActive.js";
+import type { SetUserActive } from "../../../application/identity/SetUserActive.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentUserSummary } from "../presenters/userAdminPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

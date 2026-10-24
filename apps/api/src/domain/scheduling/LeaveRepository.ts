@@ -1,5 +1,5 @@
-import type { LeaveRequest, LeaveStatus } from "../../domain/scheduling/leave.js";
-import type { LeaveDays } from "../../domain/scheduling/shift.js";
+import type { LeaveRequest, LeaveStatus } from "./leave.js";
+import type { LeaveDays } from "./shift.js";
 
 export type NewLeaveRequest = Omit<LeaveRequest, "id" | "decisions">;
 

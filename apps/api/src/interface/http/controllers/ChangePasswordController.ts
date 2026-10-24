@@ -1,7 +1,7 @@
 import { changePasswordRequestSchema } from "@homelabconnect/shared";
-import type { ChangePassword } from "../../../application/use-cases/changePassword.js";
+import type { ChangePassword } from "../../../application/identity/ChangePassword.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
-import { requireAuth } from "../middleware/authenticate.js";
+import { requireAuth } from "../middleware/Authenticate.js";
 import { presentSessionUser } from "../presenters/authPresenter.js";
 import { parseRequest } from "../requestValidation.js";
 

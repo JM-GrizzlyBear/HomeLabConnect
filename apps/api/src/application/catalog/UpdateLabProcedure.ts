@@ -3,8 +3,8 @@ import type { LabProcedureDetails } from "../../domain/catalog/labProcedure.js";
 import type {
   LabProcedureRecord,
   LabProcedureRepository,
-} from "../ports/labProcedureRepository.js";
-import type { ProcedureCategoryRepository } from "../ports/procedureCategoryRepository.js";
+} from "../../domain/catalog/LabProcedureRepository.js";
+import type { ProcedureCategoryRepository } from "../../domain/catalog/ProcedureCategoryRepository.js";
 import { checkDetailsForSave } from "./checkProcedureDetails.js";
 
 export interface UpdateLabProcedureInput extends LabProcedureDetails {

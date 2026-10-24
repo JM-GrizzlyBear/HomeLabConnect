@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Email } from "../../../src/domain/identity/email.js";
-import { InvalidEmail, WeakPassword } from "../../../src/domain/identity/identityErrors.js";
-import { assertPasswordIsStrong } from "../../../src/domain/identity/passwordPolicy.js";
-import { isSessionActive, type Session } from "../../../src/domain/identity/session.js";
+import { Email } from "../../../../src/domain/identity/email.js";
+import { InvalidEmail, WeakPassword } from "../../../../src/domain/identity/identityErrors.js";
+import { assertPasswordIsStrong } from "../../../../src/domain/identity/passwordPolicy.js";
 
 describe("Email", () => {
   it("normalises case and surrounding spaces", () => {
@@ -29,29 +28,5 @@ describe("assertPasswordIsStrong", () => {
     ["over 72 bytes", `a1${"x".repeat(71)}`],
   ])("rejects a password with %s", (_reason, password) => {
     expect(() => assertPasswordIsStrong(password)).toThrow(WeakPassword);
-  });
-});
-
-describe("isSessionActive", () => {
-  const now = new Date("2026-01-15T08:00:00Z");
-  const session = (overrides: Partial<Session>): Session => ({
-    id: "s1",
-    userId: "u1",
-    createdAt: new Date("2026-01-15T07:00:00Z"),
-    expiresAt: new Date("2026-01-15T09:00:00Z"),
-    revokedAt: null,
-    ...overrides,
-  });
-
-  it("is active before expiry when not revoked", () => {
-    expect(isSessionActive(session({}), now)).toBe(true);
-  });
-
-  it("is inactive once expired", () => {
-    expect(isSessionActive(session({ expiresAt: now }), now)).toBe(false);
-  });
-
-  it("is inactive once revoked", () => {
-    expect(isSessionActive(session({ revokedAt: now }), now)).toBe(false);
   });
 });

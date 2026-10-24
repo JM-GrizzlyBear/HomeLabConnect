@@ -5,8 +5,8 @@ import {
   type Roster,
   rosterPeriodEnd,
   rosterPeriodOf,
-} from "../../../src/domain/scheduling/roster.js";
-import { InvalidRoster, RosterClash } from "../../../src/domain/scheduling/schedulingErrors.js";
+} from "../../../../src/domain/scheduling/roster.js";
+import { InvalidRoster, RosterClash } from "../../../../src/domain/scheduling/schedulingErrors.js";
 
 describe("roster periods", () => {
   it.each([

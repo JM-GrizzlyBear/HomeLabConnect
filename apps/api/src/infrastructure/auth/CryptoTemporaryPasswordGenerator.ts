@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import type { TemporaryPasswordGenerator } from "../../application/ports/temporaryPasswordGenerator.js";
+import type { TemporaryPasswordGenerator } from "../../application/ports/TemporaryPasswordGenerator.js";
 
 // No look-alikes (0/O/o, 1/l/I), so the password is easy to read from an email or type in.
 const LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";

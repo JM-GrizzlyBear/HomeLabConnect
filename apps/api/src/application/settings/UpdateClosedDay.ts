@@ -5,7 +5,7 @@ import {
   type ClosedDayDetails,
 } from "../../domain/settings/closedDay.js";
 import { ClosedDayNotFound } from "../../domain/settings/settingsErrors.js";
-import type { ClosedDayRepository } from "../ports/closedDayRepository.js";
+import type { ClosedDayRepository } from "../../domain/settings/ClosedDayRepository.js";
 
 export interface UpdateClosedDayInput extends ClosedDayDetails {
   id: string;

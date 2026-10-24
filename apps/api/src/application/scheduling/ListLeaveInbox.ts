@@ -1,6 +1,6 @@
 import { type Approver, canDecide } from "../../domain/scheduling/leave.js";
-import type { LeaveRepository } from "../ports/leaveRepository.js";
-import type { StaffDirectory } from "../ports/staffDirectory.js";
+import type { LeaveRepository } from "../../domain/scheduling/LeaveRepository.js";
+import type { StaffDirectory } from "../../domain/scheduling/StaffDirectory.js";
 import { type LeaveView, toLeaveViews } from "./leaveView.js";
 
 /** Pending requests waiting at a step this approver may decide, oldest first. */

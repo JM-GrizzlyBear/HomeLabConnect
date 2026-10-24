@@ -2,7 +2,7 @@ import { createTransport, type Transporter } from "nodemailer";
 import type {
   AccountEmails,
   TemporaryPasswordEmail,
-} from "../../application/ports/accountEmails.js";
+} from "../../application/ports/AccountEmails.js";
 
 export interface MailOptions {
   smtpHost: string;

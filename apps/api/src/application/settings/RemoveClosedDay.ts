@@ -1,5 +1,5 @@
 import { ClosedDayNotFound } from "../../domain/settings/settingsErrors.js";
-import type { ClosedDayRepository } from "../ports/closedDayRepository.js";
+import type { ClosedDayRepository } from "../../domain/settings/ClosedDayRepository.js";
 
 export interface RemoveClosedDayInput {
   id: string;

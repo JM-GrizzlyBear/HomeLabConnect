@@ -1,17 +1,5 @@
-import type { Session } from "../../domain/identity/session.js";
-
-export interface NewSession {
-  userId: string;
-  expiresAt: Date;
-  ipAddress: string | null;
-  userAgent: string | null;
-}
-
-/** Port: server-side record of every sign-in, so a token can be revoked before it expires. */
+/** Port: the browsers a user is signed in on, so an account can be signed out everywhere at once. */
 export interface SessionRepository {
-  create(session: NewSession): Promise<Session>;
-  findById(id: string): Promise<Session | null>;
-  revoke(id: string, at: Date): Promise<void>;
-  /** Revokes every open session of a user, except `exceptSessionId` if given. */
-  revokeAllForUser(userId: string, at: Date, exceptSessionId?: string): Promise<void>;
+  /** Signs out every browser of a user, except the session `exceptSessionId` if given. */
+  revokeAllForUser(userId: string, exceptSessionId?: string): Promise<void>;
 }

@@ -1,4 +1,4 @@
-import type { LeaveView as LeaveViewOutput } from "../../../application/use-cases/leaveView.js";
+import type { LeaveView as LeaveViewOutput } from "../../../application/scheduling/leaveView.js";
 import type {
   LeaveView,
   ScheduleDay,
@@ -7,10 +7,10 @@ import type {
   TeamBoard,
   TeamSummary,
 } from "@homelabconnect/shared";
-import type { ShiftBoardRow } from "../../../application/use-cases/getShiftBoard.js";
+import type { ShiftBoardRow } from "../../../application/scheduling/GetShiftBoard.js";
 import type { ScheduleDay as DomainScheduleDay } from "../../../domain/scheduling/shift.js";
-import type { StaffMember as DirectoryMember } from "../../../application/ports/staffDirectory.js";
-import type { TeamBoard as TeamBoardOutput } from "../../../application/use-cases/listTeams.js";
+import type { StaffMember as DirectoryMember } from "../../../domain/scheduling/StaffDirectory.js";
+import type { TeamBoard as TeamBoardOutput } from "../../../application/scheduling/ListTeams.js";
 import type { MedTeam } from "../../../domain/scheduling/medTeam.js";
 import type { HttpResponse } from "../httpTypes.js";
 

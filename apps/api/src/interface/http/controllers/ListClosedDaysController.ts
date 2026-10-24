@@ -1,5 +1,5 @@
 import { listClosedDaysQuerySchema } from "@homelabconnect/shared";
-import type { ListClosedDays } from "../../../application/use-cases/listClosedDays.js";
+import type { ListClosedDays } from "../../../application/settings/ListClosedDays.js";
 import type { Controller, HttpRequest, HttpResponse } from "../httpTypes.js";
 import { presentClosedDayList } from "../presenters/settingsPresenter.js";
 import { parseRequest } from "../requestValidation.js";
