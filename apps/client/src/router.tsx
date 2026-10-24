@@ -10,6 +10,9 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { HolidaysPage } from "./pages/HolidaysPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
+import { LeaveRequestsPage } from "./pages/LeaveRequestsPage";
+import { MyLeavePage } from "./pages/MyLeavePage";
+import { MySchedulePage } from "./pages/MySchedulePage";
 import { ProcedureEditorPage } from "./pages/ProcedureEditorPage";
 import { ProceduresPage } from "./pages/ProceduresPage";
 import { PromotionEditorPage } from "./pages/PromotionEditorPage";
@@ -19,6 +22,8 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { RoleEditorPage } from "./pages/RoleEditorPage";
 import { RolesPage } from "./pages/RolesPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ShiftsPage } from "./pages/ShiftsPage";
+import { TeamsPage } from "./pages/TeamsPage";
 import { UsersPage } from "./pages/UsersPage";
 
 export const routes: RouteObject[] = [
@@ -158,6 +163,46 @@ export const routes: RouteObject[] = [
         element: (
           <RequirePermission permission="holidays.view">
             <HolidaysPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "scheduling/teams",
+        element: (
+          <RequirePermission permission="teams.view">
+            <TeamsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "scheduling/mine",
+        element: (
+          <RequirePermission permission="shifts.view_own">
+            <MySchedulePage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "scheduling/shifts",
+        element: (
+          <RequirePermission permission="shifts.view">
+            <ShiftsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "scheduling/my-leave",
+        element: (
+          <RequirePermission permission="leave.request">
+            <MyLeavePage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "scheduling/leave",
+        element: (
+          <RequirePermission permission="leave.approve">
+            <LeaveRequestsPage />
           </RequirePermission>
         ),
       },

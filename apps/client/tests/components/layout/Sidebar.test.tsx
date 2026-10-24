@@ -45,13 +45,17 @@ describe("Sidebar", () => {
 
   it("opens the group of the current page and marks the page active", async () => {
     signedInAs(admin);
-    renderApp("/app/scheduling/shifts");
+    // A page that isn't built yet, so it also shows "coming soon".
+    renderApp("/app/payments/all");
 
-    expect(await screen.findByRole("button", { name: "Scheduling" })).toHaveAttribute(
+    expect(await screen.findByRole("button", { name: "Payments" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
-    expect(mainNav().getByRole("link", { name: "Shifts" })).toHaveAttribute("aria-current", "page");
+    expect(mainNav().getByRole("link", { name: "All Payments" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(screen.getByText(/coming soon/)).toBeInTheDocument();
   });
 
