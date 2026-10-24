@@ -4,7 +4,11 @@ import { RequireAuth } from "./auth/RequireAuth";
 import { RequirePermission } from "./auth/RequirePermission";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
+import { AllAppointmentsPage } from "./pages/AllAppointmentsPage";
+import { AppointmentPage } from "./pages/AppointmentPage";
+import { BookVisitPage } from "./pages/BookVisitPage";
 import { ComingSoonPage } from "./pages/ComingSoonPage";
+import { MyAppointmentsPage } from "./pages/MyAppointmentsPage";
 import { CreateStaffPage } from "./pages/CreateStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { HolidaysPage } from "./pages/HolidaysPage";
@@ -206,6 +210,32 @@ export const routes: RouteObject[] = [
           </RequirePermission>
         ),
       },
+      {
+        path: "appointments/book",
+        element: (
+          <RequirePermission permission="appointments.book">
+            <BookVisitPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "appointments/mine",
+        element: (
+          <RequirePermission permission="appointments.view_own">
+            <MyAppointmentsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "appointments/all",
+        element: (
+          <RequirePermission permission="appointments.view_all">
+            <AllAppointmentsPage />
+          </RequirePermission>
+        ),
+      },
+      // Patients open their own, staff any: the API answers 404 otherwise
+      { path: "appointments/:id", element: <AppointmentPage /> },
       { path: "*", element: <ComingSoonPage /> },
     ],
   },

@@ -12,13 +12,18 @@ import { routes } from "../../src/router";
 type Handler = (body: unknown, init: RequestInit) => { status: number; body?: unknown };
 
 /**
- * Fakes the API by "METHOD /api/path". Unlisted calls get a 404, so a test
+ * Fakes the API by "METHOD /api/path" (or "METHOD /api/path*" for a prefix). Unlisted calls get a 404, so a test
  * fails loudly if the page calls something unexpected.
  */
 export function mockApi(handlers: Record<string, Handler>) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init = {}) => {
     const key = `${init.method ?? "GET"} ${String(input)}`;
-    const handler = handlers[key];
+    // An exact key, or one ending in "*" that matches the start (for URLs with dates in them)
+    const handler =
+      handlers[key] ??
+      Object.entries(handlers).find(
+        ([pattern]) => pattern.endsWith("*") && key.startsWith(pattern.slice(0, -1)),
+      )?.[1];
     const { status, body } = handler
       ? handler(readBody(init.body), init)
       : { status: 404, body: { error: { code: "route_not_found", message: key } } };

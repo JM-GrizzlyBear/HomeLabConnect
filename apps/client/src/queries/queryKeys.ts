@@ -23,4 +23,9 @@ export const queryKeys = {
   myLeave: ["leave", "mine"] as const,
   leaveInbox: ["leave", "inbox"] as const,
   allLeave: (status: string | null) => ["leave", "all", status] as const,
+  availability: (from: string, to: string) => ["appointments", "availability", from, to] as const,
+  quote: (procedureIds: readonly string[]) => ["appointments", "quote", procedureIds] as const,
+  myAppointments: ["appointments", "mine"] as const,
+  appointment: (id: string | undefined) => ["appointments", "one", id] as const,
+  allAppointments: (filters: unknown) => ["appointments", "all", filters] as const,
 };
