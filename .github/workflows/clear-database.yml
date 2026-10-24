@@ -1,0 +1,75 @@
+name: Clear database
+
+# Deletes EVERY row in EVERY table of the database in the DATABASE_URL secret (users,
+# sessions, appointments, everything), then runs the seed again so the permission catalogue
+# and the seeded accounts come back. The tables themselves stay.
+# GitHub → Actions → "Clear database" → Run workflow → type CLEAR → Run workflow
+# Needs the repository secret DATABASE_URL (README → "Clearing a database").
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "This deletes ALL data. Type CLEAR to continue."
+        required: true
+        type: string
+
+jobs:
+  clear:
+    name: Delete all rows and seed again
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the confirmation
+        if: ${{ inputs.confirm != 'CLEAR' }}
+        env:
+          TYPED: ${{ inputs.confirm }}
+        run: |
+          echo "Nothing was deleted: you typed '$TYPED', not CLEAR."
+          exit 1
+
+      - name: Check the secret
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "The DATABASE_URL secret is missing (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      # Only table names are printed, never data: anyone who can see the repo can read Actions logs.
+      # Drizzle's list of applied migrations lives in its own "drizzle" schema, so it's kept.
+      - name: Delete every row
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q <<'SQL'
+          \echo 'Tables emptied:'
+          select string_agg(tablename, ', ' order by tablename) as tables
+          from pg_tables
+          where schemaname = 'public';
+
+          do $$
+          declare tables text;
+          begin
+            select string_agg(format('%I.%I', schemaname, tablename), ', ')
+              into tables
+              from pg_tables
+              where schemaname = 'public';
+            if tables is not null then
+              execute 'truncate table ' || tables || ' restart identity cascade';
+            end if;
+          end $$;
+          SQL
+
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm i --frozen-lockfile
+
+      - name: Seed again
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm exec turbo run db:seed

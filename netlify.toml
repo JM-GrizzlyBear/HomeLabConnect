@@ -1,0 +1,20 @@
+# The website on Netlify. Netlify installs the packages with pnpm (pnpm-lock.yaml),
+# then builds only the client and what it depends on.
+[build]
+  command = "pnpm exec turbo run build --filter=@homelabconnect/client..."
+  publish = "apps/client/dist"
+
+# The API lives on Render. Netlify forwards /api to it, so the browser only ever talks to
+# the Netlify address: the session cookie is first-party and no CORS is needed.
+# Change the host to your Render service's address.
+[[redirects]]
+  from = "/api/*"
+  to = "https://homelabconnect-api.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# Every other path is a page of the single-page app (React Router)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

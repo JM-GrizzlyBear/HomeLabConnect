@@ -28,3 +28,6 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Photos saved locally (PHOTO_STORAGE=local)
+apps/api/uploads/

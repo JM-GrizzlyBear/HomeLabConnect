@@ -7,7 +7,25 @@ on:
 
 jobs:
   checks:
+    name: Lint, types, architecture, tests and build
     runs-on: ubuntu-latest
+    # A throwaway Postgres for the API's integration tests (emptied before every test)
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: homelabconnect
+          POSTGRES_PASSWORD: homelabconnect
+          POSTGRES_DB: homelabconnect
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U homelabconnect"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://homelabconnect:homelabconnect@localhost:5432/homelabconnect_test?sslmode=disable
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -17,3 +35,11 @@ jobs:
           cache: pnpm
       - run: pnpm i --frozen-lockfile
       - run: pnpm exec turbo run lint typecheck arch test build
+
+  docker:
+    name: API image builds
+    runs-on: ubuntu-latest
+    needs: checks
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -t homelabconnect-api .

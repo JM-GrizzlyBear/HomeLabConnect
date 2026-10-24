@@ -1,3 +1,6 @@
+# Two ways to use this file:
+#   docker compose up -d postgres mailpit   the database and mail inbox, for "turbo run dev"
+#   docker compose --profile api up --build  also the production API image on http://localhost:8080
 name: homelabconnect
 
 services:
@@ -8,7 +11,7 @@ services:
       POSTGRES_PASSWORD: homelabconnectpass
       POSTGRES_DB: homelabconnect
     ports:
-      - "5433:5432"
+      - "5436:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -22,6 +25,22 @@ services:
     ports:
       - "1025:1025" # SMTP
       - "8025:8025" # Web inbox: http://localhost:8025
+
+  # The image Render runs (Dockerfile): applies the migrations, then starts the API
+  api:
+    profiles: [api]
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://homelabconnect:homelabconnectpass@postgres:5432/homelabconnect
+      SESSION_SECRET: ${SESSION_SECRET}
+      # http://localhost has no HTTPS, so the cookie can't be HTTPS-only here
+      COOKIE_SECURE: "false"
+      SMTP_HOST: mailpit
+    ports:
+      - "8080:4000"
 
 volumes:
   postgres-data:
