@@ -128,6 +128,26 @@ import type { Clock } from "./application/ports/Clock.js";
 import type { DatabaseHealthProbe } from "./application/ports/DatabaseHealthProbe.js";
 import type { PasswordHasher } from "./application/ports/PasswordHasher.js";
 import type { PhotoStorage } from "./application/ports/PhotoStorage.js";
+import type { FileStorage } from "./application/ports/FileStorage.js";
+import {
+  AddAppointmentNote,
+  DeleteAttachment,
+  ListAppointmentNotes,
+} from "./application/appointments/AppointmentNotes.js";
+import {
+  GetDailyRoute,
+  ListRouteTeams,
+  ReorderRoute,
+} from "./application/appointments/DailyRoute.js";
+import { ScheduleReturnVisit } from "./application/appointments/ScheduleReturnVisit.js";
+import { DrizzleAppointmentNoteRepository } from "./infrastructure/db/DrizzleAppointmentNoteRepository.js";
+import { ListAppointmentNotesController } from "./interface/http/controllers/ListAppointmentNotesController.js";
+import { AddAppointmentNoteController } from "./interface/http/controllers/AddAppointmentNoteController.js";
+import { DeleteAttachmentController } from "./interface/http/controllers/DeleteAttachmentController.js";
+import { ScheduleReturnVisitController } from "./interface/http/controllers/ScheduleReturnVisitController.js";
+import { ListRouteTeamsController } from "./interface/http/controllers/ListRouteTeamsController.js";
+import { GetDailyRouteController } from "./interface/http/controllers/GetDailyRouteController.js";
+import { ReorderRouteController } from "./interface/http/controllers/ReorderRouteController.js";
 import { RemoveProfilePhoto } from "./application/identity/RemoveProfilePhoto.js";
 import { SetProfilePhoto } from "./application/identity/SetProfilePhoto.js";
 import { RemoveProfilePhotoController } from "./interface/http/controllers/RemoveProfilePhotoController.js";
@@ -182,6 +202,8 @@ export interface BuildAppOptions {
   /** How many proxies (Netlify, Render) to trust for X-Forwarded-For / -Proto; 0 for none. */
   trustProxy: number;
   photoStorage: PhotoStorage;
+  /** Where note attachments go (photos and PDFs). */
+  fileStorage: FileStorage;
   /** Set when photos are kept on this machine, so the app serves them at /api/uploads. */
   uploadsDir?: string;
   /** Tests swap it to see the health check report a database outage. */
@@ -209,6 +231,7 @@ export function buildApp(options: BuildAppOptions) {
   const leave = new DrizzleLeaveRepository(db);
   const scheduleRepositories = { shifts, closedDays, leave };
   const appointments = new DrizzleAppointmentRepository(db);
+  const noteRepositories = { appointments, teams, notes: new DrizzleAppointmentNoteRepository(db) };
   const availabilityRepositories = { ...scheduleRepositories, appointments, teams, settings };
   const quoteBooking = new QuoteBooking(procedures, promotions, clock);
   const { appointmentEmails } = options;
@@ -350,7 +373,7 @@ export function buildApp(options: BuildAppOptions) {
         new ListMyAppointments(appointments, settings, clock),
       ),
       getAppointment: new GetAppointmentController(
-        new GetAppointment(appointments, settings, clock),
+        new GetAppointment(appointments, teams, settings, clock),
       ),
       cancelAppointment: new CancelAppointmentController(
         new CancelAppointment(appointments, settings, appointmentEmails, clock),
@@ -373,6 +396,19 @@ export function buildApp(options: BuildAppOptions) {
       assignTeam: new AssignTeamController(new AssignTeam(availabilityRepositories, clock)),
       listMyVisits: new ListMyVisitsController(new ListMyVisits(availabilityRepositories)),
       recordVisit: new RecordVisitController(new RecordVisit(availabilityRepositories)),
+      listNotes: new ListAppointmentNotesController(new ListAppointmentNotes(noteRepositories)),
+      addNote: new AddAppointmentNoteController(
+        new AddAppointmentNote(noteRepositories, options.fileStorage),
+      ),
+      deleteAttachment: new DeleteAttachmentController(
+        new DeleteAttachment(noteRepositories, options.fileStorage),
+      ),
+      scheduleReturnVisit: new ScheduleReturnVisitController(
+        new ScheduleReturnVisit(availabilityRepositories, appointmentEmails, clock),
+      ),
+      listRouteTeams: new ListRouteTeamsController(new ListRouteTeams(availabilityRepositories)),
+      getDailyRoute: new GetDailyRouteController(new GetDailyRoute(availabilityRepositories)),
+      reorderRoute: new ReorderRouteController(new ReorderRoute(availabilityRepositories)),
       answerProposal: new AnswerProposalController(
         new AnswerProposal(availabilityRepositories, appointmentEmails, clock),
       ),

@@ -70,3 +70,11 @@ export class InvalidVisitRecord extends DomainError {
     super(message, "invalid_visit_record");
   }
 }
+
+export class InvalidNote extends DomainError {
+  readonly kind = "validation";
+
+  constructor(message: string) {
+    super(message, "invalid_note");
+  }
+}

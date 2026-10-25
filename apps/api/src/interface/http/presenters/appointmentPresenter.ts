@@ -1,4 +1,6 @@
 import type {
+  AppointmentNoteView,
+  RouteTeam,
   TeamChoice as TeamChoiceView,
   AppointmentList,
   AppointmentView,
@@ -12,6 +14,7 @@ import type { AppointmentLine } from "../../../domain/appointments/appointment.j
 import type { DayAvailability as DayAvailabilityOutput } from "../../../domain/appointments/availability.js";
 import type { Appointment } from "../../../domain/appointments/appointment.js";
 import type { TeamChoice } from "../../../domain/appointments/teamAssignment.js";
+import type { AppointmentNote } from "../../../domain/appointments/note.js";
 import type { HttpResponse } from "../httpTypes.js";
 
 const toLine = (line: AppointmentLine) => ({
@@ -48,6 +51,9 @@ function toAppointmentView(output: AppointmentOutput): AppointmentView {
     decisionNote: output.decisionNote,
     team: output.team,
     collectionNote: output.collectionNote,
+    returnOf: output.returnOf,
+    returnVisits: output.returnVisits,
+    routePosition: output.routePosition,
     proposal: output.openProposal && {
       date: output.openProposal.date,
       slot: output.openProposal.slot,
@@ -108,4 +114,28 @@ export function presentVisits(visits: Appointment[]): HttpResponse<AppointmentVi
 
 export function presentVisit(visit: Appointment): HttpResponse<AppointmentView> {
   return { status: 200, body: toAppointmentView({ ...visit, cancellableUntil: null }) };
+}
+
+export function presentNotes(
+  notes: AppointmentNote[],
+  status = 200,
+): HttpResponse<AppointmentNoteView[]> {
+  return {
+    status,
+    body: notes.map((note) => ({
+      id: note.id,
+      author: note.author,
+      body: note.body,
+      sharedWithPatient: note.sharedWithPatient,
+      attachments: note.attachments.map((file) => ({
+        ...file,
+        createdAt: file.createdAt.toISOString(),
+      })),
+      createdAt: note.createdAt.toISOString(),
+    })),
+  };
+}
+
+export function presentRouteTeams(teams: RouteTeam[]): HttpResponse<RouteTeam[]> {
+  return { status: 200, body: teams };
 }

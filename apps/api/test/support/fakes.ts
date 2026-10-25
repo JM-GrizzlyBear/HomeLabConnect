@@ -23,6 +23,7 @@ import type {
 } from "../../src/application/ports/AppointmentEmails.js";
 import type { Appointment } from "../../src/domain/appointments/appointment.js";
 import type { PhotoStorage, PhotoUpload } from "../../src/application/ports/PhotoStorage.js";
+import type { FileStorage, FileUpload } from "../../src/application/ports/FileStorage.js";
 import type { StoredPhoto } from "../../src/domain/media/photo.js";
 import type { SessionRepository } from "../../src/domain/identity/SessionRepository.js";
 import type { TemporaryPasswordGenerator } from "../../src/application/ports/TemporaryPasswordGenerator.js";
@@ -123,6 +124,25 @@ export class FakeAppointmentEmails implements AppointmentEmails {
 
   async send(notice: AppointmentNotice, appointment: Appointment): Promise<void> {
     this.sent.push({ notice, code: appointment.code, to: appointment.patientEmail });
+  }
+}
+
+/** Keeps "saved" attachments in memory: keys file-1, file-2, ... */
+export class FakeFileStorage implements FileStorage {
+  readonly saved = new Map<string, FileUpload>();
+  readonly deleted: string[] = [];
+  private count = 0;
+
+  async save(file: FileUpload): Promise<StoredPhoto> {
+    this.count += 1;
+    const storageKey = `file-${this.count}`;
+    this.saved.set(storageKey, file);
+    return { storageKey, url: `https://files.example.com/${storageKey}` };
+  }
+
+  async delete(storageKey: string): Promise<void> {
+    this.saved.delete(storageKey);
+    this.deleted.push(storageKey);
   }
 }
 

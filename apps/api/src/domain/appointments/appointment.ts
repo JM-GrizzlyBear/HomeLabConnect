@@ -62,7 +62,8 @@ export type AppointmentEventKind =
   | "team_unassigned"
   | "on_the_way"
   | "collected"
-  | "not_collected";
+  | "not_collected"
+  | "return_scheduled";
 
 export interface RescheduleProposal {
   id: string;
@@ -98,6 +99,12 @@ export interface Appointment {
   team: { id: string; name: string } | null;
   /** What the med team noted when collecting, or why they couldn't. */
   collectionNote: string | null;
+  /** The visit this one returns to, for tests that weren't collected. */
+  returnOf: { id: string; code: string } | null;
+  /** Return visits scheduled from this one. */
+  returnVisits: { id: string; code: string }[];
+  /** Its place in the team's route that day; null means "by time". */
+  routePosition: number | null;
   openProposal: RescheduleProposal | null;
   events: AppointmentEvent[];
   createdAt: Date;
@@ -152,4 +159,25 @@ export function assertCan(action: Action, status: AppointmentStatus): void {
   if (!allowedFrom[action].includes(status)) {
     throw new AppointmentStatusConflict(`This appointment is ${describe[status]}.`);
   }
+}
+
+/**
+ * Business rule: a return visit is for the tests whose samples weren't taken. It can follow a
+ * visit that wasn't collected at all, or one where some tests were missed.
+ */
+export function missedTests(appointment: Pick<Appointment, "status" | "lines">): AppointmentLine[] {
+  if (appointment.status === "not_collected") return appointment.lines;
+  if (appointment.status === "collected") {
+    return appointment.lines.filter((line) => line.collected === false);
+  }
+  return [];
+}
+
+/** Business rule: a new route order must list each of the day's visits exactly once. */
+export function isSameVisits(current: readonly string[], ordered: readonly string[]): boolean {
+  return (
+    current.length === ordered.length &&
+    new Set(ordered).size === ordered.length &&
+    ordered.every((id) => current.includes(id))
+  );
 }

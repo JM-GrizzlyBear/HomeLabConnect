@@ -27,3 +27,14 @@ export function detectPhotoType(data: Uint8Array): PhotoType | null {
   }
   return null;
 }
+
+export type AttachmentType = PhotoType | "application/pdf";
+
+export const ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024;
+
+/** A photo's type, or "application/pdf" for a PDF (it starts with "%PDF-"); null for anything else. */
+export function detectAttachmentType(data: Uint8Array): AttachmentType | null {
+  const pdf = [0x25, 0x50, 0x44, 0x46, 0x2d];
+  if (pdf.every((byte, i) => data[i] === byte)) return "application/pdf";
+  return detectPhotoType(data);
+}

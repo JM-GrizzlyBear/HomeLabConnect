@@ -15,7 +15,11 @@ export function adapt(controller: Controller, ...middlewares: Middleware[]): Req
       headers: req.headers,
       ip: req.ip ?? null,
       session: { id: req.sessionID, userId: req.session.userId ?? null },
-      file: req.file && { data: new Uint8Array(req.file.buffer), size: req.file.size },
+      file: req.file && {
+        data: new Uint8Array(req.file.buffer),
+        size: req.file.size,
+        filename: req.file.originalname,
+      },
     };
     for (const middleware of middlewares) request = await middleware.handle(request);
 

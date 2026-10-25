@@ -1,4 +1,11 @@
 import { Router } from "express";
+import type { ListAppointmentNotesController } from "../../interface/http/controllers/ListAppointmentNotesController.js";
+import type { AddAppointmentNoteController } from "../../interface/http/controllers/AddAppointmentNoteController.js";
+import type { DeleteAttachmentController } from "../../interface/http/controllers/DeleteAttachmentController.js";
+import type { ScheduleReturnVisitController } from "../../interface/http/controllers/ScheduleReturnVisitController.js";
+import type { ListRouteTeamsController } from "../../interface/http/controllers/ListRouteTeamsController.js";
+import type { GetDailyRouteController } from "../../interface/http/controllers/GetDailyRouteController.js";
+import type { ReorderRouteController } from "../../interface/http/controllers/ReorderRouteController.js";
 import type { ListTeamChoicesController } from "../../interface/http/controllers/ListTeamChoicesController.js";
 import type { AssignTeamController } from "../../interface/http/controllers/AssignTeamController.js";
 import type { ListMyVisitsController } from "../../interface/http/controllers/ListMyVisitsController.js";
@@ -73,7 +80,7 @@ import type { RequestLeaveController } from "../../interface/http/controllers/Re
 import type { Middleware } from "../../interface/http/httpTypes.js";
 import { RequirePermission } from "../../interface/http/middleware/RequirePermission.js";
 import { adapt } from "./expressAdapter.js";
-import { uploadPhoto } from "./uploadPhoto.js";
+import { uploadAttachment, uploadPhoto } from "./uploadPhoto.js";
 
 export interface Controllers {
   health: HealthController;
@@ -147,6 +154,13 @@ export interface Controllers {
   assignTeam: AssignTeamController;
   listMyVisits: ListMyVisitsController;
   recordVisit: RecordVisitController;
+  listNotes: ListAppointmentNotesController;
+  addNote: AddAppointmentNoteController;
+  deleteAttachment: DeleteAttachmentController;
+  scheduleReturnVisit: ScheduleReturnVisitController;
+  listRouteTeams: ListRouteTeamsController;
+  getDailyRoute: GetDailyRouteController;
+  reorderRoute: ReorderRouteController;
 }
 
 export interface Middlewares {
@@ -310,9 +324,11 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.post("/leave/:id/decision", adapt(controllers.decideLeave, middlewares.authenticate));
   router.get("/leave", adapt(controllers.listAllLeave, ...can("leave.view")));
 
+  // Open places only, so any signed-in user may look: patients booking, staff proposing a
+  // new time, the med team booking a return visit
   router.get(
     "/appointments/availability",
-    adapt(controllers.getAvailability, ...can("appointments.book")),
+    adapt(controllers.getAvailability, middlewares.authenticate),
   );
   router.get("/appointments/quote", adapt(controllers.quoteBooking, ...can("appointments.book")));
   router.post("/appointments", adapt(controllers.bookAppointment, ...can("appointments.book")));
@@ -349,6 +365,25 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   );
   router.get("/visits/mine", adapt(controllers.listMyVisits, ...can("visits.view_assigned")));
   router.post("/visits/:id", adapt(controllers.recordVisit, ...can("visits.collect")));
+  // Notes: patients read the shared ones; the use case checks who may see the appointment
+  router.get("/appointments/:id/notes", adapt(controllers.listNotes, middlewares.authenticate));
+  router.post(
+    "/appointments/:id/notes",
+    uploadAttachment,
+    adapt(controllers.addNote, ...can("notes.create")),
+  );
+  router.delete(
+    "/appointments/:id/attachments/:attachmentId",
+    adapt(controllers.deleteAttachment, ...can("notes.attach")),
+  );
+  // The visit's team (visits.schedule_return) or staff (appointments.assign): the use case decides
+  router.post(
+    "/appointments/:id/return",
+    adapt(controllers.scheduleReturnVisit, middlewares.authenticate),
+  );
+  router.get("/routes/teams", adapt(controllers.listRouteTeams, ...can("routes.view")));
+  router.get("/routes", adapt(controllers.getDailyRoute, ...can("routes.view")));
+  router.put("/routes", adapt(controllers.reorderRoute, ...can("routes.manage")));
   router.post(
     "/appointments/:id/proposal",
     adapt(controllers.answerProposal, ...can("appointments.view_own")),

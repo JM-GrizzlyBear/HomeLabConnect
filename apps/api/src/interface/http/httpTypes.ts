@@ -14,7 +14,7 @@ export interface HttpRequest<
   headers: Record<string, string | string[] | undefined>;
   ip: string | null;
   /** The uploaded file of a multipart form (one per request), if any. */
-  file?: { data: Uint8Array; size: number };
+  file?: { data: Uint8Array; size: number; filename: string };
   /** This browser's session: its id, and who is signed in on it (null for nobody). */
   session: { id: string; userId: string | null };
   /** Set by the Authenticate middleware. */

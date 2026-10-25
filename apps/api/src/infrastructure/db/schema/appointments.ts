@@ -1,4 +1,5 @@
 import {
+  type AnyPgColumn,
   boolean,
   date,
   index,
@@ -54,6 +55,10 @@ export const appointments = pgTable(
     teamId: uuid("team_id").references(() => medTeams.id),
     /** What the team noted when collecting, or why they couldn't. */
     collectionNote: text("collection_note"),
+    /** The visit this one returns to, for tests that weren't collected. */
+    returnOfId: uuid("return_of_id").references((): AnyPgColumn => appointments.id),
+    /** Its place in the team's route that day; null means "by time". */
+    routePosition: smallint("route_position"),
     ...timestamps,
   },
   (table) => [
@@ -122,4 +127,46 @@ export const appointmentEvents = pgTable(
     note: text("note"),
   },
   (table) => [index("appointment_events_appointment_idx").on(table.appointmentId, table.at)],
+);
+
+/** A note on an appointment. Patients only see the ones shared with them. */
+export const appointmentNotes = pgTable(
+  "appointment_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    appointmentId: uuid("appointment_id")
+      .notNull()
+      .references(() => appointments.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    body: text("body").notNull(),
+    sharedWithPatient: boolean("shared_with_patient").notNull().default(false),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("appointment_notes_appointment_idx").on(table.appointmentId, table.createdAt)],
+);
+
+/** A photo or PDF attached to a note (Cloudinary, or apps/api/uploads locally). */
+export const appointmentAttachments = pgTable(
+  "appointment_attachments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    appointmentId: uuid("appointment_id")
+      .notNull()
+      .references(() => appointments.id, { onDelete: "cascade" }),
+    noteId: uuid("note_id")
+      .notNull()
+      .references(() => appointmentNotes.id, { onDelete: "cascade" }),
+    uploadedBy: uuid("uploaded_by")
+      .notNull()
+      .references(() => users.id),
+    filename: text("filename").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    url: text("url").notNull(),
+    storageKey: text("storage_key").notNull(),
+    createdAt: timestamptz("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("appointment_attachments_note_idx").on(table.noteId)],
 );

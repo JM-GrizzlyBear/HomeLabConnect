@@ -83,6 +83,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
           address: input.address,
           landmark: input.landmark,
           patientNotes: input.notes,
+          returnOfId: input.returnOfId ?? null,
           subtotalCentavos: subtotal,
           discountCentavos: discount,
           totalCentavos: subtotal - discount,
@@ -330,7 +331,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
         eq(appointments.visitDate, date),
         placeHolding,
       ),
-      [asc(appointments.slotStart)],
+      [sql`${appointments.routePosition} asc nulls last`, asc(appointments.slotStart)],
     );
   }
 
@@ -365,6 +366,26 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     });
   }
 
+  async addEvent(
+    id: string,
+    actorId: string | null,
+    kind: AppointmentEventKind,
+    note: string | null,
+  ): Promise<void> {
+    await this.db.insert(appointmentEvents).values({ appointmentId: id, actorId, kind, note });
+  }
+
+  async setRoute(orderedIds: readonly string[]): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      for (const [index, id] of orderedIds.entries()) {
+        await tx
+          .update(appointments)
+          .set({ routePosition: index + 1 })
+          .where(eq(appointments.id, id));
+      }
+    });
+  }
+
   /** Appointments matching `where`, with their tests, open proposal and history. */
   private async load(
     where: SQL | undefined,
@@ -393,6 +414,8 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
         collectionNote: appointments.collectionNote,
         teamId: appointments.teamId,
         teamName: medTeams.name,
+        returnOfId: appointments.returnOfId,
+        routePosition: appointments.routePosition,
         createdAt: appointments.createdAt,
       })
       .from(appointments)
@@ -404,7 +427,8 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     if (rows.length === 0) return [];
 
     const ids = rows.map((row) => row.id);
-    const [lines, proposals, events] = await Promise.all([
+    const returnOfIds = rows.flatMap((row) => (row.returnOfId ? [row.returnOfId] : []));
+    const [lines, proposals, events, related] = await Promise.all([
       this.db
         .select()
         .from(appointmentProcedures)
@@ -431,14 +455,38 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
         .leftJoin(users, eq(users.id, appointmentEvents.actorId))
         .where(inArray(appointmentEvents.appointmentId, ids))
         .orderBy(asc(appointmentEvents.at)),
+      // Both directions of the return-visit link, with their codes
+      this.db
+        .select({
+          id: appointments.id,
+          number: appointments.number,
+          returnOfId: appointments.returnOfId,
+        })
+        .from(appointments)
+        .where(
+          or(
+            inArray(appointments.returnOfId, ids),
+            returnOfIds.length > 0 ? inArray(appointments.id, returnOfIds) : sql`false`,
+          ),
+        ),
     ]);
 
-    return rows.map(({ number, teamId, teamName, ...row }) => {
+    return rows.map(({ number, teamId, teamName, returnOfId, ...row }) => {
+      const returnOf = related.find((candidate) => candidate.id === returnOfId);
       const proposal = proposals.find((candidate) => candidate.appointmentId === row.id);
       return {
         ...row,
         code: formatAppointmentCode(number),
         team: teamId ? { id: teamId, name: teamName ?? "" } : null,
+        returnOf: returnOf
+          ? { id: returnOf.id, code: formatAppointmentCode(returnOf.number) }
+          : null,
+        returnVisits: related
+          .filter((candidate) => candidate.returnOfId === row.id)
+          .map((candidate) => ({
+            id: candidate.id,
+            code: formatAppointmentCode(candidate.number),
+          })),
         lines: lines
           .filter((line) => line.appointmentId === row.id)
           .map((line) => ({

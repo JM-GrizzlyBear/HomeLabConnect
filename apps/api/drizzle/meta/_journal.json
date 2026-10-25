@@ -127,6 +127,13 @@
       "when": 1792861474429,
       "tag": "0017_heavy_boomer",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792919660183,
+      "tag": "0018_mature_thunderbird",
+      "breakpoints": true
     }
   ]
 }
