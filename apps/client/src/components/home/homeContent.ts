@@ -12,6 +12,13 @@ import {
 // The public homepage's copy. Prices and tests match the seeded catalogue; the visit hours,
 // notice and cut-off match the default Settings.
 
+/** The homepage's sections, linked from the header and the footer. */
+export const sectionLinks = [
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#tests", label: "Tests & prices" },
+  { href: "#faq", label: "FAQ" },
+] as const;
+
 export interface Step {
   icon: LucideIcon;
   title: string;

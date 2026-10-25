@@ -10,20 +10,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-
-export const sections = [
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#tests", label: "Tests & prices" },
-  { href: "#faq", label: "FAQ" },
-] as const;
-
-interface HomeHeaderProps {
-  signedIn: boolean;
-  bookPath: string;
-}
+import { sectionLinks } from "./homeContent";
+import { useHomeLinks } from "./useHomeLinks";
 
 /** The homepage's top bar: logo, section links, and sign in / book (a menu on phones). */
-export function HomeHeader({ signedIn, bookPath }: HomeHeaderProps) {
+export function HomeHeader() {
+  const { signedIn, bookPath } = useHomeLinks();
   const [open, setOpen] = useState(false);
 
   const actions = (
@@ -55,7 +47,7 @@ export function HomeHeader({ signedIn, bookPath }: HomeHeaderProps) {
           aria-label="Sections"
           className="hidden items-center gap-7 text-sm text-slate-600 md:flex"
         >
-          {sections.map((section) => (
+          {sectionLinks.map((section) => (
             <a key={section.href} href={section.href} className="hover:text-brand-700">
               {section.label}
             </a>
@@ -82,7 +74,7 @@ export function HomeHeader({ signedIn, bookPath }: HomeHeaderProps) {
             <SheetDescription>Lab tests at home. Results online.</SheetDescription>
           </SheetHeader>
           <nav aria-label="Sections" className="grid gap-1 px-4">
-            {sections.map((section) => (
+            {sectionLinks.map((section) => (
               <a
                 key={section.href}
                 href={section.href}
