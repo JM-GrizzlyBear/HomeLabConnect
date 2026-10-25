@@ -1,6 +1,6 @@
 # ERD: Appointments
 
-Tables added by Module 5 (slices 5A booking, 5B staff review, 5C team assignment and visits). Dates are whole days and times are "HH:MM", in Philippine time. Money is centavos.
+Tables added by Module 5 (slices 5A booking, 5B staff review, 5C team assignment and visits, 5D notes, return visits and routes). Dates are whole days and times are "HH:MM", in Philippine time. Money is centavos.
 
 ```mermaid
 erDiagram
@@ -12,6 +12,9 @@ erDiagram
     appointments ||--o{ appointment_events : "history"
     users ||--o{ appointment_events : "done by"
     med_teams ||--o{ appointments : "goes on"
+    appointments ||--o{ appointments : "return visit of"
+    appointments ||--o{ appointment_notes : "notes"
+    appointment_notes ||--o{ appointment_attachments : "files"
 
     appointments {
         uuid id PK
@@ -30,6 +33,27 @@ erDiagram
         text decision_note "why rejected or cancelled by staff"
         uuid team_id FK "the med team going"
         text collection_note "the team's note, or why it couldn't collect"
+        uuid return_of_id FK "the visit this one returns to"
+        smallint route_position "order in the team's route; null = by time"
+    }
+    appointment_notes {
+        uuid id PK
+        uuid appointment_id FK
+        uuid author_id FK
+        text body
+        boolean shared_with_patient
+        timestamptz created_at
+    }
+    appointment_attachments {
+        uuid id PK
+        uuid appointment_id FK
+        uuid note_id FK
+        uuid uploaded_by FK
+        text filename
+        text mime_type "JPG, PNG, WebP or PDF"
+        int size_bytes "at most 5 MB"
+        text url
+        text storage_key "Cloudinary public id, or the local file name"
     }
     appointment_procedures {
         uuid appointment_id PK, FK
@@ -73,4 +97,7 @@ erDiagram
 - **Emails** go to the patient when a booking is received, confirmed, rejected, given a new time or cancelled by staff. A failed email never undoes the change.
 - **Team assignment:** a confirmed visit goes to one med team on duty that day. A team does one visit per slot and at most _visits per team per day_. With Settings → team assignment **auto**, a visit is given to the free team with the fewest visits that day (ties A–Z) as soon as it's confirmed; if none is free, staff assign it. With **manual**, staff with `appointments.assign` pick the team. Moving a visit to a new time takes its team away (re-assigned automatically in auto mode). The check and the write happen under the date's lock, so two visits can't take the same team and slot.
 - **The visit:** a member of the assigned team (`visits.collect`) marks it **on the way**, then **collected** (ticking which tests' samples were taken, with an optional note) or **not collected** (with the reason). Collected and not-collected visits still count toward the team's day.
+- **Notes & files:** staff and members of the visit's team add notes (`notes.create`), optionally with one photo or PDF up to 5 MB (`notes.attach`; the file's first bytes are checked, not its name). Patients see only notes marked "shared with patient". Files go to Cloudinary (`<CLOUDINARY_FOLDER>/attachments`, kept as uploaded) or `apps/api/uploads/attachments` locally. The uploader or an admin can remove a file.
+- **Return visits:** after a visit that wasn't collected, or one where some tests were missed, the visit's team (`visits.schedule_return`) or staff (`appointments.assign`) book a return visit at an open time: a new **confirmed** appointment for the missed tests only, at ₱0, linked both ways (`return_of_id`), given to the same team when it's free.
+- **Daily route:** a team's visits for a day, ordered by `route_position` (set when an admin with `routes.manage` reorders them), then by time. The med team (`routes.view`) sees its own route, with an "Open in Maps" link per stop; My Visits uses the same order.
 - `turbo run db:seed` adds four sample bookings (patient01–03) on an empty database; the confirmed one goes to Team Makati.
