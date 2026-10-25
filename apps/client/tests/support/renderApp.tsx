@@ -85,5 +85,3 @@ export const adminUser = {
   lastName: "Admin",
   permissions: [...PERMISSION_KEYS] as string[],
 };
-
-export const health = () => ({ status: 200, body: { status: "ok", db: "ok" } });
