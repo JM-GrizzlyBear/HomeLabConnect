@@ -1,8 +1,7 @@
-import { Link } from "react-router";
 import { LogoMark } from "@/components/icons";
 import { sectionLinks } from "./homeContent";
 
-/** The homepage footer: the brand, section links, staff sign-in and the year. */
+/** The homepage footer: the brand, section links and the year. */
 export function HomeFooter() {
   return (
     <footer className="bg-brand-950 text-brand-100">
@@ -20,9 +19,6 @@ export function HomeFooter() {
               {section.label}
             </a>
           ))}
-          <Link to="/login" className="hover:text-white">
-            Staff sign in
-          </Link>
         </nav>
         <p className="text-sm text-brand-200">© {new Date().getFullYear()} HomeLabConnect</p>
       </div>
