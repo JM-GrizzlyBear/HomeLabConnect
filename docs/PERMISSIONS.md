@@ -81,7 +81,10 @@ Seeded examples:
 - `appointments.view_all` opens **All Appointments** (admin, doctors, support). On it, `accept` and `reject` decide pending bookings (admin), and `reschedule` proposes a new time (admin, support).
 - `appointments.assign` (admin) gives a confirmed visit to a med team on duty (the **Assign team** button).
 - `visits.view_assigned` (med team) opens **My Visits**: their team's visits for a day. `visits.collect` records them (on the way, collected, couldn't collect); only members of the visit's team can, for anyone else it answers 404.
-- An appointment's page opens for its patient, or for anyone with `appointments.view_all`; everyone else gets 404.
+- `notes.view` shows every note on an appointment (staff and the visit's team); patients see only notes shared with them. `notes.create` adds notes, `notes.attach` adds a photo or PDF to one.
+- `visits.schedule_return` (med team) books a return visit for the tests their team couldn't collect; staff with `appointments.assign` can too.
+- `routes.view` (med team) opens **Daily Route** for their own team; `routes.manage` (admin) opens any team's and changes the order.
+- An appointment's page opens for its patient, for anyone with `appointments.view_all`, and for members of the med team assigned to it; everyone else gets 404.
 
 ### Scheduling, teams and leave
 

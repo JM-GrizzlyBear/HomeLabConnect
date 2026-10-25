@@ -12,6 +12,7 @@ import { SESSION_COOKIE } from "../../../src/infrastructure/http/session.js";
 import {
   FakeAccountEmails,
   FakeAppointmentEmails,
+  FakeFileStorage,
   FakePhotoStorage,
   FakeTemporaryPasswordGenerator,
   FixedClock,
@@ -61,6 +62,7 @@ export async function buildTestApp({ databaseReachable = true } = {}) {
   const passwords = new FakeTemporaryPasswordGenerator();
   const photos = new FakePhotoStorage();
   const appointmentEmails = new FakeAppointmentEmails();
+  const files = new FakeFileStorage();
   const unreachable: DatabaseHealthProbe = { isReachable: async () => false };
 
   const app = buildApp({
@@ -76,10 +78,21 @@ export async function buildTestApp({ databaseReachable = true } = {}) {
     secureCookie: false,
     trustProxy: 0,
     photoStorage: photos,
+    fileStorage: files,
     healthProbe: databaseReachable ? undefined : unreachable,
   });
 
-  return { app, db, clock, emails, appointmentEmails, passwords, photos, given: new Given(db) };
+  return {
+    app,
+    db,
+    clock,
+    emails,
+    appointmentEmails,
+    passwords,
+    photos,
+    files,
+    given: new Given(db),
+  };
 }
 
 /** Signs in and returns the session cookie header that makes later requests count as that user. */

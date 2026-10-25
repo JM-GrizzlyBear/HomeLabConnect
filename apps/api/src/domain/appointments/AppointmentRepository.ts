@@ -16,6 +16,8 @@ export interface NewAppointment {
   landmark: string | null;
   notes: string | null;
   lines: AppointmentLine[];
+  /** For a return visit: the visit it returns to. */
+  returnOfId?: string;
 }
 
 /** The most a slot and its day may hold when a booking is saved. */
@@ -92,6 +94,15 @@ export interface AppointmentRepository {
   listForTeams(teamIds: readonly string[], date: string): Promise<Appointment[]>;
   /** The med team's progress: on the way, then collected (per test) or not. */
   recordVisit(id: string, record: VisitRecord): Promise<void>;
+  /** Adds a line to an appointment's history. */
+  addEvent(
+    id: string,
+    actorId: string | null,
+    kind: AppointmentEventKind,
+    note: string | null,
+  ): Promise<void>;
+  /** Saves the team's route for a date: the visits in this order. */
+  setRoute(orderedIds: readonly string[]): Promise<void>;
 }
 
 export interface VisitRecord {

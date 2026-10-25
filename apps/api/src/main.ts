@@ -7,6 +7,7 @@ import { createDatabase } from "./infrastructure/db/client.js";
 import { NodemailerAccountEmails } from "./infrastructure/mail/NodemailerAccountEmails.js";
 import { NodemailerAppointmentEmails } from "./infrastructure/mail/NodemailerAppointmentEmails.js";
 import { SystemClock } from "./infrastructure/SystemClock.js";
+import { createFileStorage } from "./infrastructure/storage/createFileStorage.js";
 import { createPhotoStorage } from "./infrastructure/storage/createPhotoStorage.js";
 
 const config = loadConfig();
@@ -34,6 +35,7 @@ const app = buildApp({
   secureCookie: config.secureCookie,
   trustProxy: config.trustProxy,
   photoStorage: createPhotoStorage(config),
+  fileStorage: createFileStorage(config),
   uploadsDir: config.photoStorage === "local" ? config.uploadsDir : undefined,
 });
 

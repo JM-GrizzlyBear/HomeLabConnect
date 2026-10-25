@@ -50,7 +50,21 @@ export const eventLabels: Record<string, string> = {
   on_the_way: "Team on the way",
   collected: "Samples collected",
   not_collected: "Couldn't collect",
+  return_scheduled: "Return visit",
 };
+
+/** A Google Maps search for an address, for directions on the phone. */
+export function mapsLink(address: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+/** Tests left to collect on a finished visit: what a return visit would be for. */
+export function missedTests(appointment: AppointmentView) {
+  if (appointment.status === "not_collected") return appointment.lines;
+  if (appointment.status === "collected")
+    return appointment.lines.filter((line) => line.collected === false);
+  return [];
+}
 
 /** "Sat, Jan 17, 2026 · 8:00 AM". */
 export function formatVisit(date: string, slot: string): string {

@@ -103,6 +103,9 @@ export const appointmentSchema = z.object({
   decisionNote: z.string().nullable(),
   team: z.object({ id: z.uuid(), name: z.string() }).nullable(),
   collectionNote: z.string().nullable(),
+  returnOf: z.object({ id: z.uuid(), code: z.string() }).nullable(),
+  returnVisits: z.array(z.object({ id: z.uuid(), code: z.string() })),
+  routePosition: z.number().int().nullable(),
   proposal: z.object({ date: z.iso.date(), slot: z.string(), reason: z.string() }).nullable(),
   /** Until when the patient may still cancel; null once they can't. */
   cancellableUntil: z.iso.datetime().nullable(),
@@ -190,7 +193,58 @@ export const recordVisitRequestSchema = z.discriminatedUnion("outcome", [
   }),
 ]);
 
+export const attachmentSchema = z.object({
+  id: z.uuid(),
+  filename: z.string(),
+  mimeType: z.string(),
+  sizeBytes: z.number().int(),
+  url: z.string(),
+  uploadedBy: z.object({ id: z.uuid(), name: z.string() }),
+  createdAt: z.iso.datetime(),
+});
+
+export const appointmentNoteSchema = z.object({
+  id: z.uuid(),
+  author: z.object({ id: z.uuid(), name: z.string() }),
+  body: z.string(),
+  sharedWithPatient: z.boolean(),
+  attachments: z.array(attachmentSchema),
+  createdAt: z.iso.datetime(),
+});
+export const appointmentNotesSchema = z.array(appointmentNoteSchema);
+
+/** Sent as a multipart form (a file may come with it), so every field arrives as text. */
+export const addNoteRequestSchema = z.object({
+  body: z.string().max(2000, "Keep notes under 2000 characters.").default(""),
+  sharedWithPatient: z
+    .union([z.boolean(), z.enum(["true", "false"])])
+    .default(false)
+    .transform((value) => value === true || value === "true"),
+});
+
+export const attachmentParamsSchema = z.object({
+  id: z.uuid("Not a valid id."),
+  attachmentId: z.uuid("Not a valid id."),
+});
+
+export const returnVisitRequestSchema = z.object({
+  date: z.iso.date("Choose a date."),
+  slot: slotSchema,
+});
+
+export const routeTeamsQuerySchema = z.object({ date: z.iso.date("Not a valid date.") });
+export const routeTeamsSchema = z.array(z.object({ id: z.uuid(), name: z.string() }));
+export const routeQuerySchema = z.object({
+  teamId: z.uuid("Choose a team."),
+  date: z.iso.date("Not a valid date."),
+});
+export const reorderRouteRequestSchema = routeQuerySchema.extend({
+  appointmentIds: z.array(z.uuid()).min(1, "The route has no visits."),
+});
+
 export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
+export type AppointmentNoteView = z.infer<typeof appointmentNoteSchema>;
+export type RouteTeam = z.infer<typeof routeTeamsSchema>[number];
 export type TeamChoice = z.infer<typeof teamChoiceSchema>;
 export type RecordVisitRequest = z.infer<typeof recordVisitRequestSchema>;
 export type BookAppointmentRequest = z.infer<typeof bookAppointmentRequestSchema>;

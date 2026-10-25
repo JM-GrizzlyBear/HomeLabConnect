@@ -256,6 +256,9 @@ Appointments
 - [ ] As `support@`: **Propose new time** on a booking. As that patient: the appointment shows the new time with **Accept new time** / **Decline**; accepting moves the visit.
 - [ ] Try to book the last place of a time from two browsers at once: one succeeds, the other is told the time was just taken.
 - [ ] As `admin@`: open a confirmed appointment → **Assign team** lists the teams on duty (busy ones greyed out) → pick one. With Settings → team assignment = Auto, accepting a booking assigns a team by itself.
+- [ ] As `medteam@`: open a visit (**Details & notes**) → add a note with a photo or PDF; tick **Share with patient** on one. As the patient, only the shared note shows.
+- [ ] Record a visit as **Collected** with one test unticked → **Schedule return visit** → pick a time: a new ₱0 confirmed visit for the missed test, linked both ways.
+- [ ] As `admin@`: **Daily Route** → pick Team Makati → move a stop up or down; `medteam@`'s My Visits shows the new order. **Open in Maps** opens directions.
 - [ ] As `medteam@`: **My Visits** shows the team's visits for the day (address, phone, tests) → **On the way** → **Collected** (tick the tests, add a note). The appointment page shows ✓/✗ per test and the team's note.
 
 Production image (optional)

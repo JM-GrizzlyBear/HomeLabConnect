@@ -57,6 +57,9 @@ const appointment = (overrides: Record<string, unknown> = {}) => ({
   decisionNote: null,
   team: null,
   collectionNote: null,
+  returnOf: null,
+  returnVisits: [],
+  routePosition: null,
   proposal: null,
   cancellableUntil: "2099-01-01T00:00:00.000Z",
   events: [
@@ -308,5 +311,128 @@ describe("MyVisitsPage", () => {
       { outcome: "on_the_way" },
       { outcome: "collected", collectedProcedureIds: [cbc.id], note: "All good." },
     ]);
+  });
+});
+
+describe("notes, return visits and the daily route", () => {
+  beforeEach(() => localStorage.clear());
+
+  const medTeamUser = {
+    ...sampleUser,
+    id: "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0e",
+    firstName: "Juan",
+    lastName: "Tech",
+    role: "med_team" as const,
+    permissions: [
+      "visits.view_assigned",
+      "visits.collect",
+      "visits.schedule_return",
+      "notes.view",
+      "notes.create",
+      "notes.attach",
+      "routes.view",
+    ],
+  };
+  const team = { id: "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b", name: "Team Makati" };
+  const note = (overrides: Record<string, unknown> = {}) => ({
+    id: "8b9c0d1e-2f3a-4b4c-9d5e-6f7a8b9c0d1e",
+    author: { id: medTeamUser.id, name: "Juan Tech" },
+    body: "Dog at the gate.",
+    sharedWithPatient: false,
+    attachments: [],
+    createdAt: "2026-01-15T08:00:00.000Z",
+    ...overrides,
+  });
+
+  it("adds a note shared with the patient", async () => {
+    let sent: FormData | undefined;
+    const visit = appointment({ status: "confirmed", team, cancellableUntil: null });
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: medTeamUser }),
+      [`GET /api/appointments/${visit.id}`]: () => ({ status: 200, body: visit }),
+      [`GET /api/appointments/${visit.id}/notes`]: () => ({ status: 200, body: [] }),
+      [`POST /api/appointments/${visit.id}/notes`]: (body) => {
+        sent = body as FormData;
+        return { status: 201, body: [note({ body: "Fasting needed.", sharedWithPatient: true })] };
+      },
+    });
+    renderApp(`/app/appointments/${visit.id}`);
+
+    await userEvent.type(await screen.findByLabelText("New note"), "Fasting needed.");
+    await userEvent.click(screen.getByRole("switch"));
+    await userEvent.click(screen.getByRole("button", { name: "Add note" }));
+
+    expect(await toasts().findByText("Note added")).toBeInTheDocument();
+    expect(sent?.get("body")).toBe("Fasting needed.");
+    expect(sent?.get("sharedWithPatient")).toBe("true");
+  });
+
+  it("books a return visit for the tests that weren't collected", async () => {
+    let sent: unknown;
+    const visit = appointment({
+      status: "collected",
+      team,
+      cancellableUntil: null,
+      lines: [{ ...line, collected: false }],
+    });
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: medTeamUser }),
+      [`GET /api/appointments/${visit.id}`]: () => ({ status: 200, body: visit }),
+      [`GET /api/appointments/${visit.id}/notes`]: () => ({ status: 200, body: [] }),
+      "GET /api/appointments/availability*": () => ({
+        status: 200,
+        body: [
+          { date: openDate, closedReason: null, label: null, slots: [{ start: "07:00", left: 1 }] },
+        ],
+      }),
+      [`POST /api/appointments/${visit.id}/return`]: (body) => {
+        sent = body;
+        return {
+          status: 201,
+          body: appointment({ code: "HLC-000002", status: "confirmed", totalCentavos: 0 }),
+        };
+      },
+    });
+    renderApp(`/app/appointments/${visit.id}`);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Schedule return visit" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    const dayLabel = `${format(parseISO(openDate), "EEEE, MMMM d")}: 1 open`;
+    await userEvent.click(await dialog.findByRole("button", { name: dayLabel }));
+    await userEvent.click(dialog.getByRole("button", { name: /7:00 AM/ }));
+    await userEvent.click(dialog.getByRole("button", { name: "Book return visit" }));
+
+    expect(await toasts().findByText("Return visit HLC-000002 booked")).toBeInTheDocument();
+    expect(sent).toEqual({ date: openDate, slot: "07:00" });
+  });
+
+  it("lets an admin move a stop down the route", async () => {
+    let sent: unknown;
+    const first = appointment({ status: "confirmed", team, slot: "06:00", code: "HLC-000001" });
+    const second = appointment({
+      id: "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e2f",
+      status: "confirmed",
+      team,
+      slot: "08:00",
+      code: "HLC-000002",
+    });
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: adminUser }),
+      "GET /api/routes/teams*": () => ({ status: 200, body: [team] }),
+      "GET /api/routes?*": () => ({ status: 200, body: [first, second] }),
+      "PUT /api/routes": (body) => {
+        sent = body;
+        return { status: 200, body: [second, first] };
+      },
+    });
+    renderApp("/app/appointments/route");
+
+    await userEvent.click(await screen.findByRole("button", { name: "Move HLC-000001 down" }));
+
+    expect(await toasts().findByText("Route updated")).toBeInTheDocument();
+    expect(sent).toMatchObject({
+      teamId: team.id,
+      appointmentIds: [first.id, second.id].reverse(),
+    });
   });
 });

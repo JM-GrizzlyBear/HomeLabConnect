@@ -14,7 +14,11 @@ export class GetAppointmentController implements Controller {
     const { userId, permissions } = requireAuth(request);
     const output = await this.getAppointment.execute({
       id,
-      viewer: { userId, canViewAll: permissions.has("appointments.view_all") },
+      viewer: {
+        userId,
+        canViewAll: permissions.has("appointments.view_all"),
+        canViewAssigned: permissions.has("visits.view_assigned"),
+      },
     });
     return presentAppointment(output);
   }

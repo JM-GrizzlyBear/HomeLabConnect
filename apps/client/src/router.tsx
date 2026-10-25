@@ -8,6 +8,7 @@ import { AllAppointmentsPage } from "./pages/AllAppointmentsPage";
 import { AppointmentPage } from "./pages/AppointmentPage";
 import { BookVisitPage } from "./pages/BookVisitPage";
 import { ComingSoonPage } from "./pages/ComingSoonPage";
+import { DailyRoutePage } from "./pages/DailyRoutePage";
 import { MyAppointmentsPage } from "./pages/MyAppointmentsPage";
 import { MyVisitsPage } from "./pages/MyVisitsPage";
 import { CreateStaffPage } from "./pages/CreateStaffPage";
@@ -240,6 +241,14 @@ export const routes: RouteObject[] = [
         element: (
           <RequirePermission permission="visits.view_assigned">
             <MyVisitsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "appointments/route",
+        element: (
+          <RequirePermission permission="routes.view">
+            <DailyRoutePage />
           </RequirePermission>
         ),
       },
