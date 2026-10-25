@@ -1,12 +1,14 @@
 import { format, parseISO } from "date-fns";
 import { CalendarClockIcon, CircleAlertIcon } from "lucide-react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { AppointmentActions } from "@/components/appointments/AppointmentActions";
 import { AppointmentLines } from "@/components/appointments/AppointmentLines";
+import { NotesCard } from "@/components/appointments/NotesCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchAppointment } from "../api/appointments";
+import { useAuth } from "../auth/authContext";
 import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import {
@@ -21,6 +23,7 @@ import { useApiQuery } from "../queries/useApiQuery";
 /** One appointment: when and where, the tests and prices, what happened, and what can be done. */
 export function AppointmentPage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const {
     data: appointment,
     error,
@@ -110,6 +113,30 @@ export function AppointmentPage() {
                 </span>
               </dd>
             </div>
+            {(appointment.returnOf || appointment.returnVisits.length > 0) && (
+              <div className="sm:col-span-2">
+                <dt className="text-muted-foreground">Return visit</dt>
+                <dd className="flex flex-wrap gap-x-3">
+                  {appointment.returnOf && (
+                    <Link
+                      to={`/app/appointments/${appointment.returnOf.id}`}
+                      className="text-brand-700 hover:underline"
+                    >
+                      Return of {appointment.returnOf.code}
+                    </Link>
+                  )}
+                  {appointment.returnVisits.map((visit) => (
+                    <Link
+                      key={visit.id}
+                      to={`/app/appointments/${visit.id}`}
+                      className="text-brand-700 hover:underline"
+                    >
+                      Return visit {visit.code}
+                    </Link>
+                  ))}
+                </dd>
+              </div>
+            )}
             <div>
               <dt className="text-muted-foreground">Team</dt>
               <dd>{appointment.team?.name ?? "Not assigned yet"}</dd>
@@ -138,6 +165,7 @@ export function AppointmentPage() {
           <AppointmentLines {...appointment} />
           <p className="mt-3 text-xs text-muted-foreground">Payment: Unpaid</p>
         </ContentCard>
+        <NotesCard appointmentId={appointment.id} isPatient={appointment.patient.id === user?.id} />
         <ContentCard title="History" className="lg:col-span-5">
           <ol className="space-y-2 text-sm">
             {appointment.events.map((event, index) => (

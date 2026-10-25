@@ -2,6 +2,7 @@ import {
   type AppointmentView,
   appointmentReasonRequestSchema,
   proposeTimeRequestSchema,
+  returnVisitRequestSchema,
 } from "@homelabconnect/shared";
 import { format, parseISO } from "date-fns";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
@@ -25,11 +26,12 @@ import {
   fetchAvailability,
   proposeNewTime,
   rejectAppointment,
+  scheduleReturnVisit,
 } from "../../api/appointments";
 import { useAuth } from "../../auth/authContext";
 import { useCan } from "../../auth/useCan";
 import { useFeedback } from "../../feedback/feedbackContext";
-import { formatVisit } from "../../format/appointments";
+import { formatVisit, missedTests } from "../../format/appointments";
 import { monthEnd, monthOf, shiftMonth } from "../../format/schedule";
 import { useFormState } from "../../forms/useFormState";
 import { queryKeys } from "../../queries/queryKeys";
@@ -42,7 +44,7 @@ interface AppointmentActionsProps {
   onChanged(updated: AppointmentView): void;
 }
 
-type Open = "reject" | "cancel" | "propose" | "team" | null;
+type Open = "reject" | "cancel" | "propose" | "team" | "return" | null;
 
 /**
  * What the viewer may do with an appointment right now: staff accept, reject, propose
@@ -182,6 +184,17 @@ export function AppointmentActions({ appointment, onChanged }: AppointmentAction
       </Button>,
     );
   }
+  if (
+    missedTests(appointment).length > 0 &&
+    appointment.returnVisits.length === 0 &&
+    (can("visits.schedule_return") || can("appointments.assign"))
+  ) {
+    buttons.push(
+      <Button key="return" size="sm" disabled={busy} onClick={() => setOpen("return")}>
+        Schedule return visit
+      </Button>,
+    );
+  }
   if (isOwner && appointment.cancellableUntil && can("appointments.cancel")) {
     buttons.push(
       <Button
@@ -244,13 +257,19 @@ export function AppointmentActions({ appointment, onChanged }: AppointmentAction
         }}
       />
       <ProposeTimeDialog
-        open={open === "propose"}
+        open={open === "propose" || open === "return"}
+        mode={open === "return" ? "return" : "propose"}
         appointment={appointment}
         onClose={() => setOpen(null)}
         onProposed={(updated) => {
           onChanged(updated);
           setOpen(null);
-          feedback.success({ title: "New time sent to the patient" });
+          feedback.success({
+            title:
+              open === "return"
+                ? `Return visit ${updated.code} booked`
+                : "New time sent to the patient",
+          });
         }}
       />
     </>
@@ -326,32 +345,58 @@ function ReasonForm({
 
 interface ProposeTimeDialogProps {
   open: boolean;
+  /** "propose": a new time the patient answers; "return": book a return visit for missed tests. */
+  mode: "propose" | "return";
   appointment: AppointmentView;
   onClose(): void;
   onProposed(updated: AppointmentView): void;
 }
 
-/** Staff pick another open date and time; the patient then accepts or declines it. */
-function ProposeTimeDialog({ open, appointment, onClose, onProposed }: ProposeTimeDialogProps) {
+/**
+ * Picks another open date and time: either a new time the patient then accepts or declines,
+ * or a return visit for the tests that weren't collected (booked straight away, at ₱0).
+ */
+function ProposeTimeDialog({
+  open,
+  mode,
+  appointment,
+  onClose,
+  onProposed,
+}: ProposeTimeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       {open && (
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Propose a new time</DialogTitle>
+            <DialogTitle>
+              {mode === "return" ? "Schedule a return visit" : "Propose a new time"}
+            </DialogTitle>
             <DialogDescription>
-              Now booked for {formatVisit(appointment.date, appointment.slot)}. The patient accepts
-              or declines the new time.
+              {mode === "return"
+                ? `For ${missedTests(appointment)
+                    .map((line) => line.name)
+                    .join(", ")}. It's confirmed straight away, at no extra charge.`
+                : `Now booked for ${formatVisit(appointment.date, appointment.slot)}. The patient accepts or declines the new time.`}
             </DialogDescription>
           </DialogHeader>
-          <ProposeForm appointment={appointment} onClose={onClose} onProposed={onProposed} />
+          <ProposeForm
+            mode={mode}
+            appointment={appointment}
+            onClose={onClose}
+            onProposed={onProposed}
+          />
         </DialogContent>
       )}
     </Dialog>
   );
 }
 
-function ProposeForm({ appointment, onClose, onProposed }: Omit<ProposeTimeDialogProps, "open">) {
+function ProposeForm({
+  mode,
+  appointment,
+  onClose,
+  onProposed,
+}: Omit<ProposeTimeDialogProps, "open">) {
   const [month, setMonth] = useState(() => monthOf(appointment.date));
   const { values, errors, submitting, setValues, submit } = useFormState({
     date: "",
@@ -366,6 +411,17 @@ function ProposeForm({ appointment, onClose, onProposed }: Omit<ProposeTimeDialo
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (mode === "return") {
+      await submit(
+        returnVisitRequestSchema.safeParse(values),
+        async (request) => onProposed(await scheduleReturnVisit(appointment.id, request)),
+        {
+          title: "Couldn't book the return visit",
+          fieldByCode: { slot_full: "slot", slot_not_bookable: "slot" },
+        },
+      );
+      return;
+    }
     await submit(
       proposeTimeRequestSchema.safeParse(values),
       async (request) => onProposed(await proposeNewTime(appointment.id, request)),
@@ -417,22 +473,24 @@ function ProposeForm({ appointment, onClose, onProposed }: Omit<ProposeTimeDialo
       {(errors.date || errors.slot) && (
         <p className="text-sm text-destructive">{errors.slot ?? errors.date}</p>
       )}
-      <FormField label="Reason for the patient" error={errors.reason}>
-        {(control) => (
-          <Textarea
-            {...control}
-            rows={2}
-            value={values.reason}
-            onChange={(event) => setValues({ reason: event.target.value })}
-          />
-        )}
-      </FormField>
+      {mode === "propose" && (
+        <FormField label="Reason for the patient" error={errors.reason}>
+          {(control) => (
+            <Textarea
+              {...control}
+              rows={2}
+              value={values.reason}
+              onChange={(event) => setValues({ reason: event.target.value })}
+            />
+          )}
+        </FormField>
+      )}
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>
           Back
         </Button>
         <Button type="submit" loading={submitting}>
-          Send new time
+          {mode === "return" ? "Book return visit" : "Send new time"}
         </Button>
       </DialogFooter>
     </form>

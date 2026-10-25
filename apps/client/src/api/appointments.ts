@@ -11,7 +11,11 @@ import {
   type ProposeTimeRequest,
   type Quote,
   quoteSchema,
+  type AppointmentNoteView,
+  appointmentNotesSchema,
   type RecordVisitRequest,
+  type RouteTeam,
+  routeTeamsSchema,
   type TeamChoice,
   teamChoicesSchema,
 } from "@homelabconnect/shared";
@@ -126,5 +130,60 @@ export async function recordVisit(
 ): Promise<AppointmentView> {
   return appointmentSchema.parse(
     await apiRequest(`/visits/${id}`, { method: "POST", body: record }),
+  );
+}
+
+export async function fetchNotes(id: string, signal?: AbortSignal): Promise<AppointmentNoteView[]> {
+  return appointmentNotesSchema.parse(await apiRequest(`/appointments/${id}/notes`, { signal }));
+}
+
+/** A note, optionally with a photo or PDF: sent as a form so the file can come along. */
+export async function addNote(
+  id: string,
+  note: { body: string; sharedWithPatient: boolean; file: File | null },
+): Promise<AppointmentNoteView[]> {
+  const form = new FormData();
+  form.append("body", note.body);
+  form.append("sharedWithPatient", String(note.sharedWithPatient));
+  if (note.file) form.append("file", note.file);
+  return appointmentNotesSchema.parse(
+    await apiRequest(`/appointments/${id}/notes`, { method: "POST", body: form }),
+  );
+}
+
+export async function deleteAttachment(id: string, attachmentId: string): Promise<void> {
+  await apiRequest(`/appointments/${id}/attachments/${attachmentId}`, { method: "DELETE" });
+}
+
+export async function scheduleReturnVisit(
+  id: string,
+  request: { date: string; slot: string },
+): Promise<AppointmentView> {
+  return appointmentSchema.parse(
+    await apiRequest(`/appointments/${id}/return`, { method: "POST", body: request }),
+  );
+}
+
+export async function fetchRouteTeams(date: string, signal?: AbortSignal): Promise<RouteTeam[]> {
+  return routeTeamsSchema.parse(await apiRequest(`/routes/teams?date=${date}`, { signal }));
+}
+
+export async function fetchRoute(
+  teamId: string,
+  date: string,
+  signal?: AbortSignal,
+): Promise<AppointmentView[]> {
+  return myAppointmentsSchema.parse(
+    await apiRequest(`/routes?teamId=${teamId}&date=${date}`, { signal }),
+  );
+}
+
+export async function reorderRoute(
+  teamId: string,
+  date: string,
+  appointmentIds: string[],
+): Promise<AppointmentView[]> {
+  return myAppointmentsSchema.parse(
+    await apiRequest("/routes", { method: "PUT", body: { teamId, date, appointmentIds } }),
   );
 }

@@ -8,6 +8,8 @@ import {
   PhoneIcon,
 } from "lucide-react";
 import { type SubmitEvent, useState } from "react";
+import { Link } from "react-router";
+import { AppointmentActions } from "@/components/appointments/AppointmentActions";
 import { EmptyState } from "@/components/data/EmptyState";
 import { FormField } from "@/components/form/FormField";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -143,6 +145,10 @@ export function MyVisitsPage() {
                   <Badge variant={appointmentStatusVariants[visit.status]}>
                     {visit.code} · {appointmentStatusLabels[visit.status]}
                   </Badge>
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to={`/app/appointments/${visit.id}`}>Details & notes</Link>
+                  </Button>
+                  <AppointmentActions appointment={visit} onChanged={reload} />
                   {visit.status === "confirmed" && (
                     <Button size="sm" onClick={() => void setOff(visit)}>
                       On the way
