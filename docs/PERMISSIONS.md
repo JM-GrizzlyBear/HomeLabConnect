@@ -79,6 +79,8 @@ Seeded examples:
 
 - `appointments.book` (patients) opens **Book a Visit**: availability, prices and booking. `appointments.view_own` opens **My Appointments** and lets the patient answer a proposed new time. `appointments.cancel` lets patients cancel their own visits before the cut-off, and staff who also have `appointments.view_all` cancel any appointment with a reason.
 - `appointments.view_all` opens **All Appointments** (admin, doctors, support). On it, `accept` and `reject` decide pending bookings (admin), and `reschedule` proposes a new time (admin, support).
+- `appointments.assign` (admin) gives a confirmed visit to a med team on duty (the **Assign team** button).
+- `visits.view_assigned` (med team) opens **My Visits**: their team's visits for a day. `visits.collect` records them (on the way, collected, couldn't collect); only members of the visit's team can, for anyone else it answers 404.
 - An appointment's page opens for its patient, or for anyone with `appointments.view_all`; everyone else gets 404.
 
 ### Scheduling, teams and leave

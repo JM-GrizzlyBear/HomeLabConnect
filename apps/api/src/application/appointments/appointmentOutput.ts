@@ -1,4 +1,4 @@
-import { ACTIVE_STATUSES, type Appointment } from "../../domain/appointments/appointment.js";
+import { CANCELLABLE_STATUSES, type Appointment } from "../../domain/appointments/appointment.js";
 import { businessDateTime } from "../../domain/time/businessDate.js";
 
 export interface AppointmentOutput extends Appointment {
@@ -16,6 +16,6 @@ export function toAppointmentOutput(
     businessDateTime(appointment.date, appointment.slot).getTime() -
       cancelCutoffHours * 60 * 60_000,
   );
-  const open = ACTIVE_STATUSES.includes(appointment.status) && until.getTime() > now.getTime();
+  const open = CANCELLABLE_STATUSES.includes(appointment.status) && until.getTime() > now.getTime();
   return { ...appointment, cancellableUntil: open ? until : null };
 }

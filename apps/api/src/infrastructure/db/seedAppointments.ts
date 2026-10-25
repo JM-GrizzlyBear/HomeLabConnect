@@ -6,6 +6,7 @@ import {
   appointmentProcedures,
   appointments,
   labProcedures,
+  medTeams,
   users,
 } from "./schema/index.js";
 
@@ -47,6 +48,11 @@ export async function seedAppointments(
       ),
     );
   if (tests.length === 0 || patients.length === 0) return 0;
+  // The confirmed sample goes to Team Makati, so the med team sees it under My Visits
+  const [makati] = await db
+    .select({ id: medTeams.id })
+    .from(medTeams)
+    .where(eq(medTeams.name, "Team Makati"));
 
   const today = businessDate(now);
   let added = 0;
@@ -71,6 +77,7 @@ export async function seedAppointments(
           discountCentavos: 0,
           totalCentavos: subtotal,
           decisionNote: status === "rejected" ? "No team can reach that area yet." : null,
+          teamId: status === "confirmed" ? (makati?.id ?? null) : null,
         })
         .returning({ id: appointments.id });
       if (!row) return;

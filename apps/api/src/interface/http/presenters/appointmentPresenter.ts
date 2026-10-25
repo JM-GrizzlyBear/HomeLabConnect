@@ -1,4 +1,5 @@
 import type {
+  TeamChoice as TeamChoiceView,
   AppointmentList,
   AppointmentView,
   DayAvailability,
@@ -9,6 +10,8 @@ import type { ListAppointmentsOutput } from "../../../application/appointments/L
 import type { QuoteOutput } from "../../../application/appointments/QuoteBooking.js";
 import type { AppointmentLine } from "../../../domain/appointments/appointment.js";
 import type { DayAvailability as DayAvailabilityOutput } from "../../../domain/appointments/availability.js";
+import type { Appointment } from "../../../domain/appointments/appointment.js";
+import type { TeamChoice } from "../../../domain/appointments/teamAssignment.js";
 import type { HttpResponse } from "../httpTypes.js";
 
 const toLine = (line: AppointmentLine) => ({
@@ -18,6 +21,7 @@ const toLine = (line: AppointmentLine) => ({
   priceCentavos: line.priceCentavos,
   promotionName: line.promotionName,
   discountCentavos: line.discountCentavos,
+  collected: line.collected,
 });
 
 function toAppointmentView(output: AppointmentOutput): AppointmentView {
@@ -42,6 +46,8 @@ function toAppointmentView(output: AppointmentOutput): AppointmentView {
     totalCentavos: output.totalCentavos,
     paymentStatus: output.paymentStatus,
     decisionNote: output.decisionNote,
+    team: output.team,
+    collectionNote: output.collectionNote,
     proposal: output.openProposal && {
       date: output.openProposal.date,
       slot: output.openProposal.slot,
@@ -86,4 +92,20 @@ export function presentAvailability(
 
 export function presentQuote(quote: QuoteOutput): HttpResponse<Quote> {
   return { status: 200, body: { ...quote, lines: quote.lines.map(toLine) } };
+}
+
+export function presentTeamChoices(choices: TeamChoice[]): HttpResponse<TeamChoiceView[]> {
+  return { status: 200, body: choices };
+}
+
+/** A med team's visits: the same view, without the patient's cancel deadline. */
+export function presentVisits(visits: Appointment[]): HttpResponse<AppointmentView[]> {
+  return {
+    status: 200,
+    body: visits.map((visit) => toAppointmentView({ ...visit, cancellableUntil: null })),
+  };
+}
+
+export function presentVisit(visit: Appointment): HttpResponse<AppointmentView> {
+  return { status: 200, body: toAppointmentView({ ...visit, cancellableUntil: null }) };
 }

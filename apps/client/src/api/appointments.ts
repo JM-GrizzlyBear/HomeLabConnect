@@ -11,6 +11,9 @@ import {
   type ProposeTimeRequest,
   type Quote,
   quoteSchema,
+  type RecordVisitRequest,
+  type TeamChoice,
+  teamChoicesSchema,
 } from "@homelabconnect/shared";
 import { apiRequest } from "./apiClient";
 
@@ -97,5 +100,31 @@ export async function proposeNewTime(
 export async function answerProposal(id: string, accept: boolean): Promise<AppointmentView> {
   return appointmentSchema.parse(
     await apiRequest(`/appointments/${id}/proposal`, { method: "POST", body: { accept } }),
+  );
+}
+
+export async function fetchTeamChoices(id: string, signal?: AbortSignal): Promise<TeamChoice[]> {
+  return teamChoicesSchema.parse(await apiRequest(`/appointments/${id}/teams`, { signal }));
+}
+
+export async function assignTeam(id: string, teamId: string | null): Promise<AppointmentView> {
+  return appointmentSchema.parse(
+    await apiRequest(`/appointments/${id}/team`, { method: "PUT", body: { teamId } }),
+  );
+}
+
+export async function fetchMyVisits(
+  date: string,
+  signal?: AbortSignal,
+): Promise<AppointmentView[]> {
+  return myAppointmentsSchema.parse(await apiRequest(`/visits/mine?date=${date}`, { signal }));
+}
+
+export async function recordVisit(
+  id: string,
+  record: RecordVisitRequest,
+): Promise<AppointmentView> {
+  return appointmentSchema.parse(
+    await apiRequest(`/visits/${id}`, { method: "POST", body: record }),
   );
 }

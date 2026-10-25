@@ -36,6 +36,7 @@ const line = {
   priceCentavos: 35_000,
   promotionName: "January Sale",
   discountCentavos: 7_000,
+  collected: null,
 };
 
 const appointment = (overrides: Record<string, unknown> = {}) => ({
@@ -54,6 +55,8 @@ const appointment = (overrides: Record<string, unknown> = {}) => ({
   totalCentavos: 28_000,
   paymentStatus: "unpaid",
   decisionNote: null,
+  team: null,
+  collectionNote: null,
   proposal: null,
   cancellableUntil: "2099-01-01T00:00:00.000Z",
   events: [
@@ -208,5 +211,102 @@ describe("AllAppointmentsPage", () => {
 
     expect(await toasts().findByText("Booking rejected")).toBeInTheDocument();
     expect(rejected).toEqual({ reason: "No team can reach that area." });
+  });
+});
+
+describe("assigning a team", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("lists the teams on duty and assigns a free one", async () => {
+    let sent: unknown;
+    const confirmed = appointment({ status: "confirmed", cancellableUntil: null });
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: adminUser }),
+      [`GET /api/appointments/${confirmed.id}`]: () => ({ status: 200, body: confirmed }),
+      [`GET /api/appointments/${confirmed.id}/teams`]: () => ({
+        status: 200,
+        body: [
+          {
+            teamId: "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b",
+            name: "Team Makati",
+            visitsThatDay: 3,
+            available: true,
+          },
+          {
+            teamId: "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b9c",
+            name: "Team QC",
+            visitsThatDay: 1,
+            available: false,
+          },
+        ],
+      }),
+      [`PUT /api/appointments/${confirmed.id}/team`]: (body) => {
+        sent = body;
+        return {
+          status: 200,
+          body: {
+            ...confirmed,
+            team: { id: "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b", name: "Team Makati" },
+          },
+        };
+      },
+    });
+    renderApp(`/app/appointments/${confirmed.id}`);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Assign team" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    expect(dialog.getByRole("radio", { name: /Team QC/ })).toBeDisabled();
+    await userEvent.click(dialog.getByRole("radio", { name: /Team Makati/ }));
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }));
+
+    expect(await toasts().findByText("Team Makati assigned")).toBeInTheDocument();
+    expect(sent).toEqual({ teamId: "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b" });
+  });
+});
+
+describe("MyVisitsPage", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("records a visit: on the way, then the tests collected", async () => {
+    const medTeamUser = {
+      ...sampleUser,
+      id: "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0e",
+      role: "med_team" as const,
+      permissions: ["visits.view_assigned", "visits.collect"],
+    };
+    let status = "confirmed";
+    const recorded: unknown[] = [];
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: medTeamUser }),
+      "GET /api/visits/mine*": () => ({
+        status: 200,
+        body: [
+          appointment({
+            status,
+            cancellableUntil: null,
+            team: { id: "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b", name: "Team Makati" },
+          }),
+        ],
+      }),
+      [`POST /api/visits/${appointment().id}`]: (body) => {
+        recorded.push(body);
+        status = (body as { outcome: string }).outcome;
+        return { status: 200, body: appointment({ status }) };
+      },
+    });
+    renderApp("/app/appointments/visits");
+
+    await userEvent.click(await screen.findByRole("button", { name: "On the way" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Collected" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    expect(dialog.getByRole("checkbox")).toBeChecked();
+    await userEvent.type(dialog.getByLabelText(/Note/), "All good.");
+    await userEvent.click(dialog.getByRole("button", { name: "Save" }));
+
+    expect(await toasts().findByText("Visit recorded")).toBeInTheDocument();
+    expect(recorded).toEqual([
+      { outcome: "on_the_way" },
+      { outcome: "collected", collectedProcedureIds: [cbc.id], note: "All good." },
+    ]);
   });
 });

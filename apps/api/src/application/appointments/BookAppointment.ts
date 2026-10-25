@@ -5,7 +5,8 @@ import type { Clock } from "../ports/Clock.js";
 import { type AppointmentOutput, toAppointmentOutput } from "./appointmentOutput.js";
 import type { AvailabilityRepositories } from "./GetAvailability.js";
 import type { QuoteBooking } from "./QuoteBooking.js";
-import { teamsOnDuty } from "./teamsOnDuty.js";
+import { assignIfAutomatic } from "./assignIfAutomatic.js";
+import { teamsOnDutyOn } from "./teamsOnDuty.js";
 
 export interface BookAppointmentInput {
   patientId: string;
@@ -37,8 +38,7 @@ export class BookAppointment {
     ]);
     assertBookableSlot(input.date, input.slot, this.clock.now(), rules, closedDays);
 
-    const onDuty =
-      (await teamsOnDuty(input.date, input.date, teams, schedules)).get(input.date) ?? 0;
+    const onDuty = (await teamsOnDutyOn(input.date, teams, schedules)).length;
     if (onDuty === 0) throw new SlotNotBookable("No team is available that day.");
 
     const { lines } = await this.quote.execute({ procedureIds: input.procedureIds });
@@ -61,6 +61,7 @@ export class BookAppointment {
       booked.status === "confirmed" ? "confirmed" : "received",
       booked,
     );
-    return toAppointmentOutput(booked, rules.cancelCutoffHours, this.clock.now());
+    const assigned = await assignIfAutomatic(booked.id, this.repositories);
+    return toAppointmentOutput(assigned ?? booked, rules.cancelCutoffHours, this.clock.now());
   }
 }

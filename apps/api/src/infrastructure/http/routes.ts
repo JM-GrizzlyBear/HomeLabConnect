@@ -1,4 +1,8 @@
 import { Router } from "express";
+import type { ListTeamChoicesController } from "../../interface/http/controllers/ListTeamChoicesController.js";
+import type { AssignTeamController } from "../../interface/http/controllers/AssignTeamController.js";
+import type { ListMyVisitsController } from "../../interface/http/controllers/ListMyVisitsController.js";
+import type { RecordVisitController } from "../../interface/http/controllers/RecordVisitController.js";
 import type { GetAvailabilityController } from "../../interface/http/controllers/GetAvailabilityController.js";
 import type { QuoteBookingController } from "../../interface/http/controllers/QuoteBookingController.js";
 import type { BookAppointmentController } from "../../interface/http/controllers/BookAppointmentController.js";
@@ -139,6 +143,10 @@ export interface Controllers {
   rejectAppointment: DecideAppointmentController;
   proposeNewTime: ProposeNewTimeController;
   answerProposal: AnswerProposalController;
+  listTeamChoices: ListTeamChoicesController;
+  assignTeam: AssignTeamController;
+  listMyVisits: ListMyVisitsController;
+  recordVisit: RecordVisitController;
 }
 
 export interface Middlewares {
@@ -331,6 +339,16 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
     "/appointments/:id/reschedule",
     adapt(controllers.proposeNewTime, ...can("appointments.reschedule")),
   );
+  router.get(
+    "/appointments/:id/teams",
+    adapt(controllers.listTeamChoices, ...can("appointments.assign")),
+  );
+  router.put(
+    "/appointments/:id/team",
+    adapt(controllers.assignTeam, ...can("appointments.assign")),
+  );
+  router.get("/visits/mine", adapt(controllers.listMyVisits, ...can("visits.view_assigned")));
+  router.post("/visits/:id", adapt(controllers.recordVisit, ...can("visits.collect")));
   router.post(
     "/appointments/:id/proposal",
     adapt(controllers.answerProposal, ...can("appointments.view_own")),

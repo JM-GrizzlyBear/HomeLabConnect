@@ -6,8 +6,15 @@ import {
   type ScheduleRepositories,
 } from "../scheduling/buildSchedules.js";
 
+export interface TeamOnDuty {
+  id: string;
+  name: string;
+  /** Who is on the team that period. */
+  memberIds: readonly string[];
+}
+
 /**
- * How many med teams can go out on each date: active teams with a roster for that period
+ * The med teams that can go out on each date: active teams with a roster for that period
  * and at least one member working that day (approved leave counts as not working).
  */
 export async function teamsOnDuty(
@@ -15,17 +22,17 @@ export async function teamsOnDuty(
   to: string,
   teams: MedTeamRepository,
   schedules: ScheduleRepositories,
-): Promise<Map<string, number>> {
+): Promise<Map<string, TeamOnDuty[]>> {
   const dates = datesBetween(from, to);
   const periods = [...new Set(dates.map(rosterPeriodOf))];
-  const activeTeamIds = new Set(
-    (await teams.list()).filter((team) => team.isActive).map((team) => team.id),
+  const activeTeams = new Map(
+    (await teams.list()).filter((team) => team.isActive).map((team) => [team.id, team.name]),
   );
   const rostersByPeriod = new Map(
     await Promise.all(
       periods.map(async (period) => {
         const rosters = await teams.listRosters(period);
-        return [period, rosters.filter((roster) => activeTeamIds.has(roster.teamId))] as const;
+        return [period, rosters.filter((roster) => activeTeams.has(roster.teamId))] as const;
       }),
     ),
   );
@@ -41,9 +48,22 @@ export async function teamsOnDuty(
   return new Map(
     dates.map((date) => [
       date,
-      (rostersByPeriod.get(rosterPeriodOf(date)) ?? []).filter((roster) =>
-        roster.memberIds.some((userId) => isWorking(userId, date)),
-      ).length,
+      (rostersByPeriod.get(rosterPeriodOf(date)) ?? [])
+        .filter((roster) => roster.memberIds.some((userId) => isWorking(userId, date)))
+        .map((roster) => ({
+          id: roster.teamId,
+          name: activeTeams.get(roster.teamId) ?? "",
+          memberIds: roster.memberIds,
+        })),
     ]),
   );
+}
+
+/** The teams on duty on one date. */
+export async function teamsOnDutyOn(
+  date: string,
+  teams: MedTeamRepository,
+  schedules: ScheduleRepositories,
+): Promise<TeamOnDuty[]> {
+  return (await teamsOnDuty(date, date, teams, schedules)).get(date) ?? [];
 }

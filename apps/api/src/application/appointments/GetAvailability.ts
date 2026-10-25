@@ -41,7 +41,7 @@ export class GetAvailability {
         now,
         rules,
         closedDays,
-        onDuty.get(date) ?? 0,
+        onDuty.get(date)?.length ?? 0,
         bookings.get(date) ?? none,
       ),
     );

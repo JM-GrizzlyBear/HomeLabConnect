@@ -48,6 +48,7 @@ export class QuoteBooking {
       discountCentavos: procedure.promotion
         ? procedure.priceCentavos - procedure.promotion.discountedPriceCentavos
         : 0,
+      collected: null,
     }));
     return { lines, ...totalsOf(lines) };
   }

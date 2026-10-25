@@ -9,6 +9,7 @@ import { AppointmentPage } from "./pages/AppointmentPage";
 import { BookVisitPage } from "./pages/BookVisitPage";
 import { ComingSoonPage } from "./pages/ComingSoonPage";
 import { MyAppointmentsPage } from "./pages/MyAppointmentsPage";
+import { MyVisitsPage } from "./pages/MyVisitsPage";
 import { CreateStaffPage } from "./pages/CreateStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { HolidaysPage } from "./pages/HolidaysPage";
@@ -231,6 +232,14 @@ export const routes: RouteObject[] = [
         element: (
           <RequirePermission permission="appointments.view_all">
             <AllAppointmentsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "appointments/visits",
+        element: (
+          <RequirePermission permission="visits.view_assigned">
+            <MyVisitsPage />
           </RequirePermission>
         ),
       },

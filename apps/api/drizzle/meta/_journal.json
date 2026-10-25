@@ -120,6 +120,13 @@
       "when": 1792859695259,
       "tag": "0016_loud_microchip",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792861474429,
+      "tag": "0017_heavy_boomer",
+      "breakpoints": true
     }
   ]
 }

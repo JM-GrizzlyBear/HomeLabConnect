@@ -34,6 +34,7 @@ import { monthEnd, monthOf, shiftMonth } from "../../format/schedule";
 import { useFormState } from "../../forms/useFormState";
 import { queryKeys } from "../../queries/queryKeys";
 import { useApiQuery } from "../../queries/useApiQuery";
+import { AssignTeamDialog } from "./AssignTeamDialog";
 import { AvailabilityCalendar, SlotPicker } from "./AvailabilityCalendar";
 
 interface AppointmentActionsProps {
@@ -41,7 +42,7 @@ interface AppointmentActionsProps {
   onChanged(updated: AppointmentView): void;
 }
 
-type Open = "reject" | "cancel" | "propose" | null;
+type Open = "reject" | "cancel" | "propose" | "team" | null;
 
 /**
  * What the viewer may do with an appointment right now: staff accept, reject, propose
@@ -119,6 +120,19 @@ export function AppointmentActions({ appointment, onChanged }: AppointmentAction
         onClick={() => setOpen("reject")}
       >
         Reject
+      </Button>,
+    );
+  }
+  if (staff && status === "confirmed" && can("appointments.assign")) {
+    buttons.push(
+      <Button
+        key="team"
+        size="sm"
+        variant="outline"
+        disabled={busy}
+        onClick={() => setOpen("team")}
+      >
+        {appointment.team ? "Change team" : "Assign team"}
       </Button>,
     );
   }
@@ -218,6 +232,15 @@ export function AppointmentActions({ appointment, onChanged }: AppointmentAction
           feedback.success({
             title: open === "reject" ? "Booking rejected" : "Appointment cancelled",
           });
+        }}
+      />
+      <AssignTeamDialog
+        open={open === "team"}
+        appointment={appointment}
+        onClose={() => setOpen(null)}
+        onAssigned={(updated) => {
+          onChanged(updated);
+          setOpen(null);
         }}
       />
       <ProposeTimeDialog

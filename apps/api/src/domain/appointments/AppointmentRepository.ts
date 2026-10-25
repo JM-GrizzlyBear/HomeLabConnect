@@ -5,6 +5,7 @@ import type {
   AppointmentStatus,
 } from "./appointment.js";
 import type { DayBookings } from "./availability.js";
+import type { TeamLoad } from "./teamAssignment.js";
 
 export interface NewAppointment {
   patientId: string;
@@ -74,4 +75,29 @@ export interface AppointmentRepository {
   acceptProposal(id: string, limits: SlotLimits, actorId: string): Promise<void>;
   /** The patient declines: the proposal closes and the appointment is cancelled. */
   declineProposal(id: string, actorId: string): Promise<void>;
+
+  /** Each team's visits on a date (leaving out `exceptId`), for choosing who goes. */
+  teamLoads(date: string, exceptId: string | null): Promise<Map<string, TeamLoad>>;
+  /**
+   * Gives the visit to a team (or takes it away with null), checked and written atomically:
+   * throws TeamUnavailable if the team already has a visit at that time or is full that day.
+   */
+  assignTeam(
+    id: string,
+    teamId: string | null,
+    visitsPerTeamPerDay: number,
+    actorId: string | null,
+  ): Promise<void>;
+  /** The visits of these teams on a date, by slot. */
+  listForTeams(teamIds: readonly string[], date: string): Promise<Appointment[]>;
+  /** The med team's progress: on the way, then collected (per test) or not. */
+  recordVisit(id: string, record: VisitRecord): Promise<void>;
+}
+
+export interface VisitRecord {
+  status: "on_the_way" | "collected" | "not_collected";
+  actorId: string;
+  /** For "collected": which tests' samples were taken. */
+  collectedProcedureIds?: readonly string[];
+  note: string | null;
 }

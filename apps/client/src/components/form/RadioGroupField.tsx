@@ -9,6 +9,8 @@ export interface RadioOption {
   label: string;
   /** A short line under the label. */
   hint?: string;
+  /** This one option can't be picked. */
+  disabled?: boolean;
 }
 
 interface RadioGroupFieldProps {
@@ -47,7 +49,12 @@ export function RadioGroupField({
       >
         {options.map((option) => (
           <div key={option.value} className="flex items-start gap-2">
-            <RadioGroupItem value={option.value} id={`${id}-${option.value}`} className="mt-0.5" />
+            <RadioGroupItem
+              value={option.value}
+              id={`${id}-${option.value}`}
+              disabled={option.disabled}
+              className="mt-0.5"
+            />
             <Label htmlFor={`${id}-${option.value}`} className="grid gap-0.5 font-normal">
               <span className="text-sm text-slate-800">{option.label}</span>
               {option.hint && <span className="text-xs text-muted-foreground">{option.hint}</span>}

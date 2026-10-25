@@ -1,6 +1,6 @@
 # ERD: Appointments
 
-Tables added by Module 5 (slices 5A booking and 5B staff review). Dates are whole days and times are "HH:MM", in Philippine time. Money is centavos.
+Tables added by Module 5 (slices 5A booking, 5B staff review, 5C team assignment and visits). Dates are whole days and times are "HH:MM", in Philippine time. Money is centavos.
 
 ```mermaid
 erDiagram
@@ -11,6 +11,7 @@ erDiagram
     appointments ||--o{ reschedule_proposals : "new times offered"
     appointments ||--o{ appointment_events : "history"
     users ||--o{ appointment_events : "done by"
+    med_teams ||--o{ appointments : "goes on"
 
     appointments {
         uuid id PK
@@ -18,7 +19,7 @@ erDiagram
         uuid patient_user_id FK
         date visit_date
         text slot_start "HH:MM"
-        text status "pending | confirmed | reschedule_proposed | rejected | cancelled"
+        text status "pending | confirmed | reschedule_proposed | on_the_way | collected | not_collected | rejected | cancelled"
         text address
         text landmark
         text patient_notes
@@ -27,6 +28,8 @@ erDiagram
         int total_centavos
         text payment_status "unpaid (Payments module later)"
         text decision_note "why rejected or cancelled by staff"
+        uuid team_id FK "the med team going"
+        text collection_note "the team's note, or why it couldn't collect"
     }
     appointment_procedures {
         uuid appointment_id PK, FK
@@ -38,6 +41,7 @@ erDiagram
         uuid promotion_id FK
         text promotion_name
         int discount_centavos
+        boolean collected "set when the visit is recorded"
     }
     reschedule_proposals {
         uuid id PK
@@ -67,4 +71,6 @@ erDiagram
 - **Prices are copied** onto `appointment_procedures` when booked, with the best running promotion; later price changes don't affect the booking.
 - **Status flow:** a booking starts `pending` (or `confirmed` when Settings → booking approval is automatic). Staff accept (`confirmed`) or reject (`rejected`, with a reason). Staff can propose a new time (`reschedule_proposed`); the patient accepts (the visit moves there and is `confirmed`, if the slot still has room) or declines (`cancelled`). Patients cancel their own up to the cancellation cut-off; staff with `appointments.cancel` cancel any time with a reason.
 - **Emails** go to the patient when a booking is received, confirmed, rejected, given a new time or cancelled by staff. A failed email never undoes the change.
-- `turbo run db:seed` adds four sample bookings (patient01–03) on an empty database.
+- **Team assignment:** a confirmed visit goes to one med team on duty that day. A team does one visit per slot and at most _visits per team per day_. With Settings → team assignment **auto**, a visit is given to the free team with the fewest visits that day (ties A–Z) as soon as it's confirmed; if none is free, staff assign it. With **manual**, staff with `appointments.assign` pick the team. Moving a visit to a new time takes its team away (re-assigned automatically in auto mode). The check and the write happen under the date's lock, so two visits can't take the same team and slot.
+- **The visit:** a member of the assigned team (`visits.collect`) marks it **on the way**, then **collected** (ticking which tests' samples were taken, with an optional note) or **not collected** (with the reason). Collected and not-collected visits still count toward the team's day.
+- `turbo run db:seed` adds four sample bookings (patient01–03) on an empty database; the confirmed one goes to Team Makati.

@@ -255,6 +255,8 @@ Appointments
 - [ ] As `admin@`: **All Appointments** shows pending bookings first. **Accept** one (the patient gets "confirmed"), **Reject** another with a reason.
 - [ ] As `support@`: **Propose new time** on a booking. As that patient: the appointment shows the new time with **Accept new time** / **Decline**; accepting moves the visit.
 - [ ] Try to book the last place of a time from two browsers at once: one succeeds, the other is told the time was just taken.
+- [ ] As `admin@`: open a confirmed appointment → **Assign team** lists the teams on duty (busy ones greyed out) → pick one. With Settings → team assignment = Auto, accepting a booking assigns a team by itself.
+- [ ] As `medteam@`: **My Visits** shows the team's visits for the day (address, phone, tests) → **On the way** → **Collected** (tick the tests, add a note). The appointment page shows ✓/✗ per test and the team's note.
 
 Production image (optional)
 
