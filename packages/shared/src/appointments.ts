@@ -4,6 +4,9 @@ export const appointmentStatusSchema = z.enum([
   "pending",
   "confirmed",
   "reschedule_proposed",
+  "on_the_way",
+  "collected",
+  "not_collected",
   "rejected",
   "cancelled",
 ]);
@@ -59,6 +62,8 @@ export const appointmentLineSchema = z.object({
   priceCentavos: z.number().int(),
   promotionName: z.string().nullable(),
   discountCentavos: z.number().int(),
+  /** Set once the visit is recorded: whether this test's sample was taken. */
+  collected: z.boolean().nullable(),
 });
 
 export const quoteSchema = z.object({
@@ -96,6 +101,8 @@ export const appointmentSchema = z.object({
   totalCentavos: z.number().int(),
   paymentStatus: z.enum(["unpaid"]),
   decisionNote: z.string().nullable(),
+  team: z.object({ id: z.uuid(), name: z.string() }).nullable(),
+  collectionNote: z.string().nullable(),
   proposal: z.object({ date: z.iso.date(), slot: z.string(), reason: z.string() }).nullable(),
   /** Until when the patient may still cancel; null once they can't. */
   cancellableUntil: z.iso.datetime().nullable(),
@@ -152,7 +159,40 @@ export const listAppointmentsQuerySchema = z.object({
 /** The patient's answer to a new time. */
 export const proposalAnswerRequestSchema = z.object({ accept: z.boolean() });
 
+/** Give a visit to a team, or take it away (null). */
+export const assignTeamRequestSchema = z.object({ teamId: z.uuid().nullable() });
+
+export const teamChoiceSchema = z.object({
+  teamId: z.uuid(),
+  name: z.string(),
+  visitsThatDay: z.number().int(),
+  available: z.boolean(),
+});
+export const teamChoicesSchema = z.array(teamChoiceSchema);
+
+export const myVisitsQuerySchema = z.object({ date: z.iso.date("Not a valid date.") });
+
+/** What the med team records about a visit. */
+export const recordVisitRequestSchema = z.discriminatedUnion("outcome", [
+  z.object({ outcome: z.literal("on_the_way") }),
+  z.object({
+    outcome: z.literal("collected"),
+    collectedProcedureIds: z.array(z.uuid()).min(1, "Tick at least one test."),
+    note: z.string().trim().max(500, "Keep this under 500 characters.").nullable(),
+  }),
+  z.object({
+    outcome: z.literal("not_collected"),
+    reason: z
+      .string()
+      .trim()
+      .min(3, "Say why the samples couldn't be collected.")
+      .max(500, "Keep this under 500 characters."),
+  }),
+]);
+
 export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
+export type TeamChoice = z.infer<typeof teamChoiceSchema>;
+export type RecordVisitRequest = z.infer<typeof recordVisitRequestSchema>;
 export type BookAppointmentRequest = z.infer<typeof bookAppointmentRequestSchema>;
 export type ClosedReason = z.infer<typeof closedReasonSchema>;
 export type DayAvailability = z.infer<typeof dayAvailabilitySchema>;
