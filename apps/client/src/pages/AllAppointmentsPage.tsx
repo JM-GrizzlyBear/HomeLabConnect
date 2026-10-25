@@ -127,6 +127,7 @@ export function AllAppointmentsPage() {
                   <TableHead>Visit</TableHead>
                   <TableHead>Patient</TableHead>
                   <TableHead>Tests</TableHead>
+                  <TableHead>Team</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">
@@ -156,6 +157,9 @@ export function AllAppointmentsPage() {
                     </TableCell>
                     <TableCell className="max-w-56 truncate">
                       {row.lines.map((line) => line.code).join(", ")}
+                    </TableCell>
+                    <TableCell>
+                      {row.team?.name ?? <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell>{formatPeso(row.totalCentavos)}</TableCell>
                     <TableCell>

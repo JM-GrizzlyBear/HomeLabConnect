@@ -28,4 +28,6 @@ export const queryKeys = {
   myAppointments: ["appointments", "mine"] as const,
   appointment: (id: string | undefined) => ["appointments", "one", id] as const,
   allAppointments: (filters: unknown) => ["appointments", "all", filters] as const,
+  teamChoices: (id: string) => ["appointments", "teams", id] as const,
+  myVisits: (date: string) => ["appointments", "visits", date] as const,
 };

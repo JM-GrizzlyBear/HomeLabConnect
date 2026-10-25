@@ -110,6 +110,16 @@ export function AppointmentPage() {
                 </span>
               </dd>
             </div>
+            <div>
+              <dt className="text-muted-foreground">Team</dt>
+              <dd>{appointment.team?.name ?? "Not assigned yet"}</dd>
+            </div>
+            {appointment.collectionNote && (
+              <div>
+                <dt className="text-muted-foreground">Team's note</dt>
+                <dd>{appointment.collectionNote}</dd>
+              </div>
+            )}
             {appointment.notes && (
               <div>
                 <dt className="text-muted-foreground">Notes</dt>

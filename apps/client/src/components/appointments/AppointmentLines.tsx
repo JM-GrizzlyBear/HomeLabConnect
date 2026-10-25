@@ -20,6 +20,14 @@ export function AppointmentLines({
         {lines.map((line) => (
           <li key={line.procedureId} className="flex items-start justify-between gap-3 py-2">
             <span>
+              {line.collected !== null && (
+                <span
+                  className={line.collected ? "mr-1.5 text-emerald-700" : "mr-1.5 text-destructive"}
+                  aria-label={line.collected ? "Collected" : "Not collected"}
+                >
+                  {line.collected ? "✓" : "✗"}
+                </span>
+              )}
               <span className="font-medium">{line.name}</span>
               <span className="ml-2 text-xs text-muted-foreground">{line.code}</span>
               {line.promotionName && (
