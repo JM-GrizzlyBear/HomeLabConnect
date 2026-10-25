@@ -6,7 +6,8 @@ import type { Clock } from "../ports/Clock.js";
 import { type AppointmentOutput, toAppointmentOutput } from "./appointmentOutput.js";
 import type { AvailabilityRepositories } from "./GetAvailability.js";
 import { findVisible } from "./GetAppointment.js";
-import { teamsOnDuty } from "./teamsOnDuty.js";
+import { assignIfAutomatic } from "./assignIfAutomatic.js";
+import { teamsOnDutyOn } from "./teamsOnDuty.js";
 
 export interface AnswerProposalInput {
   id: string;
@@ -35,9 +36,9 @@ export class AnswerProposal {
 
     const { settings: rules } = await settings.get();
     if (accept) {
-      const onDuty =
-        (await teamsOnDuty(proposal.date, proposal.date, teams, schedules)).get(proposal.date) ?? 0;
+      const onDuty = (await teamsOnDutyOn(proposal.date, teams, schedules)).length;
       await appointments.acceptProposal(id, capacityOf(onDuty, rules), patientId);
+      await assignIfAutomatic(id, this.repositories);
     } else {
       await appointments.declineProposal(id, patientId);
     }

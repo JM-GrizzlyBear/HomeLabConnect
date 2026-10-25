@@ -1,4 +1,5 @@
 import {
+  boolean,
   date,
   index,
   integer,
@@ -10,12 +11,16 @@ import {
 } from "drizzle-orm/pg-core";
 import { timestamps, timestamptz } from "./columns.js";
 import { labProcedures, promotions } from "./catalog.js";
+import { medTeams } from "./scheduling.js";
 import { users } from "./users.js";
 
 export const appointmentStatuses = [
   "pending",
   "confirmed",
   "reschedule_proposed",
+  "on_the_way",
+  "collected",
+  "not_collected",
   "rejected",
   "cancelled",
 ] as const;
@@ -45,11 +50,16 @@ export const appointments = pgTable(
       .default("unpaid"),
     /** Why staff rejected or cancelled it, shown to the patient. */
     decisionNote: text("decision_note"),
+    /** The med team going on the visit. */
+    teamId: uuid("team_id").references(() => medTeams.id),
+    /** What the team noted when collecting, or why they couldn't. */
+    collectionNote: text("collection_note"),
     ...timestamps,
   },
   (table) => [
     index("appointments_visit_idx").on(table.visitDate, table.slotStart, table.status),
     index("appointments_patient_idx").on(table.patientUserId, table.visitDate),
+    index("appointments_team_idx").on(table.teamId, table.visitDate),
   ],
 );
 
@@ -70,6 +80,8 @@ export const appointmentProcedures = pgTable(
     promotionId: uuid("promotion_id").references(() => promotions.id, { onDelete: "set null" }),
     promotionName: text("promotion_name"),
     discountCentavos: integer("discount_centavos").notNull(),
+    /** Set when the visit is recorded: whether this test's sample was taken. */
+    collected: boolean("collected"),
   },
   (table) => [primaryKey({ columns: [table.appointmentId, table.procedureId] })],
 );

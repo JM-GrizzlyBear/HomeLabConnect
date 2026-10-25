@@ -1,12 +1,29 @@
 import { AppointmentStatusConflict } from "./appointmentErrors.js";
 
 export type AppointmentStatus =
-  "pending" | "confirmed" | "reschedule_proposed" | "rejected" | "cancelled";
+  | "pending"
+  | "confirmed"
+  | "reschedule_proposed"
+  | "on_the_way"
+  | "collected"
+  | "not_collected"
+  | "rejected"
+  | "cancelled";
 
 export type PaymentStatus = "unpaid";
 
-/** Statuses that hold a place in their time slot. */
-export const ACTIVE_STATUSES: readonly AppointmentStatus[] = [
+/** Statuses that hold a place in their time slot (and in their team's day). */
+export const PLACE_HOLDING_STATUSES: readonly AppointmentStatus[] = [
+  "pending",
+  "confirmed",
+  "reschedule_proposed",
+  "on_the_way",
+  "collected",
+  "not_collected",
+];
+
+/** Statuses a patient may still cancel from (before the cut-off). */
+export const CANCELLABLE_STATUSES: readonly AppointmentStatus[] = [
   "pending",
   "confirmed",
   "reschedule_proposed",
@@ -22,6 +39,8 @@ export interface AppointmentLine {
   promotionName: string | null;
   /** What the promotion took off this test. */
   discountCentavos: number;
+  /** Set when the visit is recorded: whether this test's sample was taken. */
+  collected: boolean | null;
 }
 
 export interface AppointmentEvent {
@@ -38,7 +57,12 @@ export type AppointmentEventKind =
   | "cancelled"
   | "reschedule_proposed"
   | "reschedule_accepted"
-  | "reschedule_declined";
+  | "reschedule_declined"
+  | "team_assigned"
+  | "team_unassigned"
+  | "on_the_way"
+  | "collected"
+  | "not_collected";
 
 export interface RescheduleProposal {
   id: string;
@@ -70,6 +94,10 @@ export interface Appointment {
   paymentStatus: PaymentStatus;
   /** Why staff rejected or cancelled it. */
   decisionNote: string | null;
+  /** The med team going on the visit. */
+  team: { id: string; name: string } | null;
+  /** What the med team noted when collecting, or why they couldn't. */
+  collectionNote: string | null;
   openProposal: RescheduleProposal | null;
   events: AppointmentEvent[];
   createdAt: Date;
@@ -86,7 +114,15 @@ export function formatAppointmentCode(number: number): string {
   return `HLC-${String(number).padStart(6, "0")}`;
 }
 
-type Action = "accept" | "reject" | "cancel" | "propose" | "answer_proposal";
+type Action =
+  | "accept"
+  | "reject"
+  | "cancel"
+  | "propose"
+  | "answer_proposal"
+  | "assign_team"
+  | "start_visit"
+  | "record_visit";
 
 /** Which statuses each action may start from. */
 const allowedFrom: Record<Action, readonly AppointmentStatus[]> = {
@@ -95,12 +131,18 @@ const allowedFrom: Record<Action, readonly AppointmentStatus[]> = {
   cancel: ["pending", "confirmed", "reschedule_proposed"],
   propose: ["pending", "confirmed"],
   answer_proposal: ["reschedule_proposed"],
+  assign_team: ["confirmed"],
+  start_visit: ["confirmed"],
+  record_visit: ["on_the_way"],
 };
 
 const describe: Record<AppointmentStatus, string> = {
   pending: "waiting for review",
   confirmed: "confirmed",
   reschedule_proposed: "waiting for the patient's answer to a new time",
+  on_the_way: "in progress: the team is on the way",
+  collected: "done: the samples were collected",
+  not_collected: "closed: the samples couldn't be collected",
   rejected: "rejected",
   cancelled: "cancelled",
 };

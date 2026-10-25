@@ -114,7 +114,14 @@ describe("appointment rules", () => {
   });
 
   it("adds up prices and discounts", () => {
-    const line = { procedureId: "p", code: "C", name: "N", promotionId: null, promotionName: null };
+    const line = {
+      procedureId: "p",
+      code: "C",
+      name: "N",
+      promotionId: null,
+      promotionName: null,
+      collected: null,
+    };
     expect(
       totalsOf([
         { ...line, priceCentavos: 35_000, discountCentavos: 7_000 },

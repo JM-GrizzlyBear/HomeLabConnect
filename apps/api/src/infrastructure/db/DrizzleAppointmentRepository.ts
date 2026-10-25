@@ -7,6 +7,7 @@ import {
   gte,
   ilike,
   inArray,
+  isNotNull,
   lte,
   ne,
   or,
@@ -14,12 +15,12 @@ import {
   type SQL,
 } from "drizzle-orm";
 import {
-  ACTIVE_STATUSES,
+  PLACE_HOLDING_STATUSES,
   type Appointment,
   type AppointmentEventKind,
   formatAppointmentCode,
 } from "../../domain/appointments/appointment.js";
-import { SlotFull } from "../../domain/appointments/appointmentErrors.js";
+import { SlotFull, TeamUnavailable } from "../../domain/appointments/appointmentErrors.js";
 import type {
   AppointmentListPage,
   AppointmentListQuery,
@@ -27,21 +28,24 @@ import type {
   NewAppointment,
   SlotLimits,
   StatusChange,
+  VisitRecord,
 } from "../../domain/appointments/AppointmentRepository.js";
 import type { DayBookings } from "../../domain/appointments/availability.js";
+import type { TeamLoad } from "../../domain/appointments/teamAssignment.js";
 import type { Database } from "./client.js";
 import { likePattern } from "./likePattern.js";
 import {
   appointmentEvents,
   appointmentProcedures,
   appointments,
+  medTeams,
   rescheduleProposals,
   users,
 } from "./schema/index.js";
 
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
-const activeStatus = inArray(appointments.status, [...ACTIVE_STATUSES]);
+const placeHolding = inArray(appointments.status, [...PLACE_HOLDING_STATUSES]);
 const patientName = sql<string>`${users.firstName} || ' ' || ${users.lastName}`;
 
 export class DrizzleAppointmentRepository implements AppointmentRepository {
@@ -51,7 +55,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
     const rows = await this.db
       .select({ date: appointments.visitDate, slot: appointments.slotStart, count: count() })
       .from(appointments)
-      .where(and(gte(appointments.visitDate, from), lte(appointments.visitDate, to), activeStatus))
+      .where(and(gte(appointments.visitDate, from), lte(appointments.visitDate, to), placeHolding))
       .groupBy(appointments.visitDate, appointments.slotStart);
 
     const days = new Map<string, { bySlot: Map<string, number>; total: number }>();
@@ -216,6 +220,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
           visitDate: proposal.proposedDate,
           slotStart: proposal.proposedSlot,
           status: "confirmed",
+          teamId: null,
         })
         .where(eq(appointments.id, id));
       await tx
@@ -237,6 +242,126 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
       }
       await tx.update(appointments).set({ status: "cancelled" }).where(eq(appointments.id, id));
       await addEvent(tx, id, actorId, "reschedule_declined", null);
+    });
+  }
+
+  async teamLoads(date: string, exceptId: string | null): Promise<Map<string, TeamLoad>> {
+    const rows = await this.db
+      .select({ teamId: appointments.teamId, slot: appointments.slotStart })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.visitDate, date),
+          placeHolding,
+          isNotNull(appointments.teamId),
+          exceptId ? ne(appointments.id, exceptId) : undefined,
+        ),
+      );
+    const loads = new Map<string, { total: number; slots: string[] }>();
+    for (const row of rows) {
+      if (!row.teamId) continue;
+      const load = loads.get(row.teamId) ?? { total: 0, slots: [] };
+      load.total += 1;
+      load.slots.push(row.slot);
+      loads.set(row.teamId, load);
+    }
+    return loads;
+  }
+
+  async assignTeam(
+    id: string,
+    teamId: string | null,
+    visitsPerTeamPerDay: number,
+    actorId: string | null,
+  ): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      const [visit] = await tx
+        .select({ date: appointments.visitDate, slot: appointments.slotStart })
+        .from(appointments)
+        .where(eq(appointments.id, id));
+      if (!visit) return;
+      let teamName: string | null = null;
+      if (teamId) {
+        await lockDate(tx, visit.date);
+        const [load] = await tx
+          .select({
+            total: count(),
+            atSlot:
+              sql<number>`count(*) filter (where ${appointments.slotStart} = ${visit.slot})`.mapWith(
+                Number,
+              ),
+          })
+          .from(appointments)
+          .where(
+            and(
+              eq(appointments.teamId, teamId),
+              eq(appointments.visitDate, visit.date),
+              placeHolding,
+              ne(appointments.id, id),
+            ),
+          );
+        if ((load?.atSlot ?? 0) > 0 || (load?.total ?? 0) >= visitsPerTeamPerDay) {
+          throw new TeamUnavailable(
+            "That team already has a visit at that time or is full that day.",
+          );
+        }
+        const [team] = await tx
+          .select({ name: medTeams.name })
+          .from(medTeams)
+          .where(eq(medTeams.id, teamId));
+        teamName = team?.name ?? null;
+      }
+      await tx.update(appointments).set({ teamId }).where(eq(appointments.id, id));
+      await addEvent(
+        tx,
+        id,
+        actorId,
+        teamId ? "team_assigned" : "team_unassigned",
+        teamName ?? (actorId ? null : "Assigned automatically."),
+      );
+    });
+  }
+
+  async listForTeams(teamIds: readonly string[], date: string): Promise<Appointment[]> {
+    if (teamIds.length === 0) return [];
+    return await this.load(
+      and(
+        inArray(appointments.teamId, [...teamIds]),
+        eq(appointments.visitDate, date),
+        placeHolding,
+      ),
+      [asc(appointments.slotStart)],
+    );
+  }
+
+  async recordVisit(id: string, record: VisitRecord): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(appointments)
+        .set({
+          status: record.status,
+          ...(record.status === "on_the_way" ? {} : { collectionNote: record.note }),
+        })
+        .where(eq(appointments.id, id));
+      if (record.status !== "on_the_way") {
+        const collected = new Set(record.collectedProcedureIds ?? []);
+        const lines = await tx
+          .select({ procedureId: appointmentProcedures.procedureId })
+          .from(appointmentProcedures)
+          .where(eq(appointmentProcedures.appointmentId, id));
+        for (const line of lines) {
+          await tx
+            .update(appointmentProcedures)
+            .set({ collected: collected.has(line.procedureId) })
+            .where(
+              and(
+                eq(appointmentProcedures.appointmentId, id),
+                eq(appointmentProcedures.procedureId, line.procedureId),
+              ),
+            );
+        }
+      }
+      await addEvent(tx, id, record.actorId, record.status, record.note);
     });
   }
 
@@ -265,10 +390,14 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
         totalCentavos: appointments.totalCentavos,
         paymentStatus: appointments.paymentStatus,
         decisionNote: appointments.decisionNote,
+        collectionNote: appointments.collectionNote,
+        teamId: appointments.teamId,
+        teamName: medTeams.name,
         createdAt: appointments.createdAt,
       })
       .from(appointments)
       .innerJoin(users, eq(users.id, appointments.patientUserId))
+      .leftJoin(medTeams, eq(medTeams.id, appointments.teamId))
       .where(where)
       .orderBy(...orderBy);
     const rows = page ? await base.limit(page.limit).offset(page.offset) : await base;
@@ -304,11 +433,12 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
         .orderBy(asc(appointmentEvents.at)),
     ]);
 
-    return rows.map(({ number, ...row }) => {
+    return rows.map(({ number, teamId, teamName, ...row }) => {
       const proposal = proposals.find((candidate) => candidate.appointmentId === row.id);
       return {
         ...row,
         code: formatAppointmentCode(number),
+        team: teamId ? { id: teamId, name: teamName ?? "" } : null,
         lines: lines
           .filter((line) => line.appointmentId === row.id)
           .map((line) => ({
@@ -319,6 +449,7 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
             promotionId: line.promotionId,
             promotionName: line.promotionName,
             discountCentavos: line.discountCentavos,
+            collected: line.collected,
           })),
         openProposal: proposal
           ? {
@@ -353,7 +484,7 @@ async function assertRoom(
   limits: SlotLimits,
   exceptId: string | null,
 ): Promise<void> {
-  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`appointments:${date}`}))`);
+  await lockDate(tx, date);
   const others = exceptId ? ne(appointments.id, exceptId) : undefined;
   const [day] = await tx
     .select({
@@ -363,10 +494,15 @@ async function assertRoom(
       ),
     })
     .from(appointments)
-    .where(and(eq(appointments.visitDate, date), activeStatus, others));
+    .where(and(eq(appointments.visitDate, date), placeHolding, others));
   if ((day?.inSlot ?? 0) >= limits.perSlot || (day?.total ?? 0) >= limits.perDay) {
     throw new SlotFull();
   }
+}
+
+/** Serializes every booking change for one date until the transaction ends. */
+async function lockDate(tx: Transaction, date: string): Promise<void> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`appointments:${date}`}))`);
 }
 
 async function openProposal(tx: Transaction, appointmentId: string) {

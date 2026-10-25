@@ -137,6 +137,13 @@ import type { Pool } from "pg";
 import type { Database } from "./infrastructure/db/client.js";
 import type { AppointmentEmails } from "./application/ports/AppointmentEmails.js";
 import { DrizzleAppointmentRepository } from "./infrastructure/db/DrizzleAppointmentRepository.js";
+import { AssignTeam, ListTeamChoices } from "./application/appointments/AssignTeam.js";
+import { ListMyVisits } from "./application/appointments/ListMyVisits.js";
+import { RecordVisit } from "./application/appointments/RecordVisit.js";
+import { AssignTeamController } from "./interface/http/controllers/AssignTeamController.js";
+import { ListMyVisitsController } from "./interface/http/controllers/ListMyVisitsController.js";
+import { ListTeamChoicesController } from "./interface/http/controllers/ListTeamChoicesController.js";
+import { RecordVisitController } from "./interface/http/controllers/RecordVisitController.js";
 import { GetAvailability } from "./application/appointments/GetAvailability.js";
 import { GetAvailabilityController } from "./interface/http/controllers/GetAvailabilityController.js";
 import { QuoteBooking } from "./application/appointments/QuoteBooking.js";
@@ -352,16 +359,20 @@ export function buildApp(options: BuildAppOptions) {
         new ListAppointments(appointments, settings, clock),
       ),
       acceptAppointment: new DecideAppointmentController(
-        new DecideAppointment(appointments, settings, appointmentEmails, clock),
+        new DecideAppointment(availabilityRepositories, appointmentEmails, clock),
         "accept",
       ),
       rejectAppointment: new DecideAppointmentController(
-        new DecideAppointment(appointments, settings, appointmentEmails, clock),
+        new DecideAppointment(availabilityRepositories, appointmentEmails, clock),
         "reject",
       ),
       proposeNewTime: new ProposeNewTimeController(
         new ProposeNewTime(availabilityRepositories, appointmentEmails, clock),
       ),
+      listTeamChoices: new ListTeamChoicesController(new ListTeamChoices(availabilityRepositories)),
+      assignTeam: new AssignTeamController(new AssignTeam(availabilityRepositories, clock)),
+      listMyVisits: new ListMyVisitsController(new ListMyVisits(availabilityRepositories)),
+      recordVisit: new RecordVisitController(new RecordVisit(availabilityRepositories)),
       answerProposal: new AnswerProposalController(
         new AnswerProposal(availabilityRepositories, appointmentEmails, clock),
       ),

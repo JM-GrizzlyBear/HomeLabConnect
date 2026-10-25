@@ -53,3 +53,20 @@ export class CancelCutoffPassed extends DomainError {
     );
   }
 }
+
+/** The team isn't on duty that day, already has a visit at that time, or is full for the day. */
+export class TeamUnavailable extends DomainError {
+  readonly kind = "conflict";
+
+  constructor(message = "That team can't take this visit.") {
+    super(message, "team_unavailable");
+  }
+}
+
+export class InvalidVisitRecord extends DomainError {
+  readonly kind = "validation";
+
+  constructor(message: string) {
+    super(message, "invalid_visit_record");
+  }
+}

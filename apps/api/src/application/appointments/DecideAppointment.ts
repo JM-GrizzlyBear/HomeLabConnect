@@ -1,9 +1,9 @@
 import { assertCan } from "../../domain/appointments/appointment.js";
-import type { AppointmentRepository } from "../../domain/appointments/AppointmentRepository.js";
-import type { SettingsRepository } from "../../domain/settings/SettingsRepository.js";
 import { type AppointmentEmails, notifyPatient } from "../ports/AppointmentEmails.js";
 import type { Clock } from "../ports/Clock.js";
 import { type AppointmentOutput, toAppointmentOutput } from "./appointmentOutput.js";
+import { assignIfAutomatic } from "./assignIfAutomatic.js";
+import type { AvailabilityRepositories } from "./GetAvailability.js";
 import { findVisible } from "./GetAppointment.js";
 
 export interface DecideAppointmentInput {
@@ -17,8 +17,7 @@ export interface DecideAppointmentInput {
 /** Staff accept or reject a pending booking. A pending booking already holds its place. */
 export class DecideAppointment {
   constructor(
-    private readonly appointments: AppointmentRepository,
-    private readonly settings: SettingsRepository,
+    private readonly repositories: AvailabilityRepositories,
     private readonly emails: AppointmentEmails,
     private readonly clock: Clock,
   ) {}
@@ -30,20 +29,21 @@ export class DecideAppointment {
     reason,
   }: DecideAppointmentInput): Promise<AppointmentOutput> {
     const viewer = { userId: actorId, canViewAll: true };
-    const appointment = await findVisible(this.appointments, id, viewer);
+    const appointment = await findVisible(this.repositories.appointments, id, viewer);
     assertCan(decision, appointment.status);
 
     const accepted = decision === "accept";
-    await this.appointments.changeStatus(id, {
+    await this.repositories.appointments.changeStatus(id, {
       status: accepted ? "confirmed" : "rejected",
       actorId,
       event: accepted ? "confirmed" : "rejected",
       note: reason,
       decisionNote: accepted ? null : reason,
     });
-    const updated = await findVisible(this.appointments, id, viewer);
+    if (accepted) await assignIfAutomatic(id, this.repositories);
+    const updated = await findVisible(this.repositories.appointments, id, viewer);
     await notifyPatient(this.emails, accepted ? "confirmed" : "rejected", updated);
-    const { settings } = await this.settings.get();
+    const { settings } = await this.repositories.settings.get();
     return toAppointmentOutput(updated, settings.cancelCutoffHours, this.clock.now());
   }
 }
