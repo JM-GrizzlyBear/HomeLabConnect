@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** An appointment's payment: a ₱0 visit (a return visit) counts as paid. */
+export const paymentStatusSchema = z.enum(["unpaid", "paid", "partially_refunded", "refunded"]);
+
 export const appointmentStatusSchema = z.enum([
   "pending",
   "confirmed",
@@ -99,7 +102,9 @@ export const appointmentSchema = z.object({
   subtotalCentavos: z.number().int(),
   discountCentavos: z.number().int(),
   totalCentavos: z.number().int(),
-  paymentStatus: z.enum(["unpaid"]),
+  paymentStatus: paymentStatusSchema,
+  /** Paid, but the visit was cancelled or rejected: an admin should refund it. */
+  needsRefund: z.boolean(),
   decisionNote: z.string().nullable(),
   team: z.object({ id: z.uuid(), name: z.string() }).nullable(),
   collectionNote: z.string().nullable(),
@@ -243,6 +248,7 @@ export const reorderRouteRequestSchema = routeQuerySchema.extend({
 });
 
 export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
+export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
 export type AppointmentNoteView = z.infer<typeof appointmentNoteSchema>;
 export type RouteTeam = z.infer<typeof routeTeamsSchema>[number];
 export type TeamChoice = z.infer<typeof teamChoiceSchema>;
