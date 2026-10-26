@@ -25,7 +25,9 @@ export function adapt(controller: Controller, ...middlewares: Middleware[]): Req
 
     const response = await controller.handle(request);
     if (response.session) await applySessionChange(req, res, response.session);
+    if (response.headers) res.set(response.headers);
     if (response.body === undefined) res.status(response.status).end();
+    else if (typeof response.body === "string") res.status(response.status).send(response.body);
     else res.status(response.status).json(response.body);
   };
 }

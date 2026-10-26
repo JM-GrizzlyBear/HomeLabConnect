@@ -30,6 +30,9 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MAIL_FROM: z.string().min(1).default("HomeLabConnect <no-reply@homelabconnect.local>"),
+  /** Card payments. Unset: only cash can be taken. */
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export interface Config {
@@ -50,6 +53,14 @@ export interface Config {
   smtpUser: string | undefined;
   smtpPass: string | undefined;
   mailFrom: string;
+  stripeSecretKey: string | undefined;
+  stripeWebhookSecret: string | undefined;
+}
+
+/** A key, unless it is empty or still the .env.example placeholder (sk_test_xxx). */
+function realKey(value: string | undefined): string | undefined {
+  const key = value?.trim();
+  return key && !/_x+$/.test(key) ? key : undefined;
 }
 
 /** Reads the repo-root .env (if present) and validates every variable the API needs. */
@@ -83,5 +94,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     smtpUser: parsed.data.SMTP_USER?.trim() || undefined,
     smtpPass: parsed.data.SMTP_PASS?.trim() || undefined,
     mailFrom: parsed.data.MAIL_FROM,
+    stripeSecretKey: realKey(parsed.data.STRIPE_SECRET_KEY),
+    stripeWebhookSecret: realKey(parsed.data.STRIPE_WEBHOOK_SECRET),
   };
 }

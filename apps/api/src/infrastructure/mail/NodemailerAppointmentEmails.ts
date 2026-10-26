@@ -53,6 +53,17 @@ const notices: Record<
         ? `Your home visit was cancelled. Reason: ${a.decisionNote}`
         : "Your home visit was cancelled.",
   },
+  payment_received: {
+    subject: (code) => `Payment received for ${code}`,
+    intro: () => "Thank you, we received your payment.",
+  },
+  payment_refunded: {
+    subject: (code) => `Refund for ${code}`,
+    intro: (a) =>
+      a.paymentStatus === "refunded"
+        ? "We refunded your payment in full. Card refunds take 5 to 10 days to show on your statement."
+        : "We refunded part of your payment. Card refunds take 5 to 10 days to show on your statement.",
+  },
 };
 
 /** Tells patients about their appointments over SMTP (Mailpit locally, Brevo in production). */

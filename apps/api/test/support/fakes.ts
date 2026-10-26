@@ -24,6 +24,12 @@ import type {
 import type { Appointment } from "../../src/domain/appointments/appointment.js";
 import type { PhotoStorage, PhotoUpload } from "../../src/application/ports/PhotoStorage.js";
 import type { FileStorage, FileUpload } from "../../src/application/ports/FileStorage.js";
+import type {
+  Checkout,
+  PaymentEvent,
+  PaymentGateway,
+} from "../../src/application/ports/PaymentGateway.js";
+import { InvalidWebhook } from "../../src/domain/payments/paymentErrors.js";
 import type { StoredPhoto } from "../../src/domain/media/photo.js";
 import type { SessionRepository } from "../../src/domain/identity/SessionRepository.js";
 import type { TemporaryPasswordGenerator } from "../../src/application/ports/TemporaryPasswordGenerator.js";
@@ -124,6 +130,30 @@ export class FakeAppointmentEmails implements AppointmentEmails {
 
   async send(notice: AppointmentNotice, appointment: Appointment): Promise<void> {
     this.sent.push({ notice, code: appointment.code, to: appointment.patientEmail });
+  }
+}
+
+/**
+ * A pretend Stripe: checkouts are cs_1, cs_2, ... and a webhook is genuine when signed
+ * "valid", with a JSON body { id, type, reference }.
+ */
+export class FakePaymentGateway implements PaymentGateway {
+  readonly checkouts: { reference: string; amountCentavos: number; code: string }[] = [];
+  readonly refunds: { reference: string; amountCentavos: number }[] = [];
+
+  async createCheckout(input: { code: string; amountCentavos: number }): Promise<Checkout> {
+    const reference = `cs_${this.checkouts.length + 1}`;
+    this.checkouts.push({ reference, amountCentavos: input.amountCentavos, code: input.code });
+    return { reference, url: `https://checkout.example.com/${reference}` };
+  }
+
+  async parseWebhook(rawBody: Uint8Array, signature: string): Promise<PaymentEvent> {
+    if (signature !== "valid") throw new InvalidWebhook();
+    return JSON.parse(new TextDecoder().decode(rawBody)) as PaymentEvent;
+  }
+
+  async refund(reference: string, amountCentavos: number): Promise<void> {
+    this.refunds.push({ reference, amountCentavos });
   }
 }
 

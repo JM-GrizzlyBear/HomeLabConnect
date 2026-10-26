@@ -10,7 +10,8 @@ export type AppointmentStatus =
   | "rejected"
   | "cancelled";
 
-export type PaymentStatus = "unpaid";
+export const PAYMENT_STATUSES = ["unpaid", "paid", "partially_refunded", "refunded"] as const;
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 /** Statuses that hold a place in their time slot (and in their team's day). */
 export const PLACE_HOLDING_STATUSES: readonly AppointmentStatus[] = [
@@ -63,7 +64,9 @@ export type AppointmentEventKind =
   | "on_the_way"
   | "collected"
   | "not_collected"
-  | "return_scheduled";
+  | "return_scheduled"
+  | "paid"
+  | "refunded";
 
 export interface RescheduleProposal {
   id: string;
