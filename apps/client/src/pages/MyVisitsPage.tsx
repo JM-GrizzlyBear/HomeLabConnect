@@ -1,4 +1,4 @@
-import { type AppointmentView, recordVisitRequestSchema } from "@homelabconnect/shared";
+import { type AppointmentView, formatPeso, recordVisitRequestSchema } from "@homelabconnect/shared";
 import { addDays, format, parseISO } from "date-fns";
 import {
   ChevronLeftIcon,
@@ -32,6 +32,7 @@ import { ContentCard } from "../components/layout/ContentCard";
 import { PageHeader } from "../components/layout/PageHeader";
 import { useFeedback } from "../feedback/feedbackContext";
 import { appointmentStatusLabels, appointmentStatusVariants } from "../format/appointments";
+import { paymentStatusLabels, paymentStatusVariants } from "../format/payments";
 import { formatTime } from "../format/settings";
 import { useFormState } from "../forms/useFormState";
 import { queryKeys } from "../queries/queryKeys";
@@ -144,6 +145,12 @@ export function MyVisitsPage() {
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <Badge variant={appointmentStatusVariants[visit.status]}>
                     {visit.code} · {appointmentStatusLabels[visit.status]}
+                  </Badge>
+                  {/* Unpaid: the team collects the total in cash (Record cash on Details) */}
+                  <Badge variant={paymentStatusVariants[visit.paymentStatus]}>
+                    {visit.totalCentavos === 0
+                      ? "No charge"
+                      : `${formatPeso(visit.totalCentavos)} · ${paymentStatusLabels[visit.paymentStatus]}`}
                   </Badge>
                   <Button asChild size="sm" variant="ghost">
                     <Link to={`/app/appointments/${visit.id}`}>Details & notes</Link>

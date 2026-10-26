@@ -10,6 +10,10 @@ import { BookVisitPage } from "./pages/BookVisitPage";
 import { ComingSoonPage } from "./pages/ComingSoonPage";
 import { DailyRoutePage } from "./pages/DailyRoutePage";
 import { MyAppointmentsPage } from "./pages/MyAppointmentsPage";
+import { AllPaymentsPage } from "./pages/AllPaymentsPage";
+import { MyPaymentsPage } from "./pages/MyPaymentsPage";
+import { PaymentReturnPage } from "./pages/PaymentReturnPage";
+import { RefundsPage } from "./pages/RefundsPage";
 import { MyVisitsPage } from "./pages/MyVisitsPage";
 import { CreateStaffPage } from "./pages/CreateStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -254,6 +258,33 @@ export const routes: RouteObject[] = [
       },
       // Patients open their own, staff any: the API answers 404 otherwise
       { path: "appointments/:id", element: <AppointmentPage /> },
+      // Stripe's checkout sends the patient back to one of these
+      { path: "payments/success", element: <PaymentReturnPage outcome="success" /> },
+      { path: "payments/cancel", element: <PaymentReturnPage outcome="cancel" /> },
+      {
+        path: "payments/mine",
+        element: (
+          <RequirePermission permission="payments.view_own">
+            <MyPaymentsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "payments/all",
+        element: (
+          <RequirePermission permission="payments.view_all">
+            <AllPaymentsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "payments/refunds",
+        element: (
+          <RequirePermission permission="payments.refund">
+            <RefundsPage />
+          </RequirePermission>
+        ),
+      },
       { path: "*", element: <ComingSoonPage /> },
     ],
   },

@@ -54,6 +54,7 @@ const appointment = (overrides: Record<string, unknown> = {}) => ({
   discountCentavos: 7_000,
   totalCentavos: 28_000,
   paymentStatus: "unpaid",
+  needsRefund: false,
   decisionNote: null,
   team: null,
   collectionNote: null,
