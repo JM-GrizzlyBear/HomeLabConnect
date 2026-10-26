@@ -216,6 +216,20 @@ DATABASE_URL="<your neon url>" turbo run db:seed
 
 GitHub → **Actions → Deploy → Run workflow**.
 
+### 10. Stripe (card payments) → `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+
+Optional, and can wait: until these are set, the app only offers cash, and everything else works.
+
+1. Sign up at https://dashboard.stripe.com/register and stay in **Test mode** (the toggle at the top). Test mode needs no business details or card.
+2. **Developers → API keys** → copy the **Secret key** (`sk_test_…`).
+3. **Developers → Webhooks → Add endpoint**:
+   - URL: `https://homelabconnect.netlify.app/api/payments/webhook`
+   - Events: `checkout.session.completed` and `checkout.session.expired`
+   - Save, then copy its **Signing secret** (`whsec_…`).
+4. Render → your service → **Environment**: add `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`, then redeploy.
+5. To try it on your PC: put the `sk_test_…` key in the root `.env`, install the Stripe CLI, run `stripe listen --forward-to localhost:4000/api/payments/webhook`, and put the `whsec_…` it prints in `.env` as `STRIPE_WEBHOOK_SECRET`. Restart `turbo run dev`.
+6. Pay with the test card `4242 4242 4242 4242`, any future date, any CVC.
+
 ## Credit cards
 
 As far as we know, the free plans of Neon, Cloudinary, Netlify, Brevo and Resend don't ask for a card, and Render's free web service usually doesn't either. If a sign-up asks for one, stop and ask before entering it.
@@ -259,6 +273,9 @@ Appointments
 - [ ] As `medteam@`: open a visit (**Details & notes**) → add a note with a photo or PDF; tick **Share with patient** on one. As the patient, only the shared note shows.
 - [ ] Record a visit as **Collected** with one test unticked → **Schedule return visit** → pick a time: a new ₱0 confirmed visit for the missed test, linked both ways.
 - [ ] As `admin@`: **Daily Route** → pick Team Makati → move a stop up or down; `medteam@`'s My Visits shows the new order. **Open in Maps** opens directions.
+- [ ] Payments without Stripe: as the patient, a confirmed visit says "Pay in cash to the med team at your visit". As `medteam@`, on a visit that is on the way or collected → **Record cash payment** → confirm: it shows Paid; Mailpit has "Payment received".
+- [ ] As `admin@`: **All Payments** lists it; **Export CSV** downloads it. **Refund** ₱100 with a reason: it shows Partly refunded. As the patient, **My Payments** shows the refund.
+- [ ] With Stripe test keys and `stripe listen` (step 10): **Pay now** opens Stripe; paying with 4242… brings you back and the visit shows Paid. Cancel a paid visit: **Refunds → Needs refund** lists it.
 - [ ] As `medteam@`: **My Visits** shows the team's visits for the day (address, phone, tests) → **On the way** → **Collected** (tick the tests, add a note). The appointment page shows ✓/✗ per test and the team's note.
 
 Production image (optional)
