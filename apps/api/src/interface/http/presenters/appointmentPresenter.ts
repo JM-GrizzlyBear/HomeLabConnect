@@ -15,6 +15,7 @@ import type { DayAvailability as DayAvailabilityOutput } from "../../../domain/a
 import type { Appointment } from "../../../domain/appointments/appointment.js";
 import type { TeamChoice } from "../../../domain/appointments/teamAssignment.js";
 import type { AppointmentNote } from "../../../domain/appointments/note.js";
+import { needsRefund } from "../../../domain/payments/payment.js";
 import type { HttpResponse } from "../httpTypes.js";
 
 const toLine = (line: AppointmentLine) => ({
@@ -48,6 +49,7 @@ function toAppointmentView(output: AppointmentOutput): AppointmentView {
     discountCentavos: output.discountCentavos,
     totalCentavos: output.totalCentavos,
     paymentStatus: output.paymentStatus,
+    needsRefund: needsRefund(output),
     decisionNote: output.decisionNote,
     team: output.team,
     collectionNote: output.collectionNote,

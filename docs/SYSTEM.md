@@ -51,7 +51,7 @@ user override → custom role grant → base role grant → deny. The full catal
 4. **Scheduling & Teams:** shifts set month by month on a calendar, leave requests (team lead → admin for med team; admin for everyone else), med teams and two-week rosters. See [erd/scheduling.md](erd/scheduling.md).
 5. **Appointments:** patient booking with live sale prices and open slots (one visit per med team on duty per slot), staff accept/reject, new-time proposals the patient accepts or declines, cancellation, and emails at each step team assignment (manual or automatic), the med team's My Visits with sample collection, notes with photo/PDF attachments, return visits for missed tests, and daily routes (built: slices 5A–5D). See [erd/appointments.md](erd/appointments.md).
 6. **Results:** doctors upload result files and patients view or download them. Results are **held until the appointment is paid**.
-7. **Payments (Stripe + Cash):** online checkout, cash recording, refunds and a payment list with export.
+7. **Payments (Stripe + Cash):** card checkout once a visit is confirmed, cash recorded by the med team at the visit, refunds (full or partial, by an admin; paid visits that get cancelled or rejected are flagged "Needs refund"), My Payments, All Payments with a CSV export (built). Without Stripe keys only cash is offered. See [erd/payments.md](erd/payments.md).
 8. **Support Desk:** patient help desk, tickets auto-assigned to on-shift agents, ticket chat.
 9. **Notifications:** in-app bell with real-time updates (SSE) and key emails (booking accepted/rejected, new time proposed, result released, payment received/refunded).
 10. **Audit Logs:** appointment and sign-in events.
@@ -64,22 +64,24 @@ user override → custom role grant → base role grant → deny. The full catal
 
 ### 5.1 Online payment (card)
 
-1. The patient books an appointment and clicks **Pay now**.
+1. Once the appointment is confirmed, the patient clicks **Pay now** on it.
 2. The backend creates a **Stripe Checkout Session** (currency `php`, amount in centavos) and saves a `payments` row with status `pending` and the session ID as `provider_reference`.
 3. The patient is redirected to Stripe's hosted checkout page and pays.
 4. Stripe redirects the patient back to the app (success or cancel URL).
 5. Stripe sends a **webhook** (`checkout.session.completed`) to `POST /api/payments/webhook`.
 6. The backend verifies the webhook signature with `STRIPE_WEBHOOK_SECRET`, stores the event in `payment_webhook_events` (ignoring duplicates), and marks the payment `paid`.
-7. The patient gets a "Payment received" notification, and results unlock once the appointment is fully paid.
+7. The patient gets a "Payment received" email, and results unlock once the appointment is fully paid.
+
+An open checkout lasts 60 minutes; clicking **Pay now** again within that time reuses it. A ₱0 visit (a return visit) counts as paid.
 
 ### 5.2 Cash payment
 
-- The med team records a cash payment during the visit (`payments.record_cash` permission).
+- The med team records a cash payment for the full total during the visit, once they are on the way (`payments.record_cash` permission), from the appointment page.
 - The payment is saved with `provider = cash` and status `paid`.
 
 ### 5.3 Refunds
 
-- An admin issues a full or partial refund (`payments.refund` permission).
+- An admin issues a full or partial refund with a reason (`payments.refund` permission), from **All Payments** or **Refunds**. Refunds are never automatic: a paid visit that is cancelled or rejected shows **Needs refund**.
 - Stripe payments are refunded through the **Stripe Refunds API**. Cash refunds are recorded manually.
 - Status becomes `refunded` or `partially_refunded`, and the patient is notified.
 
@@ -181,9 +183,8 @@ APP_URL=http://localhost:5173
 
 # Frontend (Vite). The client calls /api on its own address: Vite forwards it to the API in
 # development, Netlify to Render in production, so no API URL is needed.
-VITE_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 
-# Stripe
+# Stripe card payments. Empty or the sk_test_xxx placeholder: only cash is offered
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 

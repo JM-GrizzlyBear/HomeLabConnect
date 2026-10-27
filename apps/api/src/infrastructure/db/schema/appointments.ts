@@ -26,6 +26,8 @@ export const appointmentStatuses = [
   "cancelled",
 ] as const;
 
+export const paymentStatuses = ["unpaid", "paid", "partially_refunded", "refunded"] as const;
+
 /** A home visit a patient booked. Money is centavos, copied from the prices when booked. */
 export const appointments = pgTable(
   "appointments",
@@ -46,9 +48,7 @@ export const appointments = pgTable(
     subtotalCentavos: integer("subtotal_centavos").notNull(),
     discountCentavos: integer("discount_centavos").notNull(),
     totalCentavos: integer("total_centavos").notNull(),
-    paymentStatus: text("payment_status", { enum: ["unpaid"] })
-      .notNull()
-      .default("unpaid"),
+    paymentStatus: text("payment_status", { enum: paymentStatuses }).notNull().default("unpaid"),
     /** Why staff rejected or cancelled it, shown to the patient. */
     decisionNote: text("decision_note"),
     /** The med team going on the visit. */

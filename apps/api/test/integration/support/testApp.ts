@@ -13,6 +13,7 @@ import {
   FakeAccountEmails,
   FakeAppointmentEmails,
   FakeFileStorage,
+  FakePaymentGateway,
   FakePhotoStorage,
   FakeTemporaryPasswordGenerator,
   FixedClock,
@@ -52,7 +53,7 @@ async function resetDatabase(db: Database): Promise<void> {
 }
 
 /** Resets the test database and builds the app on it. Call at the start of every test. */
-export async function buildTestApp({ databaseReachable = true } = {}) {
+export async function buildTestApp({ databaseReachable = true, cardPayments = true } = {}) {
   const db = database();
   const { pool } = connection!;
   await resetDatabase(db);
@@ -63,6 +64,7 @@ export async function buildTestApp({ databaseReachable = true } = {}) {
   const photos = new FakePhotoStorage();
   const appointmentEmails = new FakeAppointmentEmails();
   const files = new FakeFileStorage();
+  const gateway = new FakePaymentGateway();
   const unreachable: DatabaseHealthProbe = { isReachable: async () => false };
 
   const app = buildApp({
@@ -79,6 +81,7 @@ export async function buildTestApp({ databaseReachable = true } = {}) {
     trustProxy: 0,
     photoStorage: photos,
     fileStorage: files,
+    paymentGateway: cardPayments ? gateway : null,
     healthProbe: databaseReachable ? undefined : unreachable,
   });
 
@@ -91,6 +94,7 @@ export async function buildTestApp({ databaseReachable = true } = {}) {
     passwords,
     photos,
     files,
+    gateway,
     given: new Given(db),
   };
 }

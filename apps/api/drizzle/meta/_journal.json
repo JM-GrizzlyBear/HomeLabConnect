@@ -134,6 +134,13 @@
       "when": 1792919660183,
       "tag": "0018_mature_thunderbird",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793024782146,
+      "tag": "0019_powerful_the_stranger",
+      "breakpoints": true
     }
   ]
 }

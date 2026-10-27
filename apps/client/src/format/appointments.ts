@@ -51,6 +51,8 @@ export const eventLabels: Record<string, string> = {
   collected: "Samples collected",
   not_collected: "Couldn't collect",
   return_scheduled: "Return visit",
+  paid: "Paid",
+  refunded: "Refunded",
 };
 
 /** A Google Maps search for an address, for directions on the phone. */

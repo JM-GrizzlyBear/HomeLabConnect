@@ -185,6 +185,26 @@ import { ProposeNewTimeController } from "./interface/http/controllers/ProposeNe
 import { AnswerProposal } from "./application/appointments/AnswerProposal.js";
 import { AnswerProposalController } from "./interface/http/controllers/AnswerProposalController.js";
 import { createSessionMiddleware } from "./infrastructure/http/session.js";
+import type { PaymentGateway } from "./application/ports/PaymentGateway.js";
+import { DrizzlePaymentRepository } from "./infrastructure/db/DrizzlePaymentRepository.js";
+import { HandlePaymentWebhook } from "./application/payments/HandlePaymentWebhook.js";
+import {
+  ExportPayments,
+  ListAppointmentPayments,
+  ListMyPayments,
+  ListPayments,
+} from "./application/payments/ListPayments.js";
+import { RecordCashPayment } from "./application/payments/RecordCashPayment.js";
+import { RefundPayment } from "./application/payments/RefundPayment.js";
+import { StartCardPayment } from "./application/payments/StartCardPayment.js";
+import { StartCardPaymentController } from "./interface/http/controllers/StartCardPaymentController.js";
+import { RecordCashPaymentController } from "./interface/http/controllers/RecordCashPaymentController.js";
+import { HandlePaymentWebhookController } from "./interface/http/controllers/HandlePaymentWebhookController.js";
+import { RefundPaymentController } from "./interface/http/controllers/RefundPaymentController.js";
+import { ListPaymentsController } from "./interface/http/controllers/ListPaymentsController.js";
+import { ExportPaymentsController } from "./interface/http/controllers/ExportPaymentsController.js";
+import { ListMyPaymentsController } from "./interface/http/controllers/ListMyPaymentsController.js";
+import { ListAppointmentPaymentsController } from "./interface/http/controllers/ListAppointmentPaymentsController.js";
 
 export interface BuildAppOptions {
   db: Database;
@@ -204,6 +224,8 @@ export interface BuildAppOptions {
   photoStorage: PhotoStorage;
   /** Where note attachments go (photos and PDFs). */
   fileStorage: FileStorage;
+  /** Stripe card payments; null when Stripe isn't set up (only cash is taken). */
+  paymentGateway: PaymentGateway | null;
   /** Set when photos are kept on this machine, so the app serves them at /api/uploads. */
   uploadsDir?: string;
   /** Tests swap it to see the health check report a database outage. */
@@ -234,7 +256,9 @@ export function buildApp(options: BuildAppOptions) {
   const noteRepositories = { appointments, teams, notes: new DrizzleAppointmentNoteRepository(db) };
   const availabilityRepositories = { ...scheduleRepositories, appointments, teams, settings };
   const quoteBooking = new QuoteBooking(procedures, promotions, clock);
-  const { appointmentEmails } = options;
+  const { appointmentEmails, paymentGateway: gateway } = options;
+  const payments = new DrizzlePaymentRepository(db);
+  const paymentRepositories = { appointments, teams, payments };
 
   // Use cases
   const checkSystemHealth = new CheckSystemHealth(
@@ -412,6 +436,24 @@ export function buildApp(options: BuildAppOptions) {
       answerProposal: new AnswerProposalController(
         new AnswerProposal(availabilityRepositories, appointmentEmails, clock),
       ),
+      listAppointmentPayments: new ListAppointmentPaymentsController(
+        new ListAppointmentPayments(paymentRepositories, gateway),
+      ),
+      startCardPayment: new StartCardPaymentController(
+        new StartCardPayment(paymentRepositories, gateway, clock),
+      ),
+      paymentWebhook: new HandlePaymentWebhookController(
+        new HandlePaymentWebhook(paymentRepositories, gateway, appointmentEmails, clock),
+      ),
+      recordCashPayment: new RecordCashPaymentController(
+        new RecordCashPayment(paymentRepositories, appointmentEmails, clock),
+      ),
+      refundPayment: new RefundPaymentController(
+        new RefundPayment(paymentRepositories, gateway, appointmentEmails),
+      ),
+      listPayments: new ListPaymentsController(new ListPayments(payments)),
+      exportPayments: new ExportPaymentsController(new ExportPayments(payments), clock),
+      listMyPayments: new ListMyPaymentsController(new ListMyPayments(payments)),
     },
     middlewares: {
       authenticate: new Authenticate(authenticateRequest),

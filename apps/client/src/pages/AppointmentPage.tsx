@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router";
 import { AppointmentActions } from "@/components/appointments/AppointmentActions";
 import { AppointmentLines } from "@/components/appointments/AppointmentLines";
 import { NotesCard } from "@/components/appointments/NotesCard";
+import { PaymentCard } from "@/components/payments/PaymentCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -161,10 +162,12 @@ export function AppointmentPage() {
             )}
           </dl>
         </ContentCard>
-        <ContentCard title="Tests" className="lg:col-span-2">
-          <AppointmentLines {...appointment} />
-          <p className="mt-3 text-xs text-muted-foreground">Payment: Unpaid</p>
-        </ContentCard>
+        <div className="grid gap-6 lg:col-span-2">
+          <ContentCard title="Tests">
+            <AppointmentLines {...appointment} />
+          </ContentCard>
+          <PaymentCard appointment={appointment} onChanged={reload} />
+        </div>
         <NotesCard appointmentId={appointment.id} isPatient={appointment.patient.id === user?.id} />
         <ContentCard title="History" className="lg:col-span-5">
           <ol className="space-y-2 text-sm">

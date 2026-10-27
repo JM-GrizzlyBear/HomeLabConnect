@@ -87,6 +87,8 @@ export class DrizzleAppointmentRepository implements AppointmentRepository {
           subtotalCentavos: subtotal,
           discountCentavos: discount,
           totalCentavos: subtotal - discount,
+          // A ₱0 visit (a return visit) has nothing to pay
+          paymentStatus: subtotal - discount === 0 ? "paid" : "unpaid",
         })
         .returning({ id: appointments.id });
       if (!row) throw new Error("Insert into appointments returned no row.");

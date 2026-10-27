@@ -1,6 +1,7 @@
 import express, { type ErrorRequestHandler, type Express, type RequestHandler } from "express";
 import helmet from "helmet";
 import { presentError, presentNotFound } from "../../interface/http/presenters/errorPresenter.js";
+import { adapt } from "./expressAdapter.js";
 import { type Controllers, createRouter, type Middlewares } from "./routes.js";
 
 export interface AppOptions {
@@ -28,8 +29,14 @@ export function createApp({
   app.disable("x-powered-by");
   if (trustProxy > 0) app.set("trust proxy", trustProxy);
   app.use(helmet());
-  app.use(express.json({ limit: "1mb" }));
   app.use(session);
+  // Stripe signs the exact bytes it sends, so this one route reads the body raw
+  app.post(
+    "/api/payments/webhook",
+    express.raw({ type: "application/json", limit: "1mb" }),
+    adapt(controllers.paymentWebhook),
+  );
+  app.use(express.json({ limit: "1mb" }));
   if (uploadsDir) app.use("/api/uploads", express.static(uploadsDir, { index: false }));
 
   app.use("/api", createRouter(controllers, middlewares));
