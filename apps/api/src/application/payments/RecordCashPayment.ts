@@ -6,6 +6,7 @@ import { PaymentNotAllowed } from "../../domain/payments/paymentErrors.js";
 import { type AppointmentViewer, findViewable } from "../appointments/GetAppointment.js";
 import { type AppointmentEmails, notifyPatient } from "../ports/AppointmentEmails.js";
 import type { Clock } from "../ports/Clock.js";
+import type { PaymentGateway } from "../ports/PaymentGateway.js";
 import type { PaymentRepositories } from "./paymentRepositories.js";
 
 export interface RecordCashPaymentInput {
@@ -20,6 +21,7 @@ export interface RecordCashPaymentInput {
 export class RecordCashPayment {
   constructor(
     private readonly repositories: PaymentRepositories,
+    private readonly gateway: PaymentGateway | null,
     private readonly emails: AppointmentEmails,
     private readonly clock: Clock,
   ) {}
@@ -42,9 +44,26 @@ export class RecordCashPayment {
       paidAt: this.clock.now(),
     });
     if (!payment) throw new PaymentNotAllowed("This appointment is already paid.");
+    await this.closeOpenCheckouts(appointmentId);
     const updated = await appointments.findById(appointmentId);
     if (!updated) throw new AppointmentNotFound();
     await notifyPatient(this.emails, "payment_received", updated);
     return updated;
+  }
+
+  /** A card checkout left open could still be paid: close it, so the visit isn't paid twice. */
+  private async closeOpenCheckouts(appointmentId: string): Promise<void> {
+    const { payments } = this.repositories;
+    const open = (await payments.listForAppointment(appointmentId)).filter(
+      (payment) => payment.status === "pending" && payment.providerReference,
+    );
+    for (const payment of open) {
+      try {
+        await this.gateway?.expireCheckout(payment.providerReference!);
+        await payments.markExpired(payment.id);
+      } catch {
+        // Already paid or expired at Stripe: a late card payment is still flagged for a refund
+      }
+    }
   }
 }

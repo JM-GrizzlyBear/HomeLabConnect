@@ -25,6 +25,8 @@ export interface PaymentGateway {
   }): Promise<Checkout>;
   /** Checks the signature and reads the event; throws InvalidWebhook if it isn't genuine. */
   parseWebhook(rawBody: Uint8Array, signature: string): Promise<PaymentEvent>;
+  /** Closes an open checkout so it can no longer be paid. */
+  expireCheckout(reference: string): Promise<void>;
   /** Gives back part or all of a paid checkout. */
   refund(reference: string, amountCentavos: number): Promise<void>;
 }

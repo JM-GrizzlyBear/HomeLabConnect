@@ -446,7 +446,7 @@ export function buildApp(options: BuildAppOptions) {
         new HandlePaymentWebhook(paymentRepositories, gateway, appointmentEmails, clock),
       ),
       recordCashPayment: new RecordCashPaymentController(
-        new RecordCashPayment(paymentRepositories, appointmentEmails, clock),
+        new RecordCashPayment(paymentRepositories, gateway, appointmentEmails, clock),
       ),
       refundPayment: new RefundPaymentController(
         new RefundPayment(paymentRepositories, gateway, appointmentEmails),

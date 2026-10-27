@@ -140,6 +140,7 @@ export class FakeAppointmentEmails implements AppointmentEmails {
 export class FakePaymentGateway implements PaymentGateway {
   readonly checkouts: { reference: string; amountCentavos: number; code: string }[] = [];
   readonly refunds: { reference: string; amountCentavos: number }[] = [];
+  readonly expired: string[] = [];
 
   async createCheckout(input: { code: string; amountCentavos: number }): Promise<Checkout> {
     const reference = `cs_${this.checkouts.length + 1}`;
@@ -150,6 +151,10 @@ export class FakePaymentGateway implements PaymentGateway {
   async parseWebhook(rawBody: Uint8Array, signature: string): Promise<PaymentEvent> {
     if (signature !== "valid") throw new InvalidWebhook();
     return JSON.parse(new TextDecoder().decode(rawBody)) as PaymentEvent;
+  }
+
+  async expireCheckout(reference: string): Promise<void> {
+    this.expired.push(reference);
   }
 
   async refund(reference: string, amountCentavos: number): Promise<void> {

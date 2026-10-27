@@ -185,6 +185,39 @@ describe("cash payments", () => {
   });
 });
 
+describe("paid twice", () => {
+  it("closes an open card checkout when the team takes cash", async () => {
+    const { app, asPatient, asTech, visitId, onTheWay, gateway } = await setup();
+    await onTheWay();
+    await request(app).post(`/api/appointments/${visitId}/checkout`).set(asPatient);
+
+    await request(app).post(`/api/appointments/${visitId}/cash`).set(asTech);
+    expect(gateway.expired).toEqual(["cs_1"]);
+  });
+
+  it("still records a card payment that lands after cash, and flags it for a refund", async () => {
+    const { app, asAdmin, asPatient, asTech, visitId, onTheWay, webhook, gateway } = await setup();
+    await onTheWay();
+    await request(app).post(`/api/appointments/${visitId}/checkout`).set(asPatient);
+    // Stripe refused to expire it: the patient had just paid
+    gateway.expireCheckout = async () => {
+      throw new Error("already complete");
+    };
+    await request(app).post(`/api/appointments/${visitId}/cash`).set(asTech);
+    await webhook({ eventId: "evt_1", type: "checkout_completed", reference: "cs_1" });
+
+    const flagged = await request(app).get("/api/payments?needsRefund=true").set(asAdmin);
+    expect(flagged.body.items).toMatchObject([
+      { provider: "stripe", status: "paid", needsRefund: true },
+    ]);
+    const visit = await request(app).get(`/api/appointments/${visitId}`).set(asAdmin);
+    expect(visit.body.events.at(-1).note).toContain("already paid");
+    const all = await request(app).get("/api/payments").set(asAdmin);
+    const cash = all.body.items.find((p: { provider: string }) => p.provider === "cash");
+    expect(cash.needsRefund).toBe(false);
+  });
+});
+
 describe("all payments and refunds", () => {
   it("lists, exports and refunds part, then the rest", async () => {
     const { app, asAdmin, asTech, visitId, onTheWay, appointmentEmails } = await setup();

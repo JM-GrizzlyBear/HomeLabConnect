@@ -27,6 +27,14 @@ const patientName = sql<string>`${users.firstName} || ' ' || ${users.lastName}`;
 /** The day a payment was made (or opened), Philippine time. */
 const businessDay = sql`(coalesce(${payments.paidAt}, ${payments.createdAt}) at time zone 'Asia/Manila')::date`;
 const settled = inArray(payments.status, ["paid", "partially_refunded"]);
+/** Another settled payment for the same visit came first: this one is paid twice. */
+const duplicate = sql<boolean>`exists (
+  select 1 from payments earlier
+  where earlier.appointment_id = ${payments.appointmentId}
+    and earlier.id <> ${payments.id}
+    and earlier.status in ('paid', 'partially_refunded')
+    and (earlier.paid_at, earlier.id) < (${payments.paidAt}, ${payments.id})
+)`;
 
 export class DrizzlePaymentRepository implements PaymentRepository {
   constructor(private readonly db: Database) {}
@@ -57,7 +65,7 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     if (query.patientId) filters.push(eq(appointments.patientUserId, query.patientId));
     if (query.refundable || query.needsRefund) filters.push(settled);
     if (query.needsRefund) {
-      filters.push(inArray(appointments.status, ["cancelled", "rejected"]));
+      filters.push(or(inArray(appointments.status, ["cancelled", "rejected"]), duplicate) as SQL);
     }
     if (query.q) {
       const number = Number(query.q.replace(/\D/g, ""));
@@ -106,15 +114,22 @@ export class DrizzlePaymentRepository implements PaymentRepository {
         .where(and(eq(payments.id, paymentId), eq(payments.status, "pending")))
         .returning();
       if (!row) return false;
-      await tx
+      // Only an unpaid visit becomes paid: if cash was taken meanwhile, the card payment is
+      // still recorded (the money was taken) and shows as needing a refund
+      const [visit] = await tx
         .update(appointments)
         .set({ paymentStatus: "paid" })
-        .where(eq(appointments.id, row.appointmentId));
+        .where(
+          and(eq(appointments.id, row.appointmentId), eq(appointments.paymentStatus, "unpaid")),
+        )
+        .returning({ id: appointments.id });
       await tx.insert(appointmentEvents).values({
         appointmentId: row.appointmentId,
         actorId: null,
         kind: "paid",
-        note: "Paid by card.",
+        note: visit
+          ? "Paid by card."
+          : "Paid by card, but the visit was already paid: refund one payment.",
       });
       return true;
     });
@@ -235,6 +250,7 @@ export class DrizzlePaymentRepository implements PaymentRepository {
         status: appointments.status,
         patientId: appointments.patientUserId,
         patientName,
+        duplicate,
       })
       .from(payments)
       .innerJoin(appointments, eq(appointments.id, payments.appointmentId))
@@ -247,6 +263,7 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     const refunds = await this.refundsOf(rows.map((row) => row.payment.id));
     return rows.map((row) => ({
       ...toPayment(row.payment, refunds),
+      duplicate: row.duplicate,
       appointment: {
         code: formatAppointmentCode(row.number),
         date: row.date,
