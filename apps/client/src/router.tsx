@@ -18,6 +18,9 @@ import { MyResultsPage } from "./pages/MyResultsPage";
 import { ReviewQueuePage } from "./pages/ReviewQueuePage";
 import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { ReportsPage } from "./pages/ReportsPage";
+import { MyTicketsPage } from "./pages/MyTicketsPage";
+import { TicketPage } from "./pages/TicketPage";
+import { TicketQueuePage } from "./pages/TicketQueuePage";
 import { MyVisitsPage } from "./pages/MyVisitsPage";
 import { CreateStaffPage } from "./pages/CreateStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -262,6 +265,24 @@ export const routes: RouteObject[] = [
       },
       // Patients open their own, staff any: the API answers 404 otherwise
       { path: "appointments/:id", element: <AppointmentPage /> },
+      {
+        path: "support/tickets",
+        element: (
+          <RequirePermission permission="support.view_own">
+            <MyTicketsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "support/queue",
+        element: (
+          <RequirePermission permission="support.view_queue">
+            <TicketQueuePage />
+          </RequirePermission>
+        ),
+      },
+      // Its patient, its agent or anyone who sees the queue: the API answers 404 otherwise
+      { path: "support/tickets/:id", element: <TicketPage /> },
       {
         path: "users/reports",
         element: (

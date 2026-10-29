@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Outlet } from "react-router";
+import { useEventStream } from "../../realtime/useEventStream";
 import { LogoMark } from "../icons";
 import { CloseIcon, MenuIcon } from "../navIcons";
 import { Sidebar } from "./Sidebar";
@@ -7,6 +8,7 @@ import { Sidebar } from "./Sidebar";
 /** Shell for every signed-in page: sidebar on the left, the page on a light-grey canvas. */
 export function DashboardLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  useEventStream();
   const closeDrawer = () => setDrawerOpen(false);
 
   return (

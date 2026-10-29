@@ -43,4 +43,8 @@ export const queryKeys = {
   auditLog: (filters: unknown) => ["audit", filters] as const,
   report: (kind: string, filters: unknown) => ["reports", kind, filters] as const,
   savedReports: ["reports", "saved"] as const,
+  myTickets: ["tickets", "mine"] as const,
+  ticketQueue: (filters: unknown) => ["tickets", "queue", filters] as const,
+  ticket: (id: string | undefined) => ["tickets", "one", id] as const,
+  supportAgents: ["tickets", "agents"] as const,
 };

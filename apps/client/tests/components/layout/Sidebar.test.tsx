@@ -9,6 +9,7 @@ function signedInAs(user: typeof sampleUser | typeof admin) {
   mockApi({
     "GET /api/auth/me": () => ({ status: 200, body: user }),
     "POST /api/auth/logout": () => ({ status: 204 }),
+    "GET /api/support/tickets?*": () => ({ status: 200, body: [] }),
   });
 }
 
@@ -44,7 +45,6 @@ describe("Sidebar", () => {
 
   it("opens the group of the current page and marks the page active", async () => {
     signedInAs(admin);
-    // A page that isn't built yet, so it also shows "coming soon".
     renderApp("/app/support/queue");
 
     expect(await screen.findByRole("button", { name: "Support" })).toHaveAttribute(
@@ -55,7 +55,6 @@ describe("Sidebar", () => {
       "aria-current",
       "page",
     );
-    expect(screen.getByText(/coming soon/)).toBeInTheDocument();
   });
 
   it("tells a patient they can't open an admin page", async () => {
