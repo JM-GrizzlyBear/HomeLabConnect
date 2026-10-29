@@ -66,7 +66,8 @@ export type AppointmentEventKind =
   | "not_collected"
   | "return_scheduled"
   | "paid"
-  | "refunded";
+  | "refunded"
+  | "results_released";
 
 export interface RescheduleProposal {
   id: string;

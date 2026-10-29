@@ -57,6 +57,15 @@ const notices: Record<
     subject: (code) => `Payment received for ${code}`,
     intro: () => "Thank you, we received your payment.",
   },
+  results_ready: {
+    subject: (code) => `Your lab results for ${code} are ready`,
+    intro: () => "Your lab results are ready. Open your appointment to view or download them.",
+  },
+  results_ready_unpaid: {
+    subject: (code) => `Your lab results for ${code} are ready`,
+    intro: () =>
+      "Your lab results are ready. They open once your visit is paid: pay online from your appointment, or contact us.",
+  },
   payment_refunded: {
     subject: (code) => `Refund for ${code}`,
     intro: (a) =>

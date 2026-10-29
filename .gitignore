@@ -31,3 +31,4 @@ Thumbs.db
 
 # Photos saved locally (PHOTO_STORAGE=local)
 apps/api/uploads/
+apps/api/private-uploads/

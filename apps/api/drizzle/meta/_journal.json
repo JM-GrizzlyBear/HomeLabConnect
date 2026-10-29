@@ -141,6 +141,13 @@
       "when": 1793024782146,
       "tag": "0019_powerful_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793120112587,
+      "tag": "0020_left_synch",
+      "breakpoints": true
     }
   ]
 }

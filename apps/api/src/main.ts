@@ -10,6 +10,7 @@ import { SystemClock } from "./infrastructure/SystemClock.js";
 import { createFileStorage } from "./infrastructure/storage/createFileStorage.js";
 import { createPhotoStorage } from "./infrastructure/storage/createPhotoStorage.js";
 import { createPaymentGateway } from "./infrastructure/payments/createPaymentGateway.js";
+import { createPrivateFileStorage } from "./infrastructure/storage/createPrivateFileStorage.js";
 
 const config = loadConfig();
 const { db, pool } = createDatabase(config.databaseUrl);
@@ -38,6 +39,7 @@ const app = buildApp({
   photoStorage: createPhotoStorage(config),
   fileStorage: createFileStorage(config),
   paymentGateway: createPaymentGateway(config),
+  privateFileStorage: createPrivateFileStorage(config),
   uploadsDir: config.photoStorage === "local" ? config.uploadsDir : undefined,
 });
 

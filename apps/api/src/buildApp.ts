@@ -185,6 +185,21 @@ import { ProposeNewTimeController } from "./interface/http/controllers/ProposeNe
 import { AnswerProposal } from "./application/appointments/AnswerProposal.js";
 import { AnswerProposalController } from "./interface/http/controllers/AnswerProposalController.js";
 import { createSessionMiddleware } from "./infrastructure/http/session.js";
+import type { PrivateFileStorage } from "./application/ports/PrivateFileStorage.js";
+import { DrizzleResultRepository } from "./infrastructure/db/DrizzleResultRepository.js";
+import { DeleteTestResult } from "./application/results/DeleteTestResult.js";
+import { GetAppointmentResults } from "./application/results/GetAppointmentResults.js";
+import { ListMyResults, ListReviewQueue } from "./application/results/ListReviewQueue.js";
+import { OpenResultFile } from "./application/results/OpenResultFile.js";
+import { ReleaseResults } from "./application/results/ReleaseResults.js";
+import { UploadTestResult } from "./application/results/UploadTestResult.js";
+import { GetAppointmentResultsController } from "./interface/http/controllers/GetAppointmentResultsController.js";
+import { UploadTestResultController } from "./interface/http/controllers/UploadTestResultController.js";
+import { DeleteTestResultController } from "./interface/http/controllers/DeleteTestResultController.js";
+import { ReleaseResultsController } from "./interface/http/controllers/ReleaseResultsController.js";
+import { OpenResultFileController } from "./interface/http/controllers/OpenResultFileController.js";
+import { ListReviewQueueController } from "./interface/http/controllers/ListReviewQueueController.js";
+import { ListMyResultsController } from "./interface/http/controllers/ListMyResultsController.js";
 import type { PaymentGateway } from "./application/ports/PaymentGateway.js";
 import { DrizzlePaymentRepository } from "./infrastructure/db/DrizzlePaymentRepository.js";
 import { HandlePaymentWebhook } from "./application/payments/HandlePaymentWebhook.js";
@@ -224,6 +239,8 @@ export interface BuildAppOptions {
   photoStorage: PhotoStorage;
   /** Where note attachments go (photos and PDFs). */
   fileStorage: FileStorage;
+  /** Lab result files: never a public link, handed out after an access check. */
+  privateFileStorage: PrivateFileStorage;
   /** Stripe card payments; null when Stripe isn't set up (only cash is taken). */
   paymentGateway: PaymentGateway | null;
   /** Set when photos are kept on this machine, so the app serves them at /api/uploads. */
@@ -259,6 +276,9 @@ export function buildApp(options: BuildAppOptions) {
   const { appointmentEmails, paymentGateway: gateway } = options;
   const payments = new DrizzlePaymentRepository(db);
   const paymentRepositories = { appointments, teams, payments };
+  const results = new DrizzleResultRepository(db);
+  const resultRepositories = { appointments, teams, results };
+  const { privateFileStorage: privateFiles } = options;
 
   // Use cases
   const checkSystemHealth = new CheckSystemHealth(
@@ -454,6 +474,23 @@ export function buildApp(options: BuildAppOptions) {
       listPayments: new ListPaymentsController(new ListPayments(payments)),
       exportPayments: new ExportPaymentsController(new ExportPayments(payments), clock),
       listMyPayments: new ListMyPaymentsController(new ListMyPayments(payments)),
+      getAppointmentResults: new GetAppointmentResultsController(
+        new GetAppointmentResults(resultRepositories),
+      ),
+      uploadTestResult: new UploadTestResultController(
+        new UploadTestResult(resultRepositories, privateFiles),
+      ),
+      deleteTestResult: new DeleteTestResultController(
+        new DeleteTestResult(resultRepositories, privateFiles),
+      ),
+      releaseResults: new ReleaseResultsController(
+        new ReleaseResults(resultRepositories, appointmentEmails, clock),
+      ),
+      openResultFile: new OpenResultFileController(
+        new OpenResultFile(resultRepositories, privateFiles),
+      ),
+      listReviewQueue: new ListReviewQueueController(new ListReviewQueue(results)),
+      listMyResults: new ListMyResultsController(new ListMyResults(results)),
     },
     middlewares: {
       authenticate: new Authenticate(authenticateRequest),

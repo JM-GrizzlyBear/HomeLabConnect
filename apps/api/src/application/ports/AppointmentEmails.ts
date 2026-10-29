@@ -8,7 +8,9 @@ export type AppointmentNotice =
   | "new_time_proposed"
   | "cancelled"
   | "payment_received"
-  | "payment_refunded";
+  | "payment_refunded"
+  | "results_ready"
+  | "results_ready_unpaid";
 
 /** Port: tells the patient by email when their appointment changes. */
 export interface AppointmentEmails {
