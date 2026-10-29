@@ -59,6 +59,8 @@ Example: _admin creates a lab procedure_.
 7. **Wire** — construct the repository, use case and controller in `src/buildApp.ts` (the composition root; `main.ts` only reads the settings and calls it).
 8. **Test** — `test/unit/application/catalog/CreateLabProcedure.test.ts` (use case with a fake repository) and a route test in `test/integration/http/` against the real test database; then `turbo run lint typecheck arch test`.
 
+**Live updates.** A use case that should reach open browsers calls the `EventPublisher` port (`application/ports/EventPublisher.ts`) after it saves, with the user ids concerned and a small event (`ticket.message`, `ticket.updated`). `infrastructure/realtime/SseHub.ts` implements it, keeping each signed-in browser's `GET /api/events` stream (Server-Sent Events, mounted in `app.ts`) in memory. That's enough for the single Render instance; with several, the events would go through Postgres `LISTEN/NOTIFY`. The client's `useEventStream` (in the dashboard layout) refetches the queries an event touches; events carry no data a page relies on, so a dropped stream loses nothing.
+
 The health check (`GET /api/health`) is a complete, minimal example of every step:
 `SystemHealth` → `DatabaseHealthProbe` + `CheckSystemHealth` → `HealthController` + `HealthPresenter` → `DrizzleDatabaseHealthProbe` + `routes.ts` → `buildApp.ts`.
 
