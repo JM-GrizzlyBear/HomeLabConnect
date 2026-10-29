@@ -2,6 +2,8 @@ import { assertCan } from "../../domain/appointments/appointment.js";
 import { AppointmentStatusConflict } from "../../domain/appointments/appointmentErrors.js";
 import { capacityOf } from "../../domain/appointments/availability.js";
 import { type AppointmentEmails, notifyPatient } from "../ports/AppointmentEmails.js";
+import type { Notifier } from "../notifications/Notifier.js";
+import { alertRefundNeeded, alertTeam } from "../notifications/staffAlerts.js";
 import type { Clock } from "../ports/Clock.js";
 import { type AppointmentOutput, toAppointmentOutput } from "./appointmentOutput.js";
 import type { AvailabilityRepositories } from "./GetAvailability.js";
@@ -23,6 +25,7 @@ export class AnswerProposal {
   constructor(
     private readonly repositories: AvailabilityRepositories,
     private readonly emails: AppointmentEmails,
+    private readonly notifier: Notifier,
     private readonly clock: Clock,
   ) {}
 
@@ -38,12 +41,18 @@ export class AnswerProposal {
     if (accept) {
       const onDuty = (await teamsOnDutyOn(proposal.date, teams, schedules)).length;
       await appointments.acceptProposal(id, capacityOf(onDuty, rules), patientId);
-      await assignIfAutomatic(id, this.repositories);
+      await assignIfAutomatic(id, this.repositories, this.notifier);
     } else {
       await appointments.declineProposal(id, patientId);
     }
     const updated = await findVisible(appointments, id, viewer);
     await notifyPatient(this.emails, accept ? "confirmed" : "cancelled", updated);
+    // A team that already had the visit hears it moved (or won't go ahead)
+    if (appointment.team && (!accept || updated.team?.id === appointment.team.id)) {
+      const kind = accept ? "visit_changed" : "visit_cancelled";
+      await alertTeam(this.notifier, teams, { ...updated, team: appointment.team }, kind);
+    }
+    if (!accept) await alertRefundNeeded(this.notifier, updated);
     return toAppointmentOutput(updated, rules.cancelCutoffHours, this.clock.now());
   }
 }

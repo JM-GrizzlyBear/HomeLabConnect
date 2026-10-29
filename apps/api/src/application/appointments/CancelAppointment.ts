@@ -1,7 +1,10 @@
 import { assertCan } from "../../domain/appointments/appointment.js";
 import { CancelCutoffPassed } from "../../domain/appointments/appointmentErrors.js";
 import type { AppointmentRepository } from "../../domain/appointments/AppointmentRepository.js";
+import type { MedTeamRepository } from "../../domain/scheduling/MedTeamRepository.js";
 import type { SettingsRepository } from "../../domain/settings/SettingsRepository.js";
+import type { Notifier } from "../notifications/Notifier.js";
+import { alertRefundNeeded, alertTeam } from "../notifications/staffAlerts.js";
 import { type AppointmentEmails, notifyPatient } from "../ports/AppointmentEmails.js";
 import type { Clock } from "../ports/Clock.js";
 import { type AppointmentOutput, toAppointmentOutput } from "./appointmentOutput.js";
@@ -18,7 +21,9 @@ export class CancelAppointment {
   constructor(
     private readonly appointments: AppointmentRepository,
     private readonly settings: SettingsRepository,
+    private readonly teams: MedTeamRepository,
     private readonly emails: AppointmentEmails,
+    private readonly notifier: Notifier,
     private readonly clock: Clock,
   ) {}
 
@@ -44,6 +49,10 @@ export class CancelAppointment {
     });
     const updated = await findVisible(this.appointments, id, actor);
     if (!isPatient) await notifyPatient(this.emails, "cancelled", updated);
+    // Cancelling frees the team, so tell the one it had
+    const team = { ...updated, team: appointment.team };
+    await alertTeam(this.notifier, this.teams, team, "visit_cancelled", actor.userId);
+    await alertRefundNeeded(this.notifier, updated);
     return toAppointmentOutput(updated, settings.cancelCutoffHours, now);
   }
 }

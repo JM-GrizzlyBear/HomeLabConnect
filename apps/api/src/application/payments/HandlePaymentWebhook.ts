@@ -1,5 +1,7 @@
 import { CardPaymentsUnavailable } from "../../domain/payments/paymentErrors.js";
 import { type AppointmentEmails, notifyPatient } from "../ports/AppointmentEmails.js";
+import { visitNotice } from "../../domain/notifications/notification.js";
+import type { Notifier } from "../notifications/Notifier.js";
 import type { Clock } from "../ports/Clock.js";
 import type { PaymentGateway } from "../ports/PaymentGateway.js";
 import type { PaymentRepositories } from "./paymentRepositories.js";
@@ -18,6 +20,7 @@ export class HandlePaymentWebhook {
     private readonly repositories: PaymentRepositories,
     private readonly gateway: PaymentGateway | null,
     private readonly emails: AppointmentEmails,
+    private readonly notifier: Notifier,
     private readonly clock: Clock,
   ) {}
 
@@ -36,6 +39,14 @@ export class HandlePaymentWebhook {
     }
     if (!(await payments.markPaid(payment.id, this.clock.now()))) return;
     const appointment = await appointments.findById(payment.appointmentId);
-    if (appointment) await notifyPatient(this.emails, "payment_received", appointment);
+    if (!appointment) return;
+    await notifyPatient(this.emails, "payment_received", appointment);
+    // Paid twice (cash was taken first, or two checkouts): an admin refunds the extra
+    if ((await payments.findByReference(event.reference))?.duplicate) {
+      await this.notifier.toRoles(
+        ["admin"],
+        visitNotice("refund_needed", appointment, "/app/payments/refunds"),
+      );
+    }
   }
 }

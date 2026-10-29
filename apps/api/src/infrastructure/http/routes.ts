@@ -1,3 +1,8 @@
+import type {
+  ListNotificationsController,
+  MarkAllNotificationsReadController,
+  MarkNotificationReadController,
+} from "../../interface/http/controllers/NotificationControllers.js";
 import type { OpenTicketController } from "../../interface/http/controllers/OpenTicketController.js";
 import type { ListMyTicketsController } from "../../interface/http/controllers/ListMyTicketsController.js";
 import type { ListTicketQueueController } from "../../interface/http/controllers/ListTicketQueueController.js";
@@ -231,6 +236,9 @@ interface ControllerTypes {
   setTicketPriority: SetTicketPriorityController;
   closeTicket: CloseTicketController;
   rateTicket: RateTicketController;
+  listNotifications: ListNotificationsController;
+  markNotificationRead: MarkNotificationReadController;
+  markAllNotificationsRead: MarkAllNotificationsReadController;
 }
 
 export type Controllers = Record<keyof ControllerTypes, Controller>;
@@ -546,6 +554,17 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.post(
     "/support/tickets/:id/rating",
     adapt(controllers.rateTicket, middlewares.authenticate),
+  );
+
+  // Notifications: everyone has their own
+  router.get("/notifications", adapt(controllers.listNotifications, middlewares.authenticate));
+  router.post(
+    "/notifications/read-all",
+    adapt(controllers.markAllNotificationsRead, middlewares.authenticate),
+  );
+  router.post(
+    "/notifications/:id/read",
+    adapt(controllers.markNotificationRead, middlewares.authenticate),
   );
 
   return router;

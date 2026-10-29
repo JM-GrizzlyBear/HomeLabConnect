@@ -1,6 +1,8 @@
 import { assertCan } from "../../domain/appointments/appointment.js";
 import { TeamUnavailable } from "../../domain/appointments/appointmentErrors.js";
 import { type TeamChoice, teamChoices } from "../../domain/appointments/teamAssignment.js";
+import type { Notifier } from "../notifications/Notifier.js";
+import { alertTeam } from "../notifications/staffAlerts.js";
 import type { Clock } from "../ports/Clock.js";
 import { type AppointmentOutput, toAppointmentOutput } from "./appointmentOutput.js";
 import type { AvailabilityRepositories } from "./GetAvailability.js";
@@ -32,10 +34,11 @@ export interface AssignTeamInput {
   teamId: string | null;
 }
 
-/** Staff give a confirmed visit to a med team on duty that's free at its time. */
+/** Staff give a confirmed visit to a med team on duty that's free at its time; the team is told. */
 export class AssignTeam {
   constructor(
     private readonly repositories: AvailabilityRepositories,
+    private readonly notifier: Notifier,
     private readonly clock: Clock,
   ) {}
 
@@ -57,6 +60,9 @@ export class AssignTeam {
     }
     await appointments.assignTeam(id, teamId, rules.visitsPerTeamPerDay, actorId);
     const updated = await findVisible(appointments, id, staff(actorId));
+    if (teamId && teamId !== appointment.team?.id) {
+      await alertTeam(this.notifier, this.repositories.teams, updated, "visit_assigned", actorId);
+    }
     return toAppointmentOutput(updated, rules.cancelCutoffHours, this.clock.now());
   }
 }

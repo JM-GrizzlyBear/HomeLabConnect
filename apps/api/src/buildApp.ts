@@ -275,6 +275,20 @@ import {
   SetTicketPriorityController,
 } from "./interface/http/controllers/ManageTicketControllers.js";
 
+import { Notifier } from "./application/notifications/Notifier.js";
+import { NotifyingAppointmentEmails } from "./application/notifications/NotifyingAppointmentEmails.js";
+import {
+  ListNotifications,
+  MarkAllNotificationsRead,
+  MarkNotificationRead,
+} from "./application/notifications/MyNotifications.js";
+import { DrizzleNotificationRepository } from "./infrastructure/db/DrizzleNotificationRepository.js";
+import {
+  ListNotificationsController,
+  MarkAllNotificationsReadController,
+  MarkNotificationReadController,
+} from "./interface/http/controllers/NotificationControllers.js";
+
 export interface BuildAppOptions {
   db: Database;
   /** The same connection pool as `db`; express-session keeps its sessions through it. */
@@ -331,7 +345,12 @@ export function buildApp(options: BuildAppOptions) {
   const noteRepositories = { appointments, teams, notes: new DrizzleAppointmentNoteRepository(db) };
   const availabilityRepositories = { ...scheduleRepositories, appointments, teams, settings };
   const quoteBooking = new QuoteBooking(procedures, promotions, clock);
-  const { appointmentEmails, paymentGateway: gateway } = options;
+  const { paymentGateway: gateway } = options;
+  const events = options.events ?? new SseHub();
+  const notifications = new DrizzleNotificationRepository(db);
+  const notifier = new Notifier(notifications, staff, events, clock);
+  // Every email to a patient about their visit also lands in their bell
+  const appointmentEmails = new NotifyingAppointmentEmails(options.appointmentEmails, notifier);
   const payments = new DrizzlePaymentRepository(db);
   const paymentRepositories = { appointments, teams, payments };
   const results = new DrizzleResultRepository(db);
@@ -340,7 +359,6 @@ export function buildApp(options: BuildAppOptions) {
   const auditLog = options.auditLog ?? new DrizzleAuditLog(db);
   const runReport = new RunReport(new DrizzleReportQueries(db));
   const savedReports = new DrizzleSavedReportRepository(db);
-  const events = options.events ?? new SseHub();
   const tickets = new DrizzleTicketRepository(db);
   const supportRepositories = { tickets, appointments, staff, shifts, leave };
 
@@ -470,18 +488,26 @@ export function buildApp(options: BuildAppOptions) {
         getMySchedule: new GetMyScheduleController(new GetMySchedule(scheduleRepositories)),
         getShiftBoard: new GetShiftBoardController(new GetShiftBoard(scheduleRepositories, staff)),
         setShiftDays: new SetShiftDaysController(new SetShiftDays(shifts, staff)),
-        requestLeave: new RequestLeaveController(new RequestLeave(leave, teams, staff, clock)),
+        requestLeave: new RequestLeaveController(
+          new RequestLeave(leave, teams, staff, notifier, clock),
+        ),
         listMyLeave: new ListMyLeaveController(new ListMyLeave(leave, staff)),
         cancelLeave: new CancelLeaveController(new CancelLeave(leave, staff, clock)),
         listLeaveInbox: new ListLeaveInboxController(new ListLeaveInbox(leave, staff)),
-        decideLeave: new DecideLeaveController(new DecideLeave(leave, staff, clock)),
+        decideLeave: new DecideLeaveController(new DecideLeave(leave, staff, notifier, clock)),
         listAllLeave: new ListAllLeaveController(new ListAllLeave(leave, staff)),
         getAvailability: new GetAvailabilityController(
           new GetAvailability(availabilityRepositories, clock),
         ),
         quoteBooking: new QuoteBookingController(quoteBooking),
         bookAppointment: new BookAppointmentController(
-          new BookAppointment(availabilityRepositories, quoteBooking, appointmentEmails, clock),
+          new BookAppointment(
+            availabilityRepositories,
+            quoteBooking,
+            appointmentEmails,
+            notifier,
+            clock,
+          ),
         ),
         listMyAppointments: new ListMyAppointmentsController(
           new ListMyAppointments(appointments, settings, clock),
@@ -490,17 +516,17 @@ export function buildApp(options: BuildAppOptions) {
           new GetAppointment(appointments, teams, settings, clock),
         ),
         cancelAppointment: new CancelAppointmentController(
-          new CancelAppointment(appointments, settings, appointmentEmails, clock),
+          new CancelAppointment(appointments, settings, teams, appointmentEmails, notifier, clock),
         ),
         listAppointments: new ListAppointmentsController(
           new ListAppointments(appointments, settings, clock),
         ),
         acceptAppointment: new DecideAppointmentController(
-          new DecideAppointment(availabilityRepositories, appointmentEmails, clock),
+          new DecideAppointment(availabilityRepositories, appointmentEmails, notifier, clock),
           "accept",
         ),
         rejectAppointment: new DecideAppointmentController(
-          new DecideAppointment(availabilityRepositories, appointmentEmails, clock),
+          new DecideAppointment(availabilityRepositories, appointmentEmails, notifier, clock),
           "reject",
         ),
         proposeNewTime: new ProposeNewTimeController(
@@ -509,9 +535,11 @@ export function buildApp(options: BuildAppOptions) {
         listTeamChoices: new ListTeamChoicesController(
           new ListTeamChoices(availabilityRepositories),
         ),
-        assignTeam: new AssignTeamController(new AssignTeam(availabilityRepositories, clock)),
+        assignTeam: new AssignTeamController(
+          new AssignTeam(availabilityRepositories, notifier, clock),
+        ),
         listMyVisits: new ListMyVisitsController(new ListMyVisits(availabilityRepositories)),
-        recordVisit: new RecordVisitController(new RecordVisit(availabilityRepositories)),
+        recordVisit: new RecordVisitController(new RecordVisit(availabilityRepositories, notifier)),
         listNotes: new ListAppointmentNotesController(new ListAppointmentNotes(noteRepositories)),
         addNote: new AddAppointmentNoteController(
           new AddAppointmentNote(noteRepositories, options.fileStorage),
@@ -520,13 +548,13 @@ export function buildApp(options: BuildAppOptions) {
           new DeleteAttachment(noteRepositories, options.fileStorage),
         ),
         scheduleReturnVisit: new ScheduleReturnVisitController(
-          new ScheduleReturnVisit(availabilityRepositories, appointmentEmails, clock),
+          new ScheduleReturnVisit(availabilityRepositories, appointmentEmails, notifier, clock),
         ),
         listRouteTeams: new ListRouteTeamsController(new ListRouteTeams(availabilityRepositories)),
         getDailyRoute: new GetDailyRouteController(new GetDailyRoute(availabilityRepositories)),
         reorderRoute: new ReorderRouteController(new ReorderRoute(availabilityRepositories)),
         answerProposal: new AnswerProposalController(
-          new AnswerProposal(availabilityRepositories, appointmentEmails, clock),
+          new AnswerProposal(availabilityRepositories, appointmentEmails, notifier, clock),
         ),
         listAppointmentPayments: new ListAppointmentPaymentsController(
           new ListAppointmentPayments(paymentRepositories, gateway),
@@ -535,7 +563,13 @@ export function buildApp(options: BuildAppOptions) {
           new StartCardPayment(paymentRepositories, gateway, clock),
         ),
         paymentWebhook: new HandlePaymentWebhookController(
-          new HandlePaymentWebhook(paymentRepositories, gateway, appointmentEmails, clock),
+          new HandlePaymentWebhook(
+            paymentRepositories,
+            gateway,
+            appointmentEmails,
+            notifier,
+            clock,
+          ),
         ),
         recordCashPayment: new RecordCashPaymentController(
           new RecordCashPayment(paymentRepositories, gateway, appointmentEmails, clock),
@@ -593,6 +627,13 @@ export function buildApp(options: BuildAppOptions) {
         ),
         closeTicket: new CloseTicketController(new CloseTicket(supportRepositories, events, clock)),
         rateTicket: new RateTicketController(new RateTicket(supportRepositories, events, clock)),
+        listNotifications: new ListNotificationsController(new ListNotifications(notifications)),
+        markNotificationRead: new MarkNotificationReadController(
+          new MarkNotificationRead(notifications, clock),
+        ),
+        markAllNotificationsRead: new MarkAllNotificationsReadController(
+          new MarkAllNotificationsRead(notifications, clock),
+        ),
         getDashboard: new GetDashboardController(
           new GetDashboard(new DrizzleDashboardQueries(db), teams, clock),
         ),

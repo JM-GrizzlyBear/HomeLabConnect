@@ -1,5 +1,7 @@
 import { type Approver, decide } from "../../domain/scheduling/leave.js";
 import { LeaveNotFound } from "../../domain/scheduling/schedulingErrors.js";
+import type { Notifier } from "../notifications/Notifier.js";
+import { alertLeave } from "../notifications/staffAlerts.js";
 import type { Clock } from "../ports/Clock.js";
 import type { LeaveRepository } from "../../domain/scheduling/LeaveRepository.js";
 import type { StaffDirectory } from "../../domain/scheduling/StaffDirectory.js";
@@ -17,6 +19,7 @@ export class DecideLeave {
   constructor(
     private readonly leave: LeaveRepository,
     private readonly staff: StaffDirectory,
+    private readonly notifier: Notifier,
     private readonly clock: Clock,
   ) {}
 
@@ -27,6 +30,7 @@ export class DecideLeave {
     await this.leave.update(decided);
     const [view] = await toLeaveViews([decided], this.staff);
     if (!view) throw new LeaveNotFound();
+    await alertLeave(this.notifier, decided, view.requesterName);
     return view;
   }
 }
