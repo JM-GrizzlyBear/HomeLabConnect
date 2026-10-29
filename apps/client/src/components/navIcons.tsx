@@ -12,6 +12,12 @@ const base = {
 } as const;
 
 const paths: Record<NavIconName, ReactNode> = {
+  shield: (
+    <>
+      <path d="M12 3.5 5 6.5v5c0 4.3 2.9 7.8 7 9 4.1-1.2 7-4.7 7-9v-5l-7-3Z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
   dashboard: (
     <>
       <path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h12M20 17h0" />

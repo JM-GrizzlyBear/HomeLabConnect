@@ -1,4 +1,6 @@
 import { Router } from "express";
+import type { ListAuditLogController } from "../../interface/http/controllers/ListAuditLogController.js";
+import type { GetDashboardController } from "../../interface/http/controllers/GetDashboardController.js";
 import type { GetAppointmentResultsController } from "../../interface/http/controllers/GetAppointmentResultsController.js";
 import type { UploadTestResultController } from "../../interface/http/controllers/UploadTestResultController.js";
 import type { DeleteTestResultController } from "../../interface/http/controllers/DeleteTestResultController.js";
@@ -92,12 +94,13 @@ import type { ListAllLeaveController } from "../../interface/http/controllers/Li
 import type { ListLeaveInboxController } from "../../interface/http/controllers/ListLeaveInboxController.js";
 import type { ListMyLeaveController } from "../../interface/http/controllers/ListMyLeaveController.js";
 import type { RequestLeaveController } from "../../interface/http/controllers/RequestLeaveController.js";
-import type { Middleware } from "../../interface/http/httpTypes.js";
+import type { Controller, Middleware } from "../../interface/http/httpTypes.js";
 import { RequirePermission } from "../../interface/http/middleware/RequirePermission.js";
 import { adapt } from "./expressAdapter.js";
 import { uploadAttachment, uploadPhoto } from "./uploadPhoto.js";
 
-export interface Controllers {
+/** The concrete controller behind each route (any of them may be wrapped, e.g. audited). */
+interface ControllerTypes {
   health: HealthController;
   registerPatient: RegisterPatientController;
   login: LoginController;
@@ -191,7 +194,11 @@ export interface Controllers {
   openResultFile: OpenResultFileController;
   listReviewQueue: ListReviewQueueController;
   listMyResults: ListMyResultsController;
+  listAuditLog: ListAuditLogController;
+  getDashboard: GetDashboardController;
 }
+
+export type Controllers = Record<keyof ControllerTypes, Controller>;
 
 export interface Middlewares {
   /** Signed in with a permanent password. Use this for almost every route. */
@@ -456,6 +463,8 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   );
   router.get("/results/queue", adapt(controllers.listReviewQueue, ...can("results.review")));
   router.get("/results/mine", adapt(controllers.listMyResults, ...can("results.view_own")));
+  router.get("/audit", adapt(controllers.listAuditLog, ...can("audit.view")));
+  router.get("/dashboard", adapt(controllers.getDashboard, ...can("dashboard.view")));
   router.get("/results/:id/file", adapt(controllers.openResultFile, middlewares.authenticate));
 
   return router;

@@ -10,7 +10,8 @@ export type NavIconName =
   | "clock"
   | "tag"
   | "user"
-  | "settings";
+  | "settings"
+  | "shield";
 
 export interface NavLink {
   kind: "link";
@@ -127,6 +128,7 @@ export const menu: NavEntry[] = [
   ]),
   link("Account Profile", "/app/profile", null, "Module 1 · Accounts", "user"),
   link("Settings", "/app/settings", "settings.view", "Module 12 · System Settings", "settings"),
+  link("Audit Logs", "/app/audit", "audit.view", "Module 10 · Audit Logs", "shield"),
 ];
 
 /** True when `permissions` include what the link needs. */
