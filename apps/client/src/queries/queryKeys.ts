@@ -47,4 +47,5 @@ export const queryKeys = {
   ticketQueue: (filters: unknown) => ["tickets", "queue", filters] as const,
   ticket: (id: string | undefined) => ["tickets", "one", id] as const,
   supportAgents: ["tickets", "agents"] as const,
+  notifications: (filters: unknown) => ["notifications", filters] as const,
 };

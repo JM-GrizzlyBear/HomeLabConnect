@@ -21,6 +21,7 @@ import { ReportsPage } from "./pages/ReportsPage";
 import { MyTicketsPage } from "./pages/MyTicketsPage";
 import { TicketPage } from "./pages/TicketPage";
 import { TicketQueuePage } from "./pages/TicketQueuePage";
+import { NotificationsPage } from "./pages/NotificationsPage";
 import { MyVisitsPage } from "./pages/MyVisitsPage";
 import { CreateStaffPage } from "./pages/CreateStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -283,6 +284,7 @@ export const routes: RouteObject[] = [
       },
       // Its patient, its agent or anyone who sees the queue: the API answers 404 otherwise
       { path: "support/tickets/:id", element: <TicketPage /> },
+      { path: "notifications", element: <NotificationsPage /> },
       {
         path: "users/reports",
         element: (
