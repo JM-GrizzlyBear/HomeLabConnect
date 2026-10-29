@@ -39,4 +39,6 @@ export const queryKeys = {
   results: (id: string) => ["results", "appointment", id] as const,
   reviewQueue: (filters: unknown) => ["results", "queue", filters] as const,
   myResults: ["results", "mine"] as const,
+  dashboard: ["dashboard"] as const,
+  auditLog: (filters: unknown) => ["audit", filters] as const,
 };
