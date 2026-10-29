@@ -28,6 +28,7 @@ export const AUDIT_GROUPS = {
   catalog: ["procedures.", "categories.", "promotions."],
   scheduling: ["teams.", "shifts.", "leave."],
   payments: ["payments."],
+  reports: ["reports."],
 } as const satisfies Record<string, readonly string[]>;
 
 export type AuditGroup = keyof typeof AUDIT_GROUPS;

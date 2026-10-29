@@ -1,4 +1,8 @@
 import { Router } from "express";
+import type { RunReportController } from "../../interface/http/controllers/RunReportController.js";
+import type { ListSavedReportsController } from "../../interface/http/controllers/ListSavedReportsController.js";
+import type { SaveReportController } from "../../interface/http/controllers/SaveReportController.js";
+import type { DeleteSavedReportController } from "../../interface/http/controllers/DeleteSavedReportController.js";
 import type { ListAuditLogController } from "../../interface/http/controllers/ListAuditLogController.js";
 import type { GetDashboardController } from "../../interface/http/controllers/GetDashboardController.js";
 import type { GetAppointmentResultsController } from "../../interface/http/controllers/GetAppointmentResultsController.js";
@@ -196,6 +200,11 @@ interface ControllerTypes {
   listMyResults: ListMyResultsController;
   listAuditLog: ListAuditLogController;
   getDashboard: GetDashboardController;
+  runReport: RunReportController;
+  exportReport: RunReportController;
+  listSavedReports: ListSavedReportsController;
+  saveReport: SaveReportController;
+  deleteSavedReport: DeleteSavedReportController;
 }
 
 export type Controllers = Record<keyof ControllerTypes, Controller>;
@@ -465,6 +474,12 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.get("/results/mine", adapt(controllers.listMyResults, ...can("results.view_own")));
   router.get("/audit", adapt(controllers.listAuditLog, ...can("audit.view")));
   router.get("/dashboard", adapt(controllers.getDashboard, ...can("dashboard.view")));
+  // Saved reports first, so "saved" isn't read as a report kind
+  router.get("/reports/saved", adapt(controllers.listSavedReports, ...can("reports.view")));
+  router.post("/reports/saved", adapt(controllers.saveReport, ...can("reports.save")));
+  router.delete("/reports/saved/:id", adapt(controllers.deleteSavedReport, ...can("reports.save")));
+  router.get("/reports/:kind/export", adapt(controllers.exportReport, ...can("reports.export")));
+  router.get("/reports/:kind", adapt(controllers.runReport, ...can("reports.view")));
   router.get("/results/:id/file", adapt(controllers.openResultFile, middlewares.authenticate));
 
   return router;

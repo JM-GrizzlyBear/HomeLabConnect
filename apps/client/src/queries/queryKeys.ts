@@ -41,4 +41,6 @@ export const queryKeys = {
   myResults: ["results", "mine"] as const,
   dashboard: ["dashboard"] as const,
   auditLog: (filters: unknown) => ["audit", filters] as const,
+  report: (kind: string, filters: unknown) => ["reports", kind, filters] as const,
+  savedReports: ["reports", "saved"] as const,
 };

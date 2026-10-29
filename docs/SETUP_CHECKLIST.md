@@ -299,6 +299,7 @@ Appointments
 - [ ] Results: as `doctor@`, **Review Queue → To upload** lists collected visits → **Open** → **Upload** a PDF per collected test (it shows "Draft") → **Release results**. As the patient: an unpaid visit shows "Your results are ready. Pay to view them" with no file links; once paid, **View** opens the file. **My Results** lists it. Mailpit has "Your lab results … are ready".
 - [ ] Dashboard: sign in as `admin@`, `doctor@`, `medteam@`, `support@` and a patient: each shows real numbers for its role, with no "Sample data" badges.
 - [ ] Audit Logs: as `admin@`, **Audit Logs** lists your sign-in. Try a wrong password for `support@` in another browser, then rename a team: both show (the failed one as "Failed sign-in" with the email tried, never the password).
+- [ ] Reports: as `admin@`, **Users → Reports** → Revenue for **This year**, grouped by month (the bars and totals match All Payments); switch to Bookings & visits and Tests. **Export CSV** opens in Excel. **Save** it as "Monthly revenue": it appears under Saved reports and reopens in one click; saving the same name again shows an error under the name.
 - [ ] As `medteam@`: **My Visits** shows the team's visits for the day (address, phone, tests) → **On the way** → **Collected** (tick the tests, add a note). The appointment page shows ✓/✗ per test and the team's note.
 
 Production image (optional)

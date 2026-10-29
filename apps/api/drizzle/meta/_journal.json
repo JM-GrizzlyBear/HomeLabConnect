@@ -155,6 +155,13 @@
       "when": 1793276438568,
       "tag": "0021_dusty_jazinda",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793284949801,
+      "tag": "0022_bitter_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }

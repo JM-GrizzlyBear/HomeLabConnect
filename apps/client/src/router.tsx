@@ -17,6 +17,7 @@ import { RefundsPage } from "./pages/RefundsPage";
 import { MyResultsPage } from "./pages/MyResultsPage";
 import { ReviewQueuePage } from "./pages/ReviewQueuePage";
 import { AuditLogsPage } from "./pages/AuditLogsPage";
+import { ReportsPage } from "./pages/ReportsPage";
 import { MyVisitsPage } from "./pages/MyVisitsPage";
 import { CreateStaffPage } from "./pages/CreateStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -261,6 +262,14 @@ export const routes: RouteObject[] = [
       },
       // Patients open their own, staff any: the API answers 404 otherwise
       { path: "appointments/:id", element: <AppointmentPage /> },
+      {
+        path: "users/reports",
+        element: (
+          <RequirePermission permission="reports.view">
+            <ReportsPage />
+          </RequirePermission>
+        ),
+      },
       {
         path: "audit",
         element: (

@@ -57,6 +57,9 @@ const AUDITED: Record<string, [action: string, options?: AuditOptions]> = {
   copyPreviousRosters: ["teams.copy_rosters"],
   setShiftDays: ["shifts.set_days", { target: "user" }],
   decideLeave: ["leave.decide", { target: "leave" }],
+  // Reports
+  saveReport: ["reports.save", { target: "saved_report" }],
+  deleteSavedReport: ["reports.delete_saved", { target: "saved_report", describe: () => null }],
   // Payments
   refundPayment: [
     "payments.refund",
