@@ -14,3 +14,4 @@ export * from "./payments.js";
 export * from "./results.js";
 export * from "./audit.js";
 export * from "./reports.js";
+export * from "./support.js";

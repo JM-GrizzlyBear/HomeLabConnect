@@ -1,6 +1,23 @@
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
 import type { Controller, HttpRequest, Middleware } from "../../interface/http/httpTypes.js";
 import { applySessionChange } from "./session.js";
+
+/** The framework-free HttpRequest for an Express request. */
+export function toHttpRequest(req: Request): HttpRequest {
+  return {
+    body: req.body,
+    params: req.params as Record<string, string>,
+    query: req.query as Record<string, unknown>,
+    headers: req.headers,
+    ip: req.ip ?? null,
+    session: { id: req.sessionID, userId: req.session.userId ?? null },
+    file: req.file && {
+      data: new Uint8Array(req.file.buffer),
+      size: req.file.size,
+      filename: req.file.originalname,
+    },
+  };
+}
 
 /**
  * Translates an Express request into a framework-free HttpRequest, runs the
@@ -8,19 +25,7 @@ import { applySessionChange } from "./session.js";
  */
 export function adapt(controller: Controller, ...middlewares: Middleware[]): RequestHandler {
   return async (req, res) => {
-    let request: HttpRequest = {
-      body: req.body,
-      params: req.params as Record<string, string>,
-      query: req.query as Record<string, unknown>,
-      headers: req.headers,
-      ip: req.ip ?? null,
-      session: { id: req.sessionID, userId: req.session.userId ?? null },
-      file: req.file && {
-        data: new Uint8Array(req.file.buffer),
-        size: req.file.size,
-        filename: req.file.originalname,
-      },
-    };
+    let request = toHttpRequest(req);
     for (const middleware of middlewares) request = await middleware.handle(request);
 
     const response = await controller.handle(request);

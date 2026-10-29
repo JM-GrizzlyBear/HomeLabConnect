@@ -162,6 +162,13 @@
       "when": 1793284949801,
       "tag": "0022_bitter_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793286671797,
+      "tag": "0023_optimal_gertrude_yorkes",
+      "breakpoints": true
     }
   ]
 }

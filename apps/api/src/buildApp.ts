@@ -242,6 +242,39 @@ import { ExportPaymentsController } from "./interface/http/controllers/ExportPay
 import { ListMyPaymentsController } from "./interface/http/controllers/ListMyPaymentsController.js";
 import { ListAppointmentPaymentsController } from "./interface/http/controllers/ListAppointmentPaymentsController.js";
 
+import { OpenTicket } from "./application/support/OpenTicket.js";
+import { PostMessage } from "./application/support/PostMessage.js";
+import {
+  GetTicket,
+  ListMyTickets,
+  ListSupportAgents,
+  ListTicketQueue,
+  OpenMessageAttachment,
+} from "./application/support/ReadTickets.js";
+import {
+  ClaimTicket,
+  CloseTicket,
+  RateTicket,
+  ReassignTicket,
+  SetTicketPriority,
+} from "./application/support/ManageTicket.js";
+import { DrizzleTicketRepository } from "./infrastructure/db/DrizzleTicketRepository.js";
+import { SseHub } from "./infrastructure/realtime/SseHub.js";
+import { OpenTicketController } from "./interface/http/controllers/OpenTicketController.js";
+import { ListMyTicketsController } from "./interface/http/controllers/ListMyTicketsController.js";
+import { ListTicketQueueController } from "./interface/http/controllers/ListTicketQueueController.js";
+import { GetTicketController } from "./interface/http/controllers/GetTicketController.js";
+import { PostTicketMessageController } from "./interface/http/controllers/PostTicketMessageController.js";
+import { OpenMessageAttachmentController } from "./interface/http/controllers/OpenMessageAttachmentController.js";
+import { ListSupportAgentsController } from "./interface/http/controllers/ListSupportAgentsController.js";
+import {
+  ClaimTicketController,
+  CloseTicketController,
+  RateTicketController,
+  ReassignTicketController,
+  SetTicketPriorityController,
+} from "./interface/http/controllers/ManageTicketControllers.js";
+
 export interface BuildAppOptions {
   db: Database;
   /** The same connection pool as `db`; express-session keeps its sessions through it. */
@@ -270,6 +303,8 @@ export interface BuildAppOptions {
   auditLog?: AuditLog;
   /** Tests swap it to see the health check report a database outage. */
   healthProbe?: DatabaseHealthProbe;
+  /** Live events to browsers (/api/events); tests pass their own to watch what is sent. */
+  events?: SseHub;
 }
 
 // The composition root: the only place that creates concrete classes and wires them together.
@@ -305,6 +340,9 @@ export function buildApp(options: BuildAppOptions) {
   const auditLog = options.auditLog ?? new DrizzleAuditLog(db);
   const runReport = new RunReport(new DrizzleReportQueries(db));
   const savedReports = new DrizzleSavedReportRepository(db);
+  const events = options.events ?? new SseHub();
+  const tickets = new DrizzleTicketRepository(db);
+  const supportRepositories = { tickets, appointments, staff, shifts, leave };
 
   // Use cases
   const checkSystemHealth = new CheckSystemHealth(
@@ -347,6 +385,7 @@ export function buildApp(options: BuildAppOptions) {
     }),
     trustProxy: options.trustProxy,
     uploadsDir: options.uploadsDir,
+    events,
     controllers: withAuditLog(
       {
         health: new HealthController(checkSystemHealth),
@@ -530,6 +569,30 @@ export function buildApp(options: BuildAppOptions) {
         listSavedReports: new ListSavedReportsController(new ListSavedReports(savedReports)),
         saveReport: new SaveReportController(new SaveReport(savedReports)),
         deleteSavedReport: new DeleteSavedReportController(new DeleteSavedReport(savedReports)),
+        openTicket: new OpenTicketController(
+          new OpenTicket(supportRepositories, privateFiles, events, clock),
+        ),
+        listMyTickets: new ListMyTicketsController(new ListMyTickets(tickets)),
+        listTicketQueue: new ListTicketQueueController(new ListTicketQueue(tickets)),
+        getTicket: new GetTicketController(new GetTicket(supportRepositories, clock)),
+        postTicketMessage: new PostTicketMessageController(
+          new PostMessage(supportRepositories, privateFiles, events, clock),
+        ),
+        openMessageAttachment: new OpenMessageAttachmentController(
+          new OpenMessageAttachment(tickets, privateFiles),
+        ),
+        listSupportAgents: new ListSupportAgentsController(
+          new ListSupportAgents(supportRepositories),
+        ),
+        claimTicket: new ClaimTicketController(new ClaimTicket(supportRepositories, events, clock)),
+        reassignTicket: new ReassignTicketController(
+          new ReassignTicket(supportRepositories, events, clock),
+        ),
+        setTicketPriority: new SetTicketPriorityController(
+          new SetTicketPriority(supportRepositories, events, clock),
+        ),
+        closeTicket: new CloseTicketController(new CloseTicket(supportRepositories, events, clock)),
+        rateTicket: new RateTicketController(new RateTicket(supportRepositories, events, clock)),
         getDashboard: new GetDashboardController(
           new GetDashboard(new DrizzleDashboardQueries(db), teams, clock),
         ),

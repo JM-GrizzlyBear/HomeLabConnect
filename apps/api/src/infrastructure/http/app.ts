@@ -1,6 +1,8 @@
 import express, { type ErrorRequestHandler, type Express, type RequestHandler } from "express";
 import helmet from "helmet";
 import { presentError, presentNotFound } from "../../interface/http/presenters/errorPresenter.js";
+import type { SseHub } from "../realtime/SseHub.js";
+import { eventStream } from "./eventStream.js";
 import { adapt } from "./expressAdapter.js";
 import { type Controllers, createRouter, type Middlewares } from "./routes.js";
 
@@ -13,6 +15,8 @@ export interface AppOptions {
   trustProxy: number;
   /** Photos kept on this machine (PHOTO_STORAGE=local), served at /api/uploads. */
   uploadsDir?: string;
+  /** Live events for signed-in browsers, at /api/events. */
+  events: SseHub;
 }
 
 // No CORS: the browser always calls the API on its own address
@@ -23,6 +27,7 @@ export function createApp({
   session,
   trustProxy,
   uploadsDir,
+  events,
 }: AppOptions): Express {
   const app = express();
 
@@ -36,6 +41,7 @@ export function createApp({
     express.raw({ type: "application/json", limit: "1mb" }),
     adapt(controllers.paymentWebhook),
   );
+  app.get("/api/events", eventStream(middlewares.authenticate, events));
   app.use(express.json({ limit: "1mb" }));
   if (uploadsDir) app.use("/api/uploads", express.static(uploadsDir, { index: false }));
 
