@@ -64,6 +64,34 @@ describe("live events", () => {
     expect(toasts().queryByText("New message from You")).not.toBeInTheDocument();
   });
 
+  it("rings the bell with a new notification", async () => {
+    let unread = 0;
+    mockApi({
+      "GET /api/auth/me": () => ({ status: 200, body: adminUser }),
+      "GET /api/dashboard": () => ({ status: 500 }),
+      "GET /api/notifications?*": () => ({
+        status: 200,
+        body: { items: [], total: unread, unread, page: 1, pageSize: 10 },
+      }),
+    });
+    renderApp("/app");
+    await screen.findByRole("button", { name: "Notifications" });
+
+    unread = 1;
+    FakeEventSource.last!.emit("notification.new", {
+      type: "notification.new",
+      id: "7f6e5d4c-3b2a-4190-8a7b-6c5d4e3f2a1b",
+      title: "New booking HLC-000042",
+      body: "For Sat, Jan 17 at 8:00 AM. Accept or reject it.",
+      link: "/app/appointments/9c8b7a6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+    });
+
+    expect(await toasts().findByText("New booking HLC-000042")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Notifications, 1 unread" }),
+    ).toBeInTheDocument();
+  });
+
   it("refreshes the open ticket instead of toasting", async () => {
     const fetchSpy = mockApi({
       "GET /api/auth/me": () => ({ status: 200, body: adminUser }),

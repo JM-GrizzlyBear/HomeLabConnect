@@ -7,6 +7,8 @@ import {
 import { rosterOf, rosterPeriodOf } from "../../domain/scheduling/roster.js";
 import { StaffNotFound } from "../../domain/scheduling/schedulingErrors.js";
 import { businessDate } from "../../domain/time/businessDate.js";
+import type { Notifier } from "../notifications/Notifier.js";
+import { alertLeave } from "../notifications/staffAlerts.js";
 import type { Clock } from "../ports/Clock.js";
 import type { LeaveRepository } from "../../domain/scheduling/LeaveRepository.js";
 import type { MedTeamRepository } from "../../domain/scheduling/MedTeamRepository.js";
@@ -26,6 +28,7 @@ export class RequestLeave {
     private readonly leave: LeaveRepository,
     private readonly teams: MedTeamRepository,
     private readonly staff: StaffDirectory,
+    private readonly notifier: Notifier,
     private readonly clock: Clock,
   ) {}
 
@@ -48,6 +51,7 @@ export class RequestLeave {
     });
     const [view] = await toLeaveViews([created], this.staff);
     if (!view) throw new Error("A new leave request had no view.");
+    await alertLeave(this.notifier, created, view.requesterName);
     return view;
   }
 }

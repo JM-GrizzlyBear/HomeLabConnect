@@ -9,6 +9,8 @@ import { assertBookableSlot, capacityOf } from "../../domain/appointments/availa
 import { type AppointmentEmails, notifyPatient } from "../ports/AppointmentEmails.js";
 import type { Clock } from "../ports/Clock.js";
 import { type AppointmentOutput, toAppointmentOutput } from "./appointmentOutput.js";
+import type { Notifier } from "../notifications/Notifier.js";
+import { alertTeam } from "../notifications/staffAlerts.js";
 import { assignIfAutomatic } from "./assignIfAutomatic.js";
 import { type AppointmentViewer, findViewable } from "./GetAppointment.js";
 import type { AvailabilityRepositories } from "./GetAvailability.js";
@@ -31,6 +33,7 @@ export class ScheduleReturnVisit {
   constructor(
     private readonly repositories: AvailabilityRepositories,
     private readonly emails: AppointmentEmails,
+    private readonly notifier: Notifier,
     private readonly clock: Clock,
   ) {}
 
@@ -105,9 +108,18 @@ export class ScheduleReturnVisit {
         if (!(error instanceof TeamUnavailable)) throw error;
       }
     }
-    if (!assigned) await assignIfAutomatic(booked.id, this.repositories);
+    if (!assigned) await assignIfAutomatic(booked.id, this.repositories, this.notifier);
 
     const created = (await appointments.findById(booked.id)) ?? booked;
+    if (assigned) {
+      await alertTeam(
+        this.notifier,
+        this.repositories.teams,
+        created,
+        "visit_assigned",
+        actor.userId,
+      );
+    }
     await notifyPatient(this.emails, "confirmed", created);
     return toAppointmentOutput(created, rules.cancelCutoffHours, now);
   }

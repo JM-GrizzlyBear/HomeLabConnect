@@ -133,6 +133,13 @@ export const appEventSchema = z.discriminatedUnion("type", [
     change: z.enum(["opened", "assigned", "priority", "closed", "rated"]),
     assigneeId: z.uuid().nullable(),
   }),
+  z.object({
+    type: z.literal("notification.new"),
+    id: z.uuid(),
+    title: z.string(),
+    body: z.string(),
+    link: z.string(),
+  }),
 ]);
 
 export type TicketCategory = z.infer<typeof ticketCategorySchema>;

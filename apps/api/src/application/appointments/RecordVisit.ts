@@ -3,6 +3,8 @@ import {
   AppointmentNotFound,
   InvalidVisitRecord,
 } from "../../domain/appointments/appointmentErrors.js";
+import { visitNotice } from "../../domain/notifications/notification.js";
+import type { Notifier } from "../notifications/Notifier.js";
 import type { AvailabilityRepositories } from "./GetAvailability.js";
 import { myTeamIds } from "./ListMyVisits.js";
 
@@ -19,10 +21,13 @@ export type RecordVisitInput =
 
 /**
  * A member of the visit's med team records it: on the way, then collected (which tests) or
- * couldn't collect (why). Visits of other teams answer 404.
+ * couldn't collect (why). Visits of other teams answer 404. Collected samples go to the doctors.
  */
 export class RecordVisit {
-  constructor(private readonly repositories: AvailabilityRepositories) {}
+  constructor(
+    private readonly repositories: AvailabilityRepositories,
+    private readonly notifier: Notifier,
+  ) {}
 
   async execute(input: RecordVisitInput): Promise<Appointment> {
     const { appointments } = this.repositories;
@@ -63,6 +68,12 @@ export class RecordVisit {
     }
     const updated = await appointments.findById(input.id);
     if (!updated) throw new AppointmentNotFound();
+    if (input.outcome === "collected") {
+      await this.notifier.toRoles(
+        ["doctor"],
+        visitNotice("results_to_review", updated, "/app/results/review"),
+      );
+    }
     return updated;
   }
 }

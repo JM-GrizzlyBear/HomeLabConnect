@@ -1,6 +1,8 @@
 import { SlotNotBookable } from "../../domain/appointments/appointmentErrors.js";
 import { assertBookableSlot, capacityOf } from "../../domain/appointments/availability.js";
 import { type AppointmentEmails, notifyPatient } from "../ports/AppointmentEmails.js";
+import { visitNotice } from "../../domain/notifications/notification.js";
+import type { Notifier } from "../notifications/Notifier.js";
 import type { Clock } from "../ports/Clock.js";
 import { type AppointmentOutput, toAppointmentOutput } from "./appointmentOutput.js";
 import type { AvailabilityRepositories } from "./GetAvailability.js";
@@ -27,6 +29,7 @@ export class BookAppointment {
     private readonly repositories: AvailabilityRepositories,
     private readonly quote: QuoteBooking,
     private readonly emails: AppointmentEmails,
+    private readonly notifier: Notifier,
     private readonly clock: Clock,
   ) {}
 
@@ -61,7 +64,10 @@ export class BookAppointment {
       booked.status === "confirmed" ? "confirmed" : "received",
       booked,
     );
-    const assigned = await assignIfAutomatic(booked.id, this.repositories);
+    if (booked.status === "pending") {
+      await this.notifier.toRoles(["support", "admin"], visitNotice("booking_pending", booked));
+    }
+    const assigned = await assignIfAutomatic(booked.id, this.repositories, this.notifier);
     return toAppointmentOutput(assigned ?? booked, rules.cancelCutoffHours, this.clock.now());
   }
 }

@@ -1,5 +1,7 @@
 import { assertCan } from "../../domain/appointments/appointment.js";
 import { type AppointmentEmails, notifyPatient } from "../ports/AppointmentEmails.js";
+import type { Notifier } from "../notifications/Notifier.js";
+import { alertRefundNeeded } from "../notifications/staffAlerts.js";
 import type { Clock } from "../ports/Clock.js";
 import { type AppointmentOutput, toAppointmentOutput } from "./appointmentOutput.js";
 import { assignIfAutomatic } from "./assignIfAutomatic.js";
@@ -19,6 +21,7 @@ export class DecideAppointment {
   constructor(
     private readonly repositories: AvailabilityRepositories,
     private readonly emails: AppointmentEmails,
+    private readonly notifier: Notifier,
     private readonly clock: Clock,
   ) {}
 
@@ -40,9 +43,10 @@ export class DecideAppointment {
       note: reason,
       decisionNote: accepted ? null : reason,
     });
-    if (accepted) await assignIfAutomatic(id, this.repositories);
+    if (accepted) await assignIfAutomatic(id, this.repositories, this.notifier);
     const updated = await findVisible(this.repositories.appointments, id, viewer);
     await notifyPatient(this.emails, accepted ? "confirmed" : "rejected", updated);
+    if (!accepted) await alertRefundNeeded(this.notifier, updated);
     const { settings } = await this.repositories.settings.get();
     return toAppointmentOutput(updated, settings.cancelCutoffHours, this.clock.now());
   }

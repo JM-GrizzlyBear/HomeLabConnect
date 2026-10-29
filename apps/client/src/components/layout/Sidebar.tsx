@@ -16,6 +16,7 @@ import { useAuth } from "../../auth/authContext";
 import { roleLabels } from "../../auth/roleLabels";
 import { type NavGroup, type NavLink as MenuLink, visibleMenu } from "../../navigation/menu";
 import { ChevronIcon, NavIcon } from "../navIcons";
+import { NotificationBell } from "../notifications/NotificationBell";
 
 const itemBase =
   "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-medium tracking-wide uppercase transition";
@@ -104,7 +105,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   }
 
   return (
-    <div className="flex h-full flex-col bg-white px-5 py-8">
+    <div className="relative flex h-full flex-col bg-white px-5 py-8">
+      <div className="absolute top-4 left-4 z-10">
+        <NotificationBell onNavigate={onNavigate} />
+      </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button

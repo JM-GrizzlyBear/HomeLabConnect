@@ -24,6 +24,7 @@ describe("visibleMenu", () => {
       "Payments: My Payments",
       "Support: My Tickets",
       "Catalog: Procedures, Promotions",
+      "Notifications",
       "Account Profile",
     ]);
   });
@@ -35,6 +36,7 @@ describe("visibleMenu", () => {
       "Results: Review Queue",
       "Scheduling: My Schedule, My Leave, Holidays & Closed Days",
       "Catalog: Procedures",
+      "Notifications",
       "Account Profile",
     ]);
   });

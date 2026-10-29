@@ -14,6 +14,13 @@ export type AppEvent =
       actorId: string;
       change: "opened" | "assigned" | "priority" | "closed" | "rated";
       assigneeId: string | null;
+    }
+  | {
+      type: "notification.new";
+      id: string;
+      title: string;
+      body: string;
+      link: string;
     };
 
 /**

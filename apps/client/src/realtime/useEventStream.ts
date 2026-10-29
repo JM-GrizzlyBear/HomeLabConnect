@@ -5,10 +5,11 @@ import { useLocation } from "react-router";
 import { useAuth } from "../auth/authContext";
 import { useFeedback } from "../feedback/feedbackContext";
 
-const EVENT_TYPES: AppEvent["type"][] = ["ticket.message", "ticket.updated"];
+const EVENT_TYPES: AppEvent["type"][] = ["ticket.message", "ticket.updated", "notification.new"];
 
 /**
- * Listens to /api/events while someone is signed in. Each event refreshes what it touches
+ * Listens to /api/events while someone is signed in. A new notification refreshes the bell and
+ * shows a toast (unless you're already on its page). A ticket event refreshes what it touches
  * (tickets, the dashboard), and a message or a ticket handed to you from someone else shows a
  * toast, unless you're already looking at that ticket. If the stream drops, the browser
  * reconnects by itself and everything is refetched, so nothing is missed.
@@ -38,9 +39,14 @@ export function useEventStream(): void {
       const parsed = appEventSchema.safeParse(JSON.parse(message.data));
       if (!parsed.success) return;
       const event = parsed.data;
+      const { pathname: current, feedback: notify } = latest.current;
+      if (event.type === "notification.new") {
+        void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        if (current !== event.link) notify.success({ title: event.title, description: event.body });
+        return;
+      }
       refresh();
       if (event.actorId === userId) return;
-      const { pathname: current, feedback: notify } = latest.current;
       if (current.endsWith(`/support/tickets/${event.ticketId}`)) return;
       if (event.type === "ticket.message") {
         notify.success({

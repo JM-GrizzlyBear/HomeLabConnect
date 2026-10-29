@@ -172,7 +172,7 @@ describe("UsersPage", () => {
     );
 
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls.some(([, init]) => init?.method === "PATCH")).toBe(false);
   });
 
   it("shows a failed action in an error dialog", async () => {
