@@ -30,13 +30,13 @@ export interface Payment {
   recordedBy: string | null;
   paidAt: Date | null;
   createdAt: Date;
+  /** Taken after the visit was already paid: this one should be refunded. */
+  duplicate: boolean;
   refunds: PaymentRefund[];
 }
 
 /** A payment with the appointment it belongs to, for the payment lists. */
 export interface PaymentWithAppointment extends Payment {
-  /** The visit was already paid by an earlier payment: this one was taken twice. */
-  duplicate: boolean;
   appointment: {
     code: string;
     date: string;

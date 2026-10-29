@@ -1,4 +1,4 @@
-import { index, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { appointments } from "./appointments.js";
 import { timestamps, timestamptz } from "./columns.js";
 import { users } from "./users.js";
@@ -24,6 +24,8 @@ export const payments = pgTable(
     /** Who took a cash payment. */
     recordedBy: uuid("recorded_by").references(() => users.id),
     paidAt: timestamptz("paid_at"),
+    /** Paid by card after the visit was already paid (e.g. in cash): one must be refunded. */
+    duplicate: boolean("duplicate").notNull().default(false),
     ...timestamps,
   },
   (table) => [

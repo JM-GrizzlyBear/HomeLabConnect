@@ -22,6 +22,7 @@ const payment = (overrides: Partial<Payment> = {}): Payment => ({
   recordedBy: null,
   paidAt: new Date("2026-01-15T08:00:00Z"),
   createdAt: new Date("2026-01-15T08:00:00Z"),
+  duplicate: false,
   refunds: [],
   ...overrides,
 });
