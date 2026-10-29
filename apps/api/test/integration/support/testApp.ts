@@ -14,6 +14,7 @@ import {
   FakeAppointmentEmails,
   FakeFileStorage,
   FakePaymentGateway,
+  FakePrivateFileStorage,
   FakePhotoStorage,
   FakeTemporaryPasswordGenerator,
   FixedClock,
@@ -65,6 +66,7 @@ export async function buildTestApp({ databaseReachable = true, cardPayments = tr
   const appointmentEmails = new FakeAppointmentEmails();
   const files = new FakeFileStorage();
   const gateway = new FakePaymentGateway();
+  const privateFiles = new FakePrivateFileStorage();
   const unreachable: DatabaseHealthProbe = { isReachable: async () => false };
 
   const app = buildApp({
@@ -82,6 +84,7 @@ export async function buildTestApp({ databaseReachable = true, cardPayments = tr
     photoStorage: photos,
     fileStorage: files,
     paymentGateway: cardPayments ? gateway : null,
+    privateFileStorage: privateFiles,
     healthProbe: databaseReachable ? undefined : unreachable,
   });
 
@@ -95,6 +98,7 @@ export async function buildTestApp({ databaseReachable = true, cardPayments = tr
     photos,
     files,
     gateway,
+    privateFiles,
     given: new Given(db),
   };
 }

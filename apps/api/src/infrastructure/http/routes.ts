@@ -1,4 +1,11 @@
 import { Router } from "express";
+import type { GetAppointmentResultsController } from "../../interface/http/controllers/GetAppointmentResultsController.js";
+import type { UploadTestResultController } from "../../interface/http/controllers/UploadTestResultController.js";
+import type { DeleteTestResultController } from "../../interface/http/controllers/DeleteTestResultController.js";
+import type { ReleaseResultsController } from "../../interface/http/controllers/ReleaseResultsController.js";
+import type { OpenResultFileController } from "../../interface/http/controllers/OpenResultFileController.js";
+import type { ListReviewQueueController } from "../../interface/http/controllers/ListReviewQueueController.js";
+import type { ListMyResultsController } from "../../interface/http/controllers/ListMyResultsController.js";
 import type { StartCardPaymentController } from "../../interface/http/controllers/StartCardPaymentController.js";
 import type { RecordCashPaymentController } from "../../interface/http/controllers/RecordCashPaymentController.js";
 import type { HandlePaymentWebhookController } from "../../interface/http/controllers/HandlePaymentWebhookController.js";
@@ -177,6 +184,13 @@ export interface Controllers {
   exportPayments: ExportPaymentsController;
   listMyPayments: ListMyPaymentsController;
   listAppointmentPayments: ListAppointmentPaymentsController;
+  getAppointmentResults: GetAppointmentResultsController;
+  uploadTestResult: UploadTestResultController;
+  deleteTestResult: DeleteTestResultController;
+  releaseResults: ReleaseResultsController;
+  openResultFile: OpenResultFileController;
+  listReviewQueue: ListReviewQueueController;
+  listMyResults: ListMyResultsController;
 }
 
 export interface Middlewares {
@@ -422,6 +436,27 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.get("/payments/export", adapt(controllers.exportPayments, ...can("payments.export")));
   router.get("/payments", adapt(controllers.listPayments, ...can("payments.view_all")));
   router.post("/payments/:id/refunds", adapt(controllers.refundPayment, ...can("payments.refund")));
+  // Results: anyone who may open the appointment reads them; the use cases decide how much
+  router.get(
+    "/appointments/:id/results",
+    adapt(controllers.getAppointmentResults, middlewares.authenticate),
+  );
+  router.post(
+    "/appointments/:id/results/release",
+    adapt(controllers.releaseResults, ...can("results.release")),
+  );
+  router.post(
+    "/appointments/:id/results/:procedureId",
+    uploadAttachment,
+    adapt(controllers.uploadTestResult, ...can("results.upload")),
+  );
+  router.delete(
+    "/appointments/:id/results/:procedureId",
+    adapt(controllers.deleteTestResult, ...can("results.upload")),
+  );
+  router.get("/results/queue", adapt(controllers.listReviewQueue, ...can("results.review")));
+  router.get("/results/mine", adapt(controllers.listMyResults, ...can("results.view_own")));
+  router.get("/results/:id/file", adapt(controllers.openResultFile, middlewares.authenticate));
 
   return router;
 }

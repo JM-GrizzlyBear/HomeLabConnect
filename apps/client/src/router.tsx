@@ -14,6 +14,8 @@ import { AllPaymentsPage } from "./pages/AllPaymentsPage";
 import { MyPaymentsPage } from "./pages/MyPaymentsPage";
 import { PaymentReturnPage } from "./pages/PaymentReturnPage";
 import { RefundsPage } from "./pages/RefundsPage";
+import { MyResultsPage } from "./pages/MyResultsPage";
+import { ReviewQueuePage } from "./pages/ReviewQueuePage";
 import { MyVisitsPage } from "./pages/MyVisitsPage";
 import { CreateStaffPage } from "./pages/CreateStaffPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -258,6 +260,22 @@ export const routes: RouteObject[] = [
       },
       // Patients open their own, staff any: the API answers 404 otherwise
       { path: "appointments/:id", element: <AppointmentPage /> },
+      {
+        path: "results/mine",
+        element: (
+          <RequirePermission permission="results.view_own">
+            <MyResultsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "results/review",
+        element: (
+          <RequirePermission permission="results.review">
+            <ReviewQueuePage />
+          </RequirePermission>
+        ),
+      },
       // Stripe's checkout sends the patient back to one of these
       { path: "payments/success", element: <PaymentReturnPage outcome="success" /> },
       { path: "payments/cancel", element: <PaymentReturnPage outcome="cancel" /> },

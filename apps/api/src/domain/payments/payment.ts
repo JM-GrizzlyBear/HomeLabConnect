@@ -30,6 +30,8 @@ export interface Payment {
   recordedBy: string | null;
   paidAt: Date | null;
   createdAt: Date;
+  /** Taken after the visit was already paid: this one should be refunded. */
+  duplicate: boolean;
   refunds: PaymentRefund[];
 }
 
@@ -86,11 +88,16 @@ export function statusAfterRefund(
     : "partially_refunded";
 }
 
-/** Business rule: a payment with money left, for a visit that was cancelled or rejected. */
+/**
+ * Business rule: a payment with money left, for a visit that was cancelled or rejected, or
+ * that an earlier payment already covered (paid twice).
+ */
 export function paymentNeedsRefund(payment: PaymentWithAppointment): boolean {
   return (
     refundable(payment) > 0 &&
-    (payment.appointment.status === "cancelled" || payment.appointment.status === "rejected")
+    (payment.duplicate ||
+      payment.appointment.status === "cancelled" ||
+      payment.appointment.status === "rejected")
   );
 }
 

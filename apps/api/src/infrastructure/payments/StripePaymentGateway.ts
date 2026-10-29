@@ -82,6 +82,10 @@ export class StripePaymentGateway implements PaymentGateway {
     return { eventId: event.id, type: "other", reference: null };
   }
 
+  async expireCheckout(reference: string): Promise<void> {
+    await this.stripe.checkout.sessions.expire(reference);
+  }
+
   async refund(reference: string, amountCentavos: number): Promise<void> {
     const session = await this.stripe.checkout.sessions.retrieve(reference);
     const paymentIntent =

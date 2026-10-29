@@ -36,4 +36,7 @@ export const queryKeys = {
   appointmentPayments: (id: string) => ["payments", "appointment", id] as const,
   myPayments: ["payments", "mine"] as const,
   allPayments: (filters: unknown) => ["payments", "all", filters] as const,
+  results: (id: string) => ["results", "appointment", id] as const,
+  reviewQueue: (filters: unknown) => ["results", "queue", filters] as const,
+  myResults: ["results", "mine"] as const,
 };

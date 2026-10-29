@@ -30,6 +30,10 @@ import type {
   PaymentGateway,
 } from "../../src/application/ports/PaymentGateway.js";
 import { InvalidWebhook } from "../../src/domain/payments/paymentErrors.js";
+import type {
+  FileDelivery,
+  PrivateFileStorage,
+} from "../../src/application/ports/PrivateFileStorage.js";
 import type { StoredPhoto } from "../../src/domain/media/photo.js";
 import type { SessionRepository } from "../../src/domain/identity/SessionRepository.js";
 import type { TemporaryPasswordGenerator } from "../../src/application/ports/TemporaryPasswordGenerator.js";
@@ -140,6 +144,7 @@ export class FakeAppointmentEmails implements AppointmentEmails {
 export class FakePaymentGateway implements PaymentGateway {
   readonly checkouts: { reference: string; amountCentavos: number; code: string }[] = [];
   readonly refunds: { reference: string; amountCentavos: number }[] = [];
+  readonly expired: string[] = [];
 
   async createCheckout(input: { code: string; amountCentavos: number }): Promise<Checkout> {
     const reference = `cs_${this.checkouts.length + 1}`;
@@ -152,8 +157,40 @@ export class FakePaymentGateway implements PaymentGateway {
     return JSON.parse(new TextDecoder().decode(rawBody)) as PaymentEvent;
   }
 
+  async expireCheckout(reference: string): Promise<void> {
+    this.expired.push(reference);
+  }
+
   async refund(reference: string, amountCentavos: number): Promise<void> {
     this.refunds.push({ reference, amountCentavos });
+  }
+}
+
+/** Keeps private files in memory (keys private-1, private-2, ...) and hands out their bytes. */
+export class FakePrivateFileStorage implements PrivateFileStorage {
+  readonly saved = new Map<string, FileUpload>();
+  readonly deleted: string[] = [];
+  private count = 0;
+
+  async save(file: FileUpload): Promise<{ storageKey: string }> {
+    this.count += 1;
+    const storageKey = `private-${this.count}`;
+    this.saved.set(storageKey, file);
+    return { storageKey };
+  }
+
+  async delete(storageKey: string): Promise<void> {
+    this.saved.delete(storageKey);
+    this.deleted.push(storageKey);
+  }
+
+  async open(
+    storageKey: string,
+    file: { mimeType: string; filename: string },
+  ): Promise<FileDelivery> {
+    const saved = this.saved.get(storageKey);
+    if (!saved) throw new Error(`No private file ${storageKey}`);
+    return { kind: "content", data: saved.data, ...file };
   }
 }
 

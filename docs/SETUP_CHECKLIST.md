@@ -218,17 +218,37 @@ GitHub → **Actions → Deploy → Run workflow**.
 
 ### 10. Stripe (card payments) → `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 
-Optional, and can wait: until these are set, the app only offers cash, and everything else works.
+Until `STRIPE_SECRET_KEY` is set (empty or the `sk_test_xxx` placeholder counts as unset), the app only offers cash and everything else still works. Stay in **test mode**: no business details, no real money.
 
-1. Sign up at https://dashboard.stripe.com/register and stay in **Test mode** (the toggle at the top). Test mode needs no business details or card.
-2. **Developers → API keys** → copy the **Secret key** (`sk_test_…`).
-3. **Developers → Webhooks → Add endpoint**:
-   - URL: `https://homelabconnect.netlify.app/api/payments/webhook`
+**The keys**
+
+1. Sign up at https://dashboard.stripe.com/register. Skip "Activate payments". Make sure the top bar says **Test mode** or **Sandbox**. If the Philippines isn't in the country list, any listed country is fine for a test account (checkout still charges in pesos).
+2. **Developers → API keys → Secret key → Reveal test key**: copy the `sk_test_…` key (about 100 characters). The publishable key isn't needed.
+
+There are **two different webhook secrets**: one for your PC (from the Stripe CLI) and one for the live site (from the dashboard). Each only works in its own place.
+
+**On your PC (root `.env`)**
+
+3. Put `STRIPE_SECRET_KEY=sk_test_…` in the root `.env` (no quotes, no spaces).
+4. Install the Stripe CLI (`scoop bucket add stripe https://github.com/stripe/scoop-stripe-cli.git` then `scoop install stripe`, or the Windows zip from https://github.com/stripe/stripe-cli/releases/latest) and run `stripe login`.
+5. HomeLabConnect's API must be the app on port 4000: close anything else using it. With `turbo run dev` running, in a second terminal:
+   ```
+   stripe listen --forward-to localhost:4000/api/payments/webhook --events checkout.session.completed,checkout.session.expired
+   ```
+   Copy the `whsec_…` it prints (or get it any time with `stripe listen --print-secret`) into `.env` as `STRIPE_WEBHOOK_SECRET`.
+6. Restart `turbo run dev` (the API reads `.env` only when it starts). Keep `stripe listen` running while you test.
+
+**On the live site (Render)**
+
+7. Stripe → **Developers → Webhooks** (newer dashboards: **Workbench → Webhooks**) → **Add endpoint**:
+   - URL: `https://homelabconnect-api.onrender.com/api/payments/webhook`
    - Events: `checkout.session.completed` and `checkout.session.expired`
-   - Save, then copy its **Signing secret** (`whsec_…`).
-4. Render → your service → **Environment**: add `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`, then redeploy.
-5. To try it on your PC: put the `sk_test_…` key in the root `.env`, install the Stripe CLI, run `stripe listen --forward-to localhost:4000/api/payments/webhook`, and put the `whsec_…` it prints in `.env` as `STRIPE_WEBHOOK_SECRET`. Restart `turbo run dev`.
-6. Pay with the test card `4242 4242 4242 4242`, any future date, any CVC.
+   - Save, then **Signing secret → Reveal**: copy this endpoint's `whsec_…`.
+8. Render → your service → **Environment**: add `STRIPE_SECRET_KEY` (the same `sk_test_…`) and `STRIPE_WEBHOOK_SECRET` (the endpoint's `whsec_…`), and check `APP_URL` is `https://homelabconnect.netlify.app` (Stripe sends patients back there). Save; Render redeploys.
+
+**Test cards:** `4242 4242 4242 4242` (any future date, any CVC) pays; `4000 0000 0000 9995` is declined; `4000 0025 0000 3155` asks for 3-D Secure.
+
+**If it doesn't work:** no **Pay now** → the key is missing or still the placeholder, or the API wasn't restarted. Paid on Stripe but the app still says Unpaid → the webhook: is `stripe listen` running with its secret in `.env` (locally), or does Render hold the endpoint's secret (live)? Stripe → Webhooks → your endpoint shows each failed delivery; a 400 means the signing secret doesn't match.
 
 ## Credit cards
 
@@ -276,6 +296,7 @@ Appointments
 - [ ] Payments without Stripe: as the patient, a confirmed visit says "Pay in cash to the med team at your visit". As `medteam@`, on a visit that is on the way or collected → **Record cash payment** → confirm: it shows Paid; Mailpit has "Payment received".
 - [ ] As `admin@`: **All Payments** lists it; **Export CSV** downloads it. **Refund** ₱100 with a reason: it shows Partly refunded. As the patient, **My Payments** shows the refund.
 - [ ] With Stripe test keys and `stripe listen` (step 10): **Pay now** opens Stripe; paying with 4242… brings you back and the visit shows Paid. Cancel a paid visit: **Refunds → Needs refund** lists it.
+- [ ] Results: as `doctor@`, **Review Queue → To upload** lists collected visits → **Open** → **Upload** a PDF per collected test (it shows "Draft") → **Release results**. As the patient: an unpaid visit shows "Your results are ready. Pay to view them" with no file links; once paid, **View** opens the file. **My Results** lists it. Mailpit has "Your lab results … are ready".
 - [ ] As `medteam@`: **My Visits** shows the team's visits for the day (address, phone, tests) → **On the way** → **Collected** (tick the tests, add a note). The appointment page shows ✓/✗ per test and the team's note.
 
 Production image (optional)

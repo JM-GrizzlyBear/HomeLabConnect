@@ -3,6 +3,8 @@ import {
   assertRefund,
   needsRefund,
   type Payment,
+  paymentNeedsRefund,
+  type PaymentWithAppointment,
   refundable,
   statusAfterRefund,
 } from "../../../../src/domain/payments/payment.js";
@@ -20,6 +22,7 @@ const payment = (overrides: Partial<Payment> = {}): Payment => ({
   recordedBy: null,
   paidAt: new Date("2026-01-15T08:00:00Z"),
   createdAt: new Date("2026-01-15T08:00:00Z"),
+  duplicate: false,
   refunds: [],
   ...overrides,
 });
@@ -53,5 +56,25 @@ describe("refunds", () => {
     expect(needsRefund({ status: "cancelled", paymentStatus: "unpaid" })).toBe(false);
     expect(needsRefund({ status: "cancelled", paymentStatus: "refunded" })).toBe(false);
     expect(needsRefund({ status: "collected", paymentStatus: "paid" })).toBe(false);
+  });
+
+  it("is needed for a payment taken twice, until it is refunded", () => {
+    const listed = (overrides: Partial<PaymentWithAppointment>): PaymentWithAppointment => ({
+      ...payment(),
+      duplicate: false,
+      appointment: {
+        code: "HLC-000001",
+        date: "2026-01-17",
+        status: "collected",
+        patientId: "u1",
+        patientName: "Juan Dela Cruz",
+      },
+      ...overrides,
+    });
+    expect(paymentNeedsRefund(listed({}))).toBe(false);
+    expect(paymentNeedsRefund(listed({ duplicate: true }))).toBe(true);
+    expect(
+      paymentNeedsRefund(listed({ duplicate: true, status: "refunded", refundedCentavos: 70_000 })),
+    ).toBe(false);
   });
 });

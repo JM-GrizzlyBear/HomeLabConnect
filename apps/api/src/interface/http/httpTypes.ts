@@ -29,8 +29,12 @@ export interface HttpResponse<TBody = unknown> {
   /** Undefined means an empty response (e.g. 204). */
   body: TBody;
   session?: SessionChange;
-  /** Extra headers; a string body is sent as is (e.g. a CSV file) instead of as JSON. */
+  /**
+   * Extra headers. A string or byte body is sent as is (a CSV, a file) instead of as JSON.
+   */
   headers?: Record<string, string>;
+  /** Sends the browser to this address instead (e.g. a short-lived file link). */
+  redirect?: string;
 }
 
 export interface Controller {

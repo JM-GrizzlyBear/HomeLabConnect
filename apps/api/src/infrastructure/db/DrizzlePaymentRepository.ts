@@ -57,7 +57,12 @@ export class DrizzlePaymentRepository implements PaymentRepository {
     if (query.patientId) filters.push(eq(appointments.patientUserId, query.patientId));
     if (query.refundable || query.needsRefund) filters.push(settled);
     if (query.needsRefund) {
-      filters.push(inArray(appointments.status, ["cancelled", "rejected"]));
+      filters.push(
+        or(
+          inArray(appointments.status, ["cancelled", "rejected"]),
+          eq(payments.duplicate, true),
+        ) as SQL,
+      );
     }
     if (query.q) {
       const number = Number(query.q.replace(/\D/g, ""));
@@ -106,15 +111,25 @@ export class DrizzlePaymentRepository implements PaymentRepository {
         .where(and(eq(payments.id, paymentId), eq(payments.status, "pending")))
         .returning();
       if (!row) return false;
-      await tx
+      // Only an unpaid visit becomes paid: if cash was taken meanwhile, the card payment is
+      // still recorded (the money was taken) and shows as needing a refund
+      const [visit] = await tx
         .update(appointments)
         .set({ paymentStatus: "paid" })
-        .where(eq(appointments.id, row.appointmentId));
+        .where(
+          and(eq(appointments.id, row.appointmentId), eq(appointments.paymentStatus, "unpaid")),
+        )
+        .returning({ id: appointments.id });
+      if (!visit) {
+        await tx.update(payments).set({ duplicate: true }).where(eq(payments.id, row.id));
+      }
       await tx.insert(appointmentEvents).values({
         appointmentId: row.appointmentId,
         actorId: null,
         kind: "paid",
-        note: "Paid by card.",
+        note: visit
+          ? "Paid by card."
+          : "Paid by card, but the visit was already paid: refund one payment.",
       });
       return true;
     });
@@ -280,6 +295,7 @@ function toPayment(row: PaymentRow, refunds: (typeof paymentRefunds.$inferSelect
     recordedBy: row.recordedBy,
     paidAt: row.paidAt,
     createdAt: row.createdAt,
+    duplicate: row.duplicate,
     refunds: refunds
       .filter((refund) => refund.paymentId === row.id)
       .map((refund) => ({

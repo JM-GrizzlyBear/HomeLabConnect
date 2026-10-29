@@ -5,6 +5,7 @@ import { AppointmentActions } from "@/components/appointments/AppointmentActions
 import { AppointmentLines } from "@/components/appointments/AppointmentLines";
 import { NotesCard } from "@/components/appointments/NotesCard";
 import { PaymentCard } from "@/components/payments/PaymentCard";
+import { ResultsCard } from "@/components/results/ResultsCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -168,6 +169,7 @@ export function AppointmentPage() {
           </ContentCard>
           <PaymentCard appointment={appointment} onChanged={reload} />
         </div>
+        <ResultsCard appointment={appointment} className="lg:col-span-5" />
         <NotesCard appointmentId={appointment.id} isPatient={appointment.patient.id === user?.id} />
         <ContentCard title="History" className="lg:col-span-5">
           <ol className="space-y-2 text-sm">

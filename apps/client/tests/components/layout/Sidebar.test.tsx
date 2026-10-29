@@ -45,13 +45,13 @@ describe("Sidebar", () => {
   it("opens the group of the current page and marks the page active", async () => {
     signedInAs(admin);
     // A page that isn't built yet, so it also shows "coming soon".
-    renderApp("/app/results/review");
+    renderApp("/app/support/queue");
 
-    expect(await screen.findByRole("button", { name: "Results" })).toHaveAttribute(
+    expect(await screen.findByRole("button", { name: "Support" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
-    expect(mainNav().getByRole("link", { name: "Review Queue" })).toHaveAttribute(
+    expect(mainNav().getByRole("link", { name: "Ticket Queue" })).toHaveAttribute(
       "aria-current",
       "page",
     );
