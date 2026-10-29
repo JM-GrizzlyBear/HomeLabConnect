@@ -24,7 +24,7 @@ Patients pay online with **Stripe** (card) or in **cash** when the team arrives.
 | Hosting        | Netlify, Render (Docker), Neon              | Website, API, managed Postgres                  |
 | DevOps         | Docker, GitHub Actions, pnpm, Turborepo     | API image, CI/deploy workflows, task pipeline   |
 
-¹ Behind the `PhotoStorage` port, so result files (PDFs) can use Cloudinary or another store when the Results module arrives.
+¹ Behind storage ports: photos and note files have public links; lab results use a private store (Cloudinary "authenticated" assets, or `apps/api/private-uploads` locally) and are handed out only after an access check.
 
 ---
 
@@ -50,8 +50,8 @@ user override → custom role grant → base role grant → deny. The full catal
 3. **Lab Procedure Catalog:** procedures, categories, prices and promotions/discounts.
 4. **Scheduling & Teams:** shifts set month by month on a calendar, leave requests (team lead → admin for med team; admin for everyone else), med teams and two-week rosters. See [erd/scheduling.md](erd/scheduling.md).
 5. **Appointments:** patient booking with live sale prices and open slots (one visit per med team on duty per slot), staff accept/reject, new-time proposals the patient accepts or declines, cancellation, and emails at each step team assignment (manual or automatic), the med team's My Visits with sample collection, notes with photo/PDF attachments, return visits for missed tests, and daily routes (built: slices 5A–5D). See [erd/appointments.md](erd/appointments.md).
-6. **Results:** doctors upload result files and patients view or download them. Results are **held until the appointment is paid**.
-7. **Payments (Stripe + Cash):** card checkout once a visit is confirmed, cash recorded by the med team at the visit, refunds (full or partial, by an admin; paid visits that get cancelled or rejected are flagged "Needs refund"), My Payments, All Payments with a CSV export (built). Without Stripe keys only cash is offered. See [erd/payments.md](erd/payments.md).
+6. **Results:** a **Review Queue** for doctors (to upload / ready to release / released); a PDF or photo and a comment per collected test, kept as drafts until the doctor **releases** them; the patient is emailed and views or downloads them under **My Results**. Results are **held until the appointment is paid** ("Your results are ready. Pay to view them"). Files are private: no public links, only short-lived ones after an access check (built). See [erd/results.md](erd/results.md).
+7. **Payments (Stripe + Cash):** card checkout once a visit is confirmed (an open checkout is closed when cash is taken; a card payment that still lands on a paid visit is flagged **Needs refund**), cash recorded by the med team at the visit, refunds (full or partial, by an admin; paid visits that get cancelled or rejected are flagged "Needs refund"), My Payments, All Payments with a CSV export (built). Without Stripe keys only cash is offered. See [erd/payments.md](erd/payments.md).
 8. **Support Desk:** patient help desk, tickets auto-assigned to on-shift agents, ticket chat.
 9. **Notifications:** in-app bell with real-time updates (SSE) and key emails (booking accepted/rejected, new time proposed, result released, payment received/refunded).
 10. **Audit Logs:** appointment and sign-in events.
