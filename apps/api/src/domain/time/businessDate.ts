@@ -10,6 +10,11 @@ export function businessDate(now: Date): string {
   return new Date(now.getTime() + BUSINESS_UTC_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+/** The business time of day `now` falls on, as "HH:MM". */
+export function businessTime(now: Date): string {
+  return new Date(now.getTime() + BUSINESS_UTC_OFFSET_MS).toISOString().slice(11, 16);
+}
+
 /** "YYYY-MM-DD" plus `days` (may be negative). */
 export function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);

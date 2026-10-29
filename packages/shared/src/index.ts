@@ -14,3 +14,4 @@ export * from "./results.js";
 export * from "./audit.js";
 export * from "./dashboard.js";
 export * from "./reports.js";
+export * from "./support.js";

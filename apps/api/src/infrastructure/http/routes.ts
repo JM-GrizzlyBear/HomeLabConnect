@@ -1,3 +1,17 @@
+import type { OpenTicketController } from "../../interface/http/controllers/OpenTicketController.js";
+import type { ListMyTicketsController } from "../../interface/http/controllers/ListMyTicketsController.js";
+import type { ListTicketQueueController } from "../../interface/http/controllers/ListTicketQueueController.js";
+import type { GetTicketController } from "../../interface/http/controllers/GetTicketController.js";
+import type { PostTicketMessageController } from "../../interface/http/controllers/PostTicketMessageController.js";
+import type { OpenMessageAttachmentController } from "../../interface/http/controllers/OpenMessageAttachmentController.js";
+import type { ListSupportAgentsController } from "../../interface/http/controllers/ListSupportAgentsController.js";
+import type {
+  ClaimTicketController,
+  CloseTicketController,
+  RateTicketController,
+  ReassignTicketController,
+  SetTicketPriorityController,
+} from "../../interface/http/controllers/ManageTicketControllers.js";
 import { Router } from "express";
 import type { RunReportController } from "../../interface/http/controllers/RunReportController.js";
 import type { ListSavedReportsController } from "../../interface/http/controllers/ListSavedReportsController.js";
@@ -205,6 +219,18 @@ interface ControllerTypes {
   listSavedReports: ListSavedReportsController;
   saveReport: SaveReportController;
   deleteSavedReport: DeleteSavedReportController;
+  openTicket: OpenTicketController;
+  listMyTickets: ListMyTicketsController;
+  listTicketQueue: ListTicketQueueController;
+  getTicket: GetTicketController;
+  postTicketMessage: PostTicketMessageController;
+  openMessageAttachment: OpenMessageAttachmentController;
+  listSupportAgents: ListSupportAgentsController;
+  claimTicket: ClaimTicketController;
+  reassignTicket: ReassignTicketController;
+  setTicketPriority: SetTicketPriorityController;
+  closeTicket: CloseTicketController;
+  rateTicket: RateTicketController;
 }
 
 export type Controllers = Record<keyof ControllerTypes, Controller>;
@@ -481,6 +507,46 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.get("/reports/:kind/export", adapt(controllers.exportReport, ...can("reports.export")));
   router.get("/reports/:kind", adapt(controllers.runReport, ...can("reports.view")));
   router.get("/results/:id/file", adapt(controllers.openResultFile, middlewares.authenticate));
+
+  // Support desk: "mine" and "agents" before :id; the use cases check who may see a ticket
+  router.post(
+    "/support/tickets",
+    uploadAttachment,
+    adapt(controllers.openTicket, ...can("support.create_ticket")),
+  );
+  router.get("/support/tickets/mine", adapt(controllers.listMyTickets, ...can("support.view_own")));
+  router.get("/support/tickets", adapt(controllers.listTicketQueue, ...can("support.view_queue")));
+  router.get("/support/agents", adapt(controllers.listSupportAgents, ...can("support.assign")));
+  router.get("/support/tickets/:id", adapt(controllers.getTicket, middlewares.authenticate));
+  router.post(
+    "/support/tickets/:id/messages",
+    uploadAttachment,
+    adapt(controllers.postTicketMessage, ...can("chat.use")),
+  );
+  router.get(
+    "/support/messages/:id/attachment",
+    adapt(controllers.openMessageAttachment, middlewares.authenticate),
+  );
+  router.post(
+    "/support/tickets/:id/claim",
+    adapt(controllers.claimTicket, ...can("support.handle")),
+  );
+  router.patch(
+    "/support/tickets/:id/assignee",
+    adapt(controllers.reassignTicket, ...can("support.assign")),
+  );
+  router.patch(
+    "/support/tickets/:id/priority",
+    adapt(controllers.setTicketPriority, ...can("support.handle")),
+  );
+  router.post(
+    "/support/tickets/:id/close",
+    adapt(controllers.closeTicket, middlewares.authenticate),
+  );
+  router.post(
+    "/support/tickets/:id/rating",
+    adapt(controllers.rateTicket, middlewares.authenticate),
+  );
 
   return router;
 }

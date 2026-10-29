@@ -10,6 +10,7 @@ import { buildApp } from "../../../src/buildApp.js";
 import { BcryptPasswordHasher } from "../../../src/infrastructure/auth/BcryptPasswordHasher.js";
 import { createDatabase, type Database } from "../../../src/infrastructure/db/client.js";
 import { SESSION_COOKIE } from "../../../src/infrastructure/http/session.js";
+import { SseHub } from "../../../src/infrastructure/realtime/SseHub.js";
 import {
   FakeAccountEmails,
   FakeAppointmentEmails,
@@ -72,6 +73,7 @@ export async function buildTestApp({
   const files = new FakeFileStorage();
   const gateway = new FakePaymentGateway();
   const privateFiles = new FakePrivateFileStorage();
+  const events = new SseHub();
   const unreachable: DatabaseHealthProbe = { isReachable: async () => false };
 
   const app = buildApp({
@@ -92,6 +94,7 @@ export async function buildTestApp({
     privateFileStorage: privateFiles,
     auditLog,
     healthProbe: databaseReachable ? undefined : unreachable,
+    events,
   });
 
   return {
@@ -105,6 +108,7 @@ export async function buildTestApp({
     files,
     gateway,
     privateFiles,
+    events,
     given: new Given(db),
   };
 }

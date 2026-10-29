@@ -95,7 +95,7 @@ export class GetDashboard {
       case "med_team":
         return await this.medTeam(context, user.id);
       case "support":
-        return await this.support(context);
+        return await this.support(context, user.id);
       case "patient":
         return await this.patient(today, user.id);
     }
@@ -263,17 +263,22 @@ export class GetDashboard {
     };
   }
 
-  private async support({ today, days, fortnight, month }: Context): Promise<DashboardOutput> {
+  private async support(
+    { today, days, fortnight, month }: Context,
+    agentId: string,
+  ): Promise<DashboardOutput> {
     const q = this.queries;
-    const [pending, byStatus, needsRefund, unpaid, bookings, rate, totals] = await Promise.all([
-      q.pendingBookings(),
-      q.visitsByStatus(today, null),
-      q.paymentsNeedingRefund(),
-      q.collectedUnpaid(),
-      q.bookingsPerDay(fortnight),
-      q.confirmationRate(fortnight),
-      q.paymentTotals(month, null),
-    ]);
+    const [pending, byStatus, needsRefund, unpaid, bookings, rate, totals, tickets] =
+      await Promise.all([
+        q.pendingBookings(),
+        q.visitsByStatus(today, null),
+        q.paymentsNeedingRefund(),
+        q.collectedUnpaid(),
+        q.bookingsPerDay(fortnight),
+        q.confirmationRate(fortnight),
+        q.paymentTotals(month, null),
+        q.openTickets(agentId),
+      ]);
     const visitsToday = visitSlices(byStatus);
     const bookingValues = valuesOn(bookings, days);
     return {
@@ -281,7 +286,7 @@ export class GetDashboard {
         title: "Today at a glance",
         items: [
           { label: "Pending bookings", value: String(pending) },
-          { label: "Visits today", value: String(sum(visitsToday.map((s) => s.value))) },
+          { label: "Open tickets", value: String(tickets) },
           { label: "Needs refund", value: String(needsRefund) },
           { label: "Collected, unpaid", value: String(unpaid) },
         ],

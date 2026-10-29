@@ -60,6 +60,8 @@ export interface DashboardQueries {
   /** Bookings made in the range: how many were confirmed (or got further). */
   confirmationRate(range: DateRange): Promise<{ confirmed: number; booked: number }>;
   pendingBookings(): Promise<number>;
+  /** Tickets waiting on this agent: theirs that aren't closed, plus unassigned ones. */
+  openTickets(agentId: string): Promise<number>;
   /** Paid visits that were cancelled or rejected, and payments taken twice. */
   paymentsNeedingRefund(): Promise<number>;
   collectedUnpaid(): Promise<number>;

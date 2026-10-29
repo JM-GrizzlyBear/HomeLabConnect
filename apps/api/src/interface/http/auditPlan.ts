@@ -60,6 +60,14 @@ const AUDITED: Record<string, [action: string, options?: AuditOptions]> = {
   // Reports
   saveReport: ["reports.save", { target: "saved_report" }],
   deleteSavedReport: ["reports.delete_saved", { target: "saved_report", describe: () => null }],
+  // Support desk
+  claimTicket: ["support.claim", { target: "ticket", describe: () => null }],
+  reassignTicket: ["support.reassign", { target: "ticket", describe: () => null }],
+  setTicketPriority: [
+    "support.set_priority",
+    { target: "ticket", describe: (request) => text(bodyOf(request.body).priority) },
+  ],
+  closeTicket: ["support.close", { target: "ticket", describe: () => null }],
   // Payments
   refundPayment: [
     "payments.refund",

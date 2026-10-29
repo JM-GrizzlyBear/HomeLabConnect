@@ -105,6 +105,13 @@ export class DrizzleDashboardQueries implements DashboardQueries {
     );
   }
 
+  async openTickets(agentId: string): Promise<number> {
+    return await this.count(sql`
+      select count(*) as value from support_tickets t
+      where t.status <> 'closed' and (t.assigned_to = ${agentId} or t.assigned_to is null)
+    `);
+  }
+
   async paymentsNeedingRefund(): Promise<number> {
     return await this.count(sql`
       select count(*) as value

@@ -10,6 +10,7 @@ export const auditGroupSchema = z.enum([
   "scheduling",
   "payments",
   "reports",
+  "support",
 ]);
 
 export const auditEntrySchema = z.object({
