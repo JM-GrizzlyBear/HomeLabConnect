@@ -194,6 +194,18 @@ import { DrizzleDashboardQueries } from "./infrastructure/db/DrizzleDashboardQue
 import { withAuditLog } from "./interface/http/auditPlan.js";
 import { GetDashboardController } from "./interface/http/controllers/GetDashboardController.js";
 import { ListAuditLogController } from "./interface/http/controllers/ListAuditLogController.js";
+import { RunReport } from "./application/reports/RunReport.js";
+import {
+  DeleteSavedReport,
+  ListSavedReports,
+  SaveReport,
+} from "./application/reports/SavedReports.js";
+import { DrizzleReportQueries } from "./infrastructure/db/DrizzleReportQueries.js";
+import { DrizzleSavedReportRepository } from "./infrastructure/db/DrizzleSavedReportRepository.js";
+import { RunReportController } from "./interface/http/controllers/RunReportController.js";
+import { ListSavedReportsController } from "./interface/http/controllers/ListSavedReportsController.js";
+import { SaveReportController } from "./interface/http/controllers/SaveReportController.js";
+import { DeleteSavedReportController } from "./interface/http/controllers/DeleteSavedReportController.js";
 import type { PrivateFileStorage } from "./application/ports/PrivateFileStorage.js";
 import { DrizzleResultRepository } from "./infrastructure/db/DrizzleResultRepository.js";
 import { DeleteTestResult } from "./application/results/DeleteTestResult.js";
@@ -291,6 +303,8 @@ export function buildApp(options: BuildAppOptions) {
   const resultRepositories = { appointments, teams, results };
   const { privateFileStorage: privateFiles } = options;
   const auditLog = options.auditLog ?? new DrizzleAuditLog(db);
+  const runReport = new RunReport(new DrizzleReportQueries(db));
+  const savedReports = new DrizzleSavedReportRepository(db);
 
   // Use cases
   const checkSystemHealth = new CheckSystemHealth(
@@ -511,6 +525,11 @@ export function buildApp(options: BuildAppOptions) {
         listReviewQueue: new ListReviewQueueController(new ListReviewQueue(results)),
         listMyResults: new ListMyResultsController(new ListMyResults(results)),
         listAuditLog: new ListAuditLogController(new ListAuditLog(auditLog)),
+        runReport: new RunReportController(runReport),
+        exportReport: new RunReportController(runReport, true),
+        listSavedReports: new ListSavedReportsController(new ListSavedReports(savedReports)),
+        saveReport: new SaveReportController(new SaveReport(savedReports)),
+        deleteSavedReport: new DeleteSavedReportController(new DeleteSavedReport(savedReports)),
         getDashboard: new GetDashboardController(
           new GetDashboard(new DrizzleDashboardQueries(db), teams, clock),
         ),

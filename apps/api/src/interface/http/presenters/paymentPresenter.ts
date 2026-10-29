@@ -15,6 +15,7 @@ import {
   type PaymentWithAppointment,
 } from "../../../domain/payments/payment.js";
 import type { HttpResponse } from "../httpTypes.js";
+import { csvFile } from "./csv.js";
 
 function toPaymentView(payment: Payment): PaymentView {
   return {
@@ -77,13 +78,6 @@ export function presentMyPayments(
 }
 
 const providerNames = { stripe: "Card", cash: "Cash" } as const;
-const BYTE_ORDER_MARK = String.fromCharCode(0xfeff);
-
-/** One cell: quoted when it holds a comma, quote or line break; formulas are defused. */
-function csvCell(value: string): string {
-  const safe = /^[=+\-@]/.test(value) ? `'${value}` : value;
-  return /[",\n\r]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
-}
 
 /** The payments as a CSV file for a spreadsheet. */
 export function presentPaymentsCsv(
@@ -112,14 +106,5 @@ export function presentPaymentsCsv(
     centavosToPesos(payment.refundedCentavos),
     payment.appointment.status,
   ]);
-  const body = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
-  return {
-    status: 200,
-    // The byte-order mark makes Excel read it as UTF-8 (names with ñ)
-    body: BYTE_ORDER_MARK + body + "\r\n",
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="payments-${today}.csv"`,
-    },
-  };
+  return csvFile([header, ...rows], `payments-${today}.csv`);
 }
