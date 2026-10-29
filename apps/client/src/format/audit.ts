@@ -35,6 +35,8 @@ export const auditActionLabels: Record<string, string> = {
   "leave.decide": "Decided a leave request",
   "payments.refund": "Refunded a payment",
   "payments.record_cash": "Recorded a cash payment",
+  "reports.save": "Saved a report",
+  "reports.delete_saved": "Deleted a saved report",
 };
 
 export const auditGroupLabels: Record<AuditGroup, string> = {
@@ -45,6 +47,7 @@ export const auditGroupLabels: Record<AuditGroup, string> = {
   catalog: "Catalog",
   scheduling: "Scheduling",
   payments: "Payments",
+  reports: "Reports",
 };
 
 /** "Chrome on Windows"-ish, short enough for a table cell. */
