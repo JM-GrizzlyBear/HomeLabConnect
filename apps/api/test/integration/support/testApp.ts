@@ -5,6 +5,7 @@ import type { Express } from "express";
 import request from "supertest";
 import { afterAll } from "vitest";
 import type { DatabaseHealthProbe } from "../../../src/application/ports/DatabaseHealthProbe.js";
+import type { AuditLog } from "../../../src/domain/audit/auditEntry.js";
 import { buildApp } from "../../../src/buildApp.js";
 import { BcryptPasswordHasher } from "../../../src/infrastructure/auth/BcryptPasswordHasher.js";
 import { createDatabase, type Database } from "../../../src/infrastructure/db/client.js";
@@ -54,7 +55,11 @@ async function resetDatabase(db: Database): Promise<void> {
 }
 
 /** Resets the test database and builds the app on it. Call at the start of every test. */
-export async function buildTestApp({ databaseReachable = true, cardPayments = true } = {}) {
+export async function buildTestApp({
+  databaseReachable = true,
+  cardPayments = true,
+  auditLog = undefined as AuditLog | undefined,
+} = {}) {
   const db = database();
   const { pool } = connection!;
   await resetDatabase(db);
@@ -85,6 +90,7 @@ export async function buildTestApp({ databaseReachable = true, cardPayments = tr
     fileStorage: files,
     paymentGateway: cardPayments ? gateway : null,
     privateFileStorage: privateFiles,
+    auditLog,
     healthProbe: databaseReachable ? undefined : unreachable,
   });
 

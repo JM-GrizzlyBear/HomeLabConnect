@@ -185,6 +185,15 @@ import { ProposeNewTimeController } from "./interface/http/controllers/ProposeNe
 import { AnswerProposal } from "./application/appointments/AnswerProposal.js";
 import { AnswerProposalController } from "./interface/http/controllers/AnswerProposalController.js";
 import { createSessionMiddleware } from "./infrastructure/http/session.js";
+import { ListAuditLog } from "./application/audit/ListAuditLog.js";
+import { RecordAuditEntry } from "./application/audit/RecordAuditEntry.js";
+import { GetDashboard } from "./application/dashboard/GetDashboard.js";
+import type { AuditLog } from "./domain/audit/auditEntry.js";
+import { DrizzleAuditLog } from "./infrastructure/db/DrizzleAuditLog.js";
+import { DrizzleDashboardQueries } from "./infrastructure/db/DrizzleDashboardQueries.js";
+import { withAuditLog } from "./interface/http/auditPlan.js";
+import { GetDashboardController } from "./interface/http/controllers/GetDashboardController.js";
+import { ListAuditLogController } from "./interface/http/controllers/ListAuditLogController.js";
 import type { PrivateFileStorage } from "./application/ports/PrivateFileStorage.js";
 import { DrizzleResultRepository } from "./infrastructure/db/DrizzleResultRepository.js";
 import { DeleteTestResult } from "./application/results/DeleteTestResult.js";
@@ -245,6 +254,8 @@ export interface BuildAppOptions {
   paymentGateway: PaymentGateway | null;
   /** Set when photos are kept on this machine, so the app serves them at /api/uploads. */
   uploadsDir?: string;
+  /** Tests swap it to see that a broken audit log never fails a request. */
+  auditLog?: AuditLog;
   /** Tests swap it to see the health check report a database outage. */
   healthProbe?: DatabaseHealthProbe;
 }
@@ -279,6 +290,7 @@ export function buildApp(options: BuildAppOptions) {
   const results = new DrizzleResultRepository(db);
   const resultRepositories = { appointments, teams, results };
   const { privateFileStorage: privateFiles } = options;
+  const auditLog = options.auditLog ?? new DrizzleAuditLog(db);
 
   // Use cases
   const checkSystemHealth = new CheckSystemHealth(
@@ -321,177 +333,190 @@ export function buildApp(options: BuildAppOptions) {
     }),
     trustProxy: options.trustProxy,
     uploadsDir: options.uploadsDir,
-    controllers: {
-      health: new HealthController(checkSystemHealth),
-      registerPatient: new RegisterPatientController(registerPatient),
-      login: new LoginController(login),
-      logout: new LogoutController(),
-      getCurrentUser: new GetCurrentUserController(getCurrentUser),
-      changePassword: new ChangePasswordController(changePassword),
-      getProfile: new GetProfileController(getProfile),
-      updateProfile: new UpdateProfileController(updateProfile),
-      setProfilePhoto: new SetProfilePhotoController(
-        new SetProfilePhoto(users, options.photoStorage),
-      ),
-      removeProfilePhoto: new RemoveProfilePhotoController(
-        new RemoveProfilePhoto(users, options.photoStorage),
-      ),
-      listUsers: new ListUsersController(listUsers),
-      createStaffAccount: new CreateStaffAccountController(createStaffAccount),
-      setUserActive: new SetUserActiveController(setUserActive),
-      reissueTemporaryPassword: new ReissueTemporaryPasswordController(reissueTemporaryPassword),
-      listRoles: new ListRolesController(new ListRoles(roles)),
-      getCustomRole: new GetCustomRoleController(new GetCustomRole(roles)),
-      createCustomRole: new CreateCustomRoleController(new CreateCustomRole(roles)),
-      updateCustomRole: new UpdateCustomRoleController(new UpdateCustomRole(roles)),
-      deleteCustomRole: new DeleteCustomRoleController(new DeleteCustomRole(roles)),
-      assignCustomRole: new AssignCustomRoleController(new AssignCustomRole(users, roles)),
-      listProcedureCategories: new ListProcedureCategoriesController(
-        new ListProcedureCategories(categories),
-      ),
-      createProcedureCategory: new CreateProcedureCategoryController(
-        new CreateProcedureCategory(categories),
-      ),
-      renameProcedureCategory: new RenameProcedureCategoryController(
-        new RenameProcedureCategory(categories),
-      ),
-      deleteProcedureCategory: new DeleteProcedureCategoryController(
-        new DeleteProcedureCategory(categories),
-      ),
-      listLabProcedures: new ListLabProceduresController(
-        new ListLabProcedures(procedures, promotions, clock),
-      ),
-      getLabProcedure: new GetLabProcedureController(
-        new GetLabProcedure(procedures, promotions, clock),
-      ),
-      createLabProcedure: new CreateLabProcedureController(
-        new CreateLabProcedure(procedures, categories),
-      ),
-      updateLabProcedure: new UpdateLabProcedureController(
-        new UpdateLabProcedure(procedures, categories),
-      ),
-      setLabProcedureActive: new SetLabProcedureActiveController(
-        new SetLabProcedureActive(procedures),
-      ),
-      listPromotions: new ListPromotionsController(new ListPromotions(promotions, clock)),
-      getPromotion: new GetPromotionController(new GetPromotion(promotions, clock)),
-      createPromotion: new CreatePromotionController(
-        new CreatePromotion(promotions, procedures, clock),
-      ),
-      updatePromotion: new UpdatePromotionController(
-        new UpdatePromotion(promotions, procedures, clock),
-      ),
-      setPromotionActive: new SetPromotionActiveController(
-        new SetPromotionActive(promotions, clock),
-      ),
-      getSystemSettings: new GetSystemSettingsController(new GetSystemSettings(settings)),
-      updateSystemSettings: new UpdateSystemSettingsController(new UpdateSystemSettings(settings)),
-      listClosedDays: new ListClosedDaysController(new ListClosedDays(closedDays)),
-      addClosedDay: new AddClosedDayController(new AddClosedDay(closedDays)),
-      updateClosedDay: new UpdateClosedDayController(new UpdateClosedDay(closedDays)),
-      removeClosedDay: new RemoveClosedDayController(new RemoveClosedDay(closedDays)),
-      listTeams: new ListTeamsController(new ListTeams(teams, staff, clock)),
-      createTeam: new CreateTeamController(new CreateTeam(teams)),
-      updateTeam: new UpdateTeamController(new UpdateTeam(teams)),
-      setTeamActive: new SetTeamActiveController(new SetTeamActive(teams)),
-      saveRoster: new SaveRosterController(new SaveRoster(teams, staff)),
-      copyPreviousRosters: new CopyPreviousRostersController(new CopyPreviousRosters(teams, staff)),
-      listStaff: new ListStaffController(new ListStaff(staff)),
-      getMySchedule: new GetMyScheduleController(new GetMySchedule(scheduleRepositories)),
-      getShiftBoard: new GetShiftBoardController(new GetShiftBoard(scheduleRepositories, staff)),
-      setShiftDays: new SetShiftDaysController(new SetShiftDays(shifts, staff)),
-      requestLeave: new RequestLeaveController(new RequestLeave(leave, teams, staff, clock)),
-      listMyLeave: new ListMyLeaveController(new ListMyLeave(leave, staff)),
-      cancelLeave: new CancelLeaveController(new CancelLeave(leave, staff, clock)),
-      listLeaveInbox: new ListLeaveInboxController(new ListLeaveInbox(leave, staff)),
-      decideLeave: new DecideLeaveController(new DecideLeave(leave, staff, clock)),
-      listAllLeave: new ListAllLeaveController(new ListAllLeave(leave, staff)),
-      getAvailability: new GetAvailabilityController(
-        new GetAvailability(availabilityRepositories, clock),
-      ),
-      quoteBooking: new QuoteBookingController(quoteBooking),
-      bookAppointment: new BookAppointmentController(
-        new BookAppointment(availabilityRepositories, quoteBooking, appointmentEmails, clock),
-      ),
-      listMyAppointments: new ListMyAppointmentsController(
-        new ListMyAppointments(appointments, settings, clock),
-      ),
-      getAppointment: new GetAppointmentController(
-        new GetAppointment(appointments, teams, settings, clock),
-      ),
-      cancelAppointment: new CancelAppointmentController(
-        new CancelAppointment(appointments, settings, appointmentEmails, clock),
-      ),
-      listAppointments: new ListAppointmentsController(
-        new ListAppointments(appointments, settings, clock),
-      ),
-      acceptAppointment: new DecideAppointmentController(
-        new DecideAppointment(availabilityRepositories, appointmentEmails, clock),
-        "accept",
-      ),
-      rejectAppointment: new DecideAppointmentController(
-        new DecideAppointment(availabilityRepositories, appointmentEmails, clock),
-        "reject",
-      ),
-      proposeNewTime: new ProposeNewTimeController(
-        new ProposeNewTime(availabilityRepositories, appointmentEmails, clock),
-      ),
-      listTeamChoices: new ListTeamChoicesController(new ListTeamChoices(availabilityRepositories)),
-      assignTeam: new AssignTeamController(new AssignTeam(availabilityRepositories, clock)),
-      listMyVisits: new ListMyVisitsController(new ListMyVisits(availabilityRepositories)),
-      recordVisit: new RecordVisitController(new RecordVisit(availabilityRepositories)),
-      listNotes: new ListAppointmentNotesController(new ListAppointmentNotes(noteRepositories)),
-      addNote: new AddAppointmentNoteController(
-        new AddAppointmentNote(noteRepositories, options.fileStorage),
-      ),
-      deleteAttachment: new DeleteAttachmentController(
-        new DeleteAttachment(noteRepositories, options.fileStorage),
-      ),
-      scheduleReturnVisit: new ScheduleReturnVisitController(
-        new ScheduleReturnVisit(availabilityRepositories, appointmentEmails, clock),
-      ),
-      listRouteTeams: new ListRouteTeamsController(new ListRouteTeams(availabilityRepositories)),
-      getDailyRoute: new GetDailyRouteController(new GetDailyRoute(availabilityRepositories)),
-      reorderRoute: new ReorderRouteController(new ReorderRoute(availabilityRepositories)),
-      answerProposal: new AnswerProposalController(
-        new AnswerProposal(availabilityRepositories, appointmentEmails, clock),
-      ),
-      listAppointmentPayments: new ListAppointmentPaymentsController(
-        new ListAppointmentPayments(paymentRepositories, gateway),
-      ),
-      startCardPayment: new StartCardPaymentController(
-        new StartCardPayment(paymentRepositories, gateway, clock),
-      ),
-      paymentWebhook: new HandlePaymentWebhookController(
-        new HandlePaymentWebhook(paymentRepositories, gateway, appointmentEmails, clock),
-      ),
-      recordCashPayment: new RecordCashPaymentController(
-        new RecordCashPayment(paymentRepositories, gateway, appointmentEmails, clock),
-      ),
-      refundPayment: new RefundPaymentController(
-        new RefundPayment(paymentRepositories, gateway, appointmentEmails),
-      ),
-      listPayments: new ListPaymentsController(new ListPayments(payments)),
-      exportPayments: new ExportPaymentsController(new ExportPayments(payments), clock),
-      listMyPayments: new ListMyPaymentsController(new ListMyPayments(payments)),
-      getAppointmentResults: new GetAppointmentResultsController(
-        new GetAppointmentResults(resultRepositories),
-      ),
-      uploadTestResult: new UploadTestResultController(
-        new UploadTestResult(resultRepositories, privateFiles),
-      ),
-      deleteTestResult: new DeleteTestResultController(
-        new DeleteTestResult(resultRepositories, privateFiles),
-      ),
-      releaseResults: new ReleaseResultsController(
-        new ReleaseResults(resultRepositories, appointmentEmails, clock),
-      ),
-      openResultFile: new OpenResultFileController(
-        new OpenResultFile(resultRepositories, privateFiles),
-      ),
-      listReviewQueue: new ListReviewQueueController(new ListReviewQueue(results)),
-      listMyResults: new ListMyResultsController(new ListMyResults(results)),
-    },
+    controllers: withAuditLog(
+      {
+        health: new HealthController(checkSystemHealth),
+        registerPatient: new RegisterPatientController(registerPatient),
+        login: new LoginController(login),
+        logout: new LogoutController(),
+        getCurrentUser: new GetCurrentUserController(getCurrentUser),
+        changePassword: new ChangePasswordController(changePassword),
+        getProfile: new GetProfileController(getProfile),
+        updateProfile: new UpdateProfileController(updateProfile),
+        setProfilePhoto: new SetProfilePhotoController(
+          new SetProfilePhoto(users, options.photoStorage),
+        ),
+        removeProfilePhoto: new RemoveProfilePhotoController(
+          new RemoveProfilePhoto(users, options.photoStorage),
+        ),
+        listUsers: new ListUsersController(listUsers),
+        createStaffAccount: new CreateStaffAccountController(createStaffAccount),
+        setUserActive: new SetUserActiveController(setUserActive),
+        reissueTemporaryPassword: new ReissueTemporaryPasswordController(reissueTemporaryPassword),
+        listRoles: new ListRolesController(new ListRoles(roles)),
+        getCustomRole: new GetCustomRoleController(new GetCustomRole(roles)),
+        createCustomRole: new CreateCustomRoleController(new CreateCustomRole(roles)),
+        updateCustomRole: new UpdateCustomRoleController(new UpdateCustomRole(roles)),
+        deleteCustomRole: new DeleteCustomRoleController(new DeleteCustomRole(roles)),
+        assignCustomRole: new AssignCustomRoleController(new AssignCustomRole(users, roles)),
+        listProcedureCategories: new ListProcedureCategoriesController(
+          new ListProcedureCategories(categories),
+        ),
+        createProcedureCategory: new CreateProcedureCategoryController(
+          new CreateProcedureCategory(categories),
+        ),
+        renameProcedureCategory: new RenameProcedureCategoryController(
+          new RenameProcedureCategory(categories),
+        ),
+        deleteProcedureCategory: new DeleteProcedureCategoryController(
+          new DeleteProcedureCategory(categories),
+        ),
+        listLabProcedures: new ListLabProceduresController(
+          new ListLabProcedures(procedures, promotions, clock),
+        ),
+        getLabProcedure: new GetLabProcedureController(
+          new GetLabProcedure(procedures, promotions, clock),
+        ),
+        createLabProcedure: new CreateLabProcedureController(
+          new CreateLabProcedure(procedures, categories),
+        ),
+        updateLabProcedure: new UpdateLabProcedureController(
+          new UpdateLabProcedure(procedures, categories),
+        ),
+        setLabProcedureActive: new SetLabProcedureActiveController(
+          new SetLabProcedureActive(procedures),
+        ),
+        listPromotions: new ListPromotionsController(new ListPromotions(promotions, clock)),
+        getPromotion: new GetPromotionController(new GetPromotion(promotions, clock)),
+        createPromotion: new CreatePromotionController(
+          new CreatePromotion(promotions, procedures, clock),
+        ),
+        updatePromotion: new UpdatePromotionController(
+          new UpdatePromotion(promotions, procedures, clock),
+        ),
+        setPromotionActive: new SetPromotionActiveController(
+          new SetPromotionActive(promotions, clock),
+        ),
+        getSystemSettings: new GetSystemSettingsController(new GetSystemSettings(settings)),
+        updateSystemSettings: new UpdateSystemSettingsController(
+          new UpdateSystemSettings(settings),
+        ),
+        listClosedDays: new ListClosedDaysController(new ListClosedDays(closedDays)),
+        addClosedDay: new AddClosedDayController(new AddClosedDay(closedDays)),
+        updateClosedDay: new UpdateClosedDayController(new UpdateClosedDay(closedDays)),
+        removeClosedDay: new RemoveClosedDayController(new RemoveClosedDay(closedDays)),
+        listTeams: new ListTeamsController(new ListTeams(teams, staff, clock)),
+        createTeam: new CreateTeamController(new CreateTeam(teams)),
+        updateTeam: new UpdateTeamController(new UpdateTeam(teams)),
+        setTeamActive: new SetTeamActiveController(new SetTeamActive(teams)),
+        saveRoster: new SaveRosterController(new SaveRoster(teams, staff)),
+        copyPreviousRosters: new CopyPreviousRostersController(
+          new CopyPreviousRosters(teams, staff),
+        ),
+        listStaff: new ListStaffController(new ListStaff(staff)),
+        getMySchedule: new GetMyScheduleController(new GetMySchedule(scheduleRepositories)),
+        getShiftBoard: new GetShiftBoardController(new GetShiftBoard(scheduleRepositories, staff)),
+        setShiftDays: new SetShiftDaysController(new SetShiftDays(shifts, staff)),
+        requestLeave: new RequestLeaveController(new RequestLeave(leave, teams, staff, clock)),
+        listMyLeave: new ListMyLeaveController(new ListMyLeave(leave, staff)),
+        cancelLeave: new CancelLeaveController(new CancelLeave(leave, staff, clock)),
+        listLeaveInbox: new ListLeaveInboxController(new ListLeaveInbox(leave, staff)),
+        decideLeave: new DecideLeaveController(new DecideLeave(leave, staff, clock)),
+        listAllLeave: new ListAllLeaveController(new ListAllLeave(leave, staff)),
+        getAvailability: new GetAvailabilityController(
+          new GetAvailability(availabilityRepositories, clock),
+        ),
+        quoteBooking: new QuoteBookingController(quoteBooking),
+        bookAppointment: new BookAppointmentController(
+          new BookAppointment(availabilityRepositories, quoteBooking, appointmentEmails, clock),
+        ),
+        listMyAppointments: new ListMyAppointmentsController(
+          new ListMyAppointments(appointments, settings, clock),
+        ),
+        getAppointment: new GetAppointmentController(
+          new GetAppointment(appointments, teams, settings, clock),
+        ),
+        cancelAppointment: new CancelAppointmentController(
+          new CancelAppointment(appointments, settings, appointmentEmails, clock),
+        ),
+        listAppointments: new ListAppointmentsController(
+          new ListAppointments(appointments, settings, clock),
+        ),
+        acceptAppointment: new DecideAppointmentController(
+          new DecideAppointment(availabilityRepositories, appointmentEmails, clock),
+          "accept",
+        ),
+        rejectAppointment: new DecideAppointmentController(
+          new DecideAppointment(availabilityRepositories, appointmentEmails, clock),
+          "reject",
+        ),
+        proposeNewTime: new ProposeNewTimeController(
+          new ProposeNewTime(availabilityRepositories, appointmentEmails, clock),
+        ),
+        listTeamChoices: new ListTeamChoicesController(
+          new ListTeamChoices(availabilityRepositories),
+        ),
+        assignTeam: new AssignTeamController(new AssignTeam(availabilityRepositories, clock)),
+        listMyVisits: new ListMyVisitsController(new ListMyVisits(availabilityRepositories)),
+        recordVisit: new RecordVisitController(new RecordVisit(availabilityRepositories)),
+        listNotes: new ListAppointmentNotesController(new ListAppointmentNotes(noteRepositories)),
+        addNote: new AddAppointmentNoteController(
+          new AddAppointmentNote(noteRepositories, options.fileStorage),
+        ),
+        deleteAttachment: new DeleteAttachmentController(
+          new DeleteAttachment(noteRepositories, options.fileStorage),
+        ),
+        scheduleReturnVisit: new ScheduleReturnVisitController(
+          new ScheduleReturnVisit(availabilityRepositories, appointmentEmails, clock),
+        ),
+        listRouteTeams: new ListRouteTeamsController(new ListRouteTeams(availabilityRepositories)),
+        getDailyRoute: new GetDailyRouteController(new GetDailyRoute(availabilityRepositories)),
+        reorderRoute: new ReorderRouteController(new ReorderRoute(availabilityRepositories)),
+        answerProposal: new AnswerProposalController(
+          new AnswerProposal(availabilityRepositories, appointmentEmails, clock),
+        ),
+        listAppointmentPayments: new ListAppointmentPaymentsController(
+          new ListAppointmentPayments(paymentRepositories, gateway),
+        ),
+        startCardPayment: new StartCardPaymentController(
+          new StartCardPayment(paymentRepositories, gateway, clock),
+        ),
+        paymentWebhook: new HandlePaymentWebhookController(
+          new HandlePaymentWebhook(paymentRepositories, gateway, appointmentEmails, clock),
+        ),
+        recordCashPayment: new RecordCashPaymentController(
+          new RecordCashPayment(paymentRepositories, gateway, appointmentEmails, clock),
+        ),
+        refundPayment: new RefundPaymentController(
+          new RefundPayment(paymentRepositories, gateway, appointmentEmails),
+        ),
+        listPayments: new ListPaymentsController(new ListPayments(payments)),
+        exportPayments: new ExportPaymentsController(new ExportPayments(payments), clock),
+        listMyPayments: new ListMyPaymentsController(new ListMyPayments(payments)),
+        getAppointmentResults: new GetAppointmentResultsController(
+          new GetAppointmentResults(resultRepositories),
+        ),
+        uploadTestResult: new UploadTestResultController(
+          new UploadTestResult(resultRepositories, privateFiles),
+        ),
+        deleteTestResult: new DeleteTestResultController(
+          new DeleteTestResult(resultRepositories, privateFiles),
+        ),
+        releaseResults: new ReleaseResultsController(
+          new ReleaseResults(resultRepositories, appointmentEmails, clock),
+        ),
+        openResultFile: new OpenResultFileController(
+          new OpenResultFile(resultRepositories, privateFiles),
+        ),
+        listReviewQueue: new ListReviewQueueController(new ListReviewQueue(results)),
+        listMyResults: new ListMyResultsController(new ListMyResults(results)),
+        listAuditLog: new ListAuditLogController(new ListAuditLog(auditLog)),
+        getDashboard: new GetDashboardController(
+          new GetDashboard(new DrizzleDashboardQueries(db), teams, clock),
+        ),
+      },
+      new RecordAuditEntry(auditLog, clock),
+    ),
     middlewares: {
       authenticate: new Authenticate(authenticateRequest),
       authenticateAllowingPasswordChange: new Authenticate(authenticateRequest, {
