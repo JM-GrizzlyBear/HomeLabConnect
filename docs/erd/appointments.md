@@ -101,3 +101,21 @@ erDiagram
 - **Return visits:** after a visit that wasn't collected, or one where some tests were missed, the visit's team (`visits.schedule_return`) or staff (`appointments.assign`) book a return visit at an open time: a new **confirmed** appointment for the missed tests only, at ₱0, linked both ways (`return_of_id`), given to the same team when it's free.
 - **Daily route:** a team's visits for a day, ordered by `route_position` (set when an admin with `routes.manage` reorders them), then by time. The med team (`routes.view`) sees its own route, with an "Open in Maps" link per stop; My Visits uses the same order.
 - `turbo run db:seed` adds four sample bookings (patient01–03) on an empty database; the confirmed one goes to Team Makati.
+
+## Visit ratings
+
+```mermaid
+erDiagram
+    appointments ||--o| appointment_reviews : "rated in"
+
+    appointment_reviews {
+        uuid appointment_id PK, FK "one per visit; deleted with it"
+        uuid patient_user_id FK
+        smallint rating "1-5"
+        text comment "optional, up to 500 characters"
+        timestamptz created_at
+    }
+```
+
+- Only the visit's patient rates it (`appointments.review`), once, after it's collected or not collected. Staff who see every appointment see the rating; Reports → Bookings & visits shows the average.
+- `turbo run db:seed` also adds a month of past visits with payments, a refund and ratings, today's route for Team Makati, three support tickets and a few notifications, once, on a database without ratings or tickets.

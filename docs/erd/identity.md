@@ -59,3 +59,22 @@ erDiagram
 - If the email can't be sent, the account change is kept and the API returns the temporary password to the admin once, so they can hand it over in person.
 - Deactivating an account (`is_active = false`) revokes all of its sessions at once. Admins can't deactivate themselves. Reactivating lets the user sign in again.
 - Names and phone live on `users` because every role has them. `patients` and `employees` hold only role-specific fields.
+
+## Password resets
+
+```mermaid
+erDiagram
+    users ||--o{ password_resets : "asked for"
+
+    password_resets {
+        uuid id PK
+        uuid user_id FK "deleted with the user"
+        text token_hash "SHA-256 of the emailed token, unique; the token itself is never stored"
+        timestamptz expires_at "1 hour after asking"
+        timestamptz used_at "set once; a link works once"
+        timestamptz created_at
+    }
+```
+
+- "Forgot password?" answers the same whether or not the email has an account, and sends nothing to inactive accounts. It is limited to 5 requests per IP per 15 minutes.
+- Resetting stores the new hash, clears a pending temporary password, and signs out every browser of that user.

@@ -7,6 +7,64 @@ Patients pay online with **Stripe** (card) or in **cash** when the team arrives.
 > - Full system documentation: [docs/SYSTEM.md](docs/SYSTEM.md)
 > - Backend architecture (Clean Architecture): [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
+![Sign-in page](docs/screenshots/login.png)
+
+## Try it
+
+After `turbo run db:seed` (see [Getting started](#getting-started)), sign in with any of these. The password for all of them is `Password123`.
+
+| Role     | Email                                             | Start with                                                   |
+| -------- | ------------------------------------------------- | ------------------------------------------------------------ |
+| Admin    | `admin@homelabconnect.local`                      | Dashboard, **Users → Reports**, **Audit Logs**               |
+| Doctor   | `doctor@homelabconnect.local`                     | **Results → Review Queue**                                   |
+| Med team | `medteam@homelabconnect.local`                    | **Appointments → My Visits** (today's route for Team Makati) |
+| Support  | `support@homelabconnect.local`                    | **Support → Ticket Queue**, pending bookings                 |
+| Patient  | `patient01@homelabconnect.local` (to `patient20`) | **Book a Visit**, **My Tickets**, **My Results**             |
+
+The seed adds a month of past visits with payments, a refund and ratings, today's route, three support tickets and a few notifications, so every dashboard and report has something to show.
+
+## What each role can do
+
+- **Patient:**
+  - book a home visit (live prices and open slots);
+  - pay by card (Stripe) or cash at the door;
+  - view and download results once paid;
+  - rate the visit;
+  - chat with support on a ticket;
+  - get notified of every change;
+  - reset a forgotten password.
+- **Med team:**
+  - today's visits and route;
+  - record "on the way", collected tests or why not;
+  - take cash;
+  - add notes and photos;
+  - schedule return visits for missed tests;
+  - their shifts and leave.
+- **Doctor:**
+  - the review queue;
+  - upload a PDF or photo per collected test;
+  - release results to the patient (held until paid).
+- **Support:**
+  - accept or reject bookings and propose new times;
+  - the ticket queue, with tickets auto-assigned to whoever is on shift;
+  - real-time chat with the patient beside their visit and payment.
+- **Admin:**
+  - everything above, plus staff accounts, roles and per-person permissions;
+  - the catalog and promotions;
+  - shifts, teams and leave;
+  - settings and closed days;
+  - refunds;
+  - reports with CSV export;
+  - the audit log.
+
+| Patient                                                      | Med team and doctor                                       |
+| ------------------------------------------------------------ | --------------------------------------------------------- |
+| ![Patient dashboard](docs/screenshots/patient-dashboard.png) | ![My Visits](docs/screenshots/medteam-visits.png)         |
+| ![Booking a visit](docs/screenshots/patient-book-visit.png)  | ![Review queue](docs/screenshots/doctor-review-queue.png) |
+| **Support**                                                  | **Admin**                                                 |
+| ![Ticket queue](docs/screenshots/support-ticket-queue.png)   | ![Admin dashboard](docs/screenshots/admin-dashboard.png)  |
+| ![Patient tickets](docs/screenshots/patient-tickets.png)     | ![Reports](docs/screenshots/admin-reports.png)            |
+
 ## Tech stack
 
 | Layer          | Technology                                                   |
