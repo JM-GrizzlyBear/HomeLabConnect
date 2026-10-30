@@ -61,6 +61,7 @@ export const reportSchema = z.discriminatedUnion("kind", [
     rows: z.array(bookingsRowSchema),
     totals: bookingsRowSchema.omit({ period: true }),
     topReasons: z.array(z.object({ reason: z.string(), count: z.number().int() })),
+    ratings: z.object({ average: z.number().nullable(), count: z.number().int() }),
   }),
   z.object({
     kind: z.literal("tests"),

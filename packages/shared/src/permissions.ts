@@ -244,6 +244,8 @@ export const defaultBaseGrants: Record<
     "leave.request",
     "holidays.view",
     "appointments.view_all",
+    "appointments.accept",
+    "appointments.reject",
     "appointments.reschedule",
     "notes.view",
     "payments.view_all",

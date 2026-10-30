@@ -42,6 +42,22 @@ export const changePasswordRequestSchema = z.object({
   newPassword: passwordSchema,
 });
 
+/** "Forgot password?": the email to send a reset link to. */
+export const forgotPasswordRequestSchema = z.object({ email: emailSchema });
+
+export const resetPasswordRequestSchema = z.object({
+  token: z.string().min(20, "This link isn't complete. Open it from the email again.").max(200),
+  newPassword: passwordSchema,
+});
+
+/** The reset form: a new password and its confirmation (the token comes from the link). */
+export const resetPasswordFormSchema = z
+  .object({ newPassword: passwordSchema, confirmPassword: z.string() })
+  .refine((form) => form.confirmPassword === form.newPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
 /** The change-password form: the request plus a confirmation that never leaves the browser. */
 export const changePasswordFormSchema = changePasswordRequestSchema
   .extend({ confirmPassword: z.string() })
