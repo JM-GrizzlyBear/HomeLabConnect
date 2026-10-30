@@ -18,6 +18,20 @@ import type {
   SetTicketPriorityController,
 } from "../../interface/http/controllers/ManageTicketControllers.js";
 import { Router } from "express";
+import type {
+  ExportUsersController,
+  GetUserPermissionsController,
+  SetUserOverridesController,
+  UpdateUserController,
+} from "../../interface/http/controllers/UserAdminControllers.js";
+import type {
+  GetAppointmentReviewController,
+  ReviewAppointmentController,
+} from "../../interface/http/controllers/AppointmentReviewControllers.js";
+import type {
+  RequestPasswordResetController,
+  ResetPasswordController,
+} from "../../interface/http/controllers/PasswordResetControllers.js";
 import type { RunReportController } from "../../interface/http/controllers/RunReportController.js";
 import type { ListSavedReportsController } from "../../interface/http/controllers/ListSavedReportsController.js";
 import type { SaveReportController } from "../../interface/http/controllers/SaveReportController.js";
@@ -236,6 +250,14 @@ interface ControllerTypes {
   setTicketPriority: SetTicketPriorityController;
   closeTicket: CloseTicketController;
   rateTicket: RateTicketController;
+  requestPasswordReset: RequestPasswordResetController;
+  resetPassword: ResetPasswordController;
+  getAppointmentReview: GetAppointmentReviewController;
+  reviewAppointment: ReviewAppointmentController;
+  updateUser: UpdateUserController;
+  exportUsers: ExportUsersController;
+  getUserPermissions: GetUserPermissionsController;
+  setUserOverrides: SetUserOverridesController;
   listNotifications: ListNotificationsController;
   markNotificationRead: MarkNotificationReadController;
   markAllNotificationsRead: MarkAllNotificationsReadController;
@@ -266,12 +288,33 @@ function passwordRateLimit() {
   });
 }
 
+/** Limits "Forgot password?" emails: 5 per IP per 15 minutes, answered or not. */
+function resetEmailRateLimit() {
+  return rateLimit({
+    windowMs: 15 * 60_000,
+    limit: 5,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    handler: (_req, res) => {
+      res.status(429).json({
+        error: { code: "too_many_requests", message: "Too many attempts. Try again later." },
+      });
+    },
+  });
+}
+
 export function createRouter(controllers: Controllers, middlewares: Middlewares): Router {
   const router = Router();
   router.get("/health", adapt(controllers.health));
 
   router.post("/auth/register", adapt(controllers.registerPatient));
   router.post("/auth/login", passwordRateLimit(), adapt(controllers.login));
+  router.post(
+    "/auth/forgot-password",
+    resetEmailRateLimit(),
+    adapt(controllers.requestPasswordReset),
+  );
+  router.post("/auth/reset-password", passwordRateLimit(), adapt(controllers.resetPassword));
   router.post(
     "/auth/logout",
     adapt(controllers.logout, middlewares.authenticateAllowingPasswordChange),
@@ -300,6 +343,16 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
     new RequirePermission(permission),
   ];
   router.get("/users", adapt(controllers.listUsers, ...can("users.view")));
+  router.get("/users/export", adapt(controllers.exportUsers, ...can("users.export")));
+  router.patch("/users/:id", adapt(controllers.updateUser, ...can("users.update")));
+  router.get(
+    "/users/:id/permissions",
+    adapt(controllers.getUserPermissions, ...can("permissions.view")),
+  );
+  router.put(
+    "/users/:id/permissions",
+    adapt(controllers.setUserOverrides, ...can("permissions.override")),
+  );
   router.post("/users/staff", adapt(controllers.createStaffAccount, ...can("users.create")));
   router.patch("/users/:id/status", adapt(controllers.setUserActive, ...can("users.deactivate")));
   router.post(
@@ -565,6 +618,15 @@ export function createRouter(controllers: Controllers, middlewares: Middlewares)
   router.post(
     "/notifications/:id/read",
     adapt(controllers.markNotificationRead, middlewares.authenticate),
+  );
+
+  router.get(
+    "/appointments/:id/review",
+    adapt(controllers.getAppointmentReview, middlewares.authenticate),
+  );
+  router.post(
+    "/appointments/:id/review",
+    adapt(controllers.reviewAppointment, ...can("appointments.review")),
   );
 
   return router;

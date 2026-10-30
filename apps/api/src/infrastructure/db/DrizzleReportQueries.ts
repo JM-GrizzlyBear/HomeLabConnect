@@ -121,6 +121,18 @@ export class DrizzleReportQueries implements ReportQueries {
     return rows.map((row) => ({ reason: row.reason, count: Number(row.count) }));
   }
 
+  async ratings(range: ReportRange): Promise<{ average: number | null; count: number }> {
+    const [row] = await this.rows<{ average: string | null; count: string }>(sql`
+      select round(avg(r.rating)::numeric, 1) as average, count(*) as count
+      from appointment_reviews r
+      join appointments a on a.id = r.appointment_id
+      where ${inRange(day(sql`a.created_at`), range)}`);
+    return {
+      average: row?.average == null ? null : Number(row.average),
+      count: Number(row?.count ?? 0),
+    };
+  }
+
   async tests(range: ReportRange): Promise<TestRow[]> {
     const rows = await this.rows<{
       code: string;

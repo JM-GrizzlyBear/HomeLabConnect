@@ -1,6 +1,7 @@
 import type { Transporter } from "nodemailer";
 import type {
   AccountEmails,
+  PasswordResetEmail,
   TemporaryPasswordEmail,
 } from "../../application/ports/AccountEmails.js";
 import { createMailTransport, escapeHtml, type MailOptions } from "./mailTransport.js";
@@ -61,7 +62,32 @@ export class NodemailerAccountEmails implements AccountEmails {
       <p><a href="${escapeHtml(loginUrl)}">Sign in</a> and choose a new password.</p>
       <p>This temporary password expires on <strong>${escapeHtml(expiry)}</strong>.
       After that, ask an admin to send you a new one.</p>`;
+    await this.send(to, subject, text, html);
+  }
 
+  async sendPasswordReset({ to, firstName, token, expiresAt }: PasswordResetEmail): Promise<void> {
+    const url = new URL("/reset-password", this.options.appUrl);
+    url.searchParams.set("token", token);
+    const link = url.toString();
+    const expiry = expiryFormat.format(expiresAt);
+    const text = [
+      `Hi ${firstName},`,
+      "",
+      "Someone asked to reset the password for this account. To choose a new one, open:",
+      link,
+      "",
+      `The link works once, until ${expiry}. If you didn't ask, ignore this email: your password stays the same.`,
+    ].join("\n");
+    const html = `
+      <p>Hi ${escapeHtml(firstName)},</p>
+      <p>Someone asked to reset the password for this account.</p>
+      <p><a href="${escapeHtml(link)}">Choose a new password</a></p>
+      <p>The link works once, until <strong>${escapeHtml(expiry)}</strong>.
+      If you didn't ask, ignore this email: your password stays the same.</p>`;
+    await this.send(to, "Reset your HomeLabConnect password", text, html);
+  }
+
+  private async send(to: string, subject: string, text: string, html: string): Promise<void> {
     try {
       await this.transport.sendMail({ from: this.options.from, to, subject, text, html });
     } catch (error) {

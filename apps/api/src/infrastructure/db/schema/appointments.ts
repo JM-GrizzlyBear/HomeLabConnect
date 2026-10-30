@@ -170,3 +170,16 @@ export const appointmentAttachments = pgTable(
   },
   (table) => [index("appointment_attachments_note_idx").on(table.noteId)],
 );
+
+/** The patient's 1–5 rating of a finished visit, given once. */
+export const appointmentReviews = pgTable("appointment_reviews", {
+  appointmentId: uuid("appointment_id")
+    .primaryKey()
+    .references(() => appointments.id, { onDelete: "cascade" }),
+  patientUserId: uuid("patient_user_id")
+    .notNull()
+    .references(() => users.id),
+  rating: smallint("rating").notNull(),
+  comment: text("comment"),
+  createdAt: timestamptz("created_at").notNull(),
+});

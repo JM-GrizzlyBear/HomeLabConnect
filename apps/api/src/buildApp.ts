@@ -289,6 +289,35 @@ import {
   MarkNotificationReadController,
 } from "./interface/http/controllers/NotificationControllers.js";
 
+import { RequestPasswordReset, ResetPassword } from "./application/identity/PasswordReset.js";
+import type { SecretTokens } from "./application/ports/SecretTokens.js";
+import { CryptoSecretTokens } from "./infrastructure/auth/CryptoSecretTokens.js";
+import { DrizzlePasswordResetRepository } from "./infrastructure/db/DrizzlePasswordResetRepository.js";
+import {
+  RequestPasswordResetController,
+  ResetPasswordController,
+} from "./interface/http/controllers/PasswordResetControllers.js";
+
+import {
+  GetAppointmentReview,
+  ReviewAppointment,
+} from "./application/appointments/ReviewAppointment.js";
+import { DrizzleReviewRepository } from "./infrastructure/db/DrizzleReviewRepository.js";
+import {
+  GetAppointmentReviewController,
+  ReviewAppointmentController,
+} from "./interface/http/controllers/AppointmentReviewControllers.js";
+
+import { GetUserPermissions, SetUserOverrides } from "./application/access/UserPermissions.js";
+import { UpdateUser } from "./application/identity/UpdateUser.js";
+import { DrizzleOverrideRepository } from "./infrastructure/db/DrizzleOverrideRepository.js";
+import {
+  ExportUsersController,
+  GetUserPermissionsController,
+  SetUserOverridesController,
+  UpdateUserController,
+} from "./interface/http/controllers/UserAdminControllers.js";
+
 export interface BuildAppOptions {
   db: Database;
   /** The same connection pool as `db`; express-session keeps its sessions through it. */
@@ -317,6 +346,8 @@ export interface BuildAppOptions {
   auditLog?: AuditLog;
   /** Tests swap it to see the health check report a database outage. */
   healthProbe?: DatabaseHealthProbe;
+  /** Tokens for emailed links (password reset); random unless a test passes its own. */
+  secretTokens?: SecretTokens;
   /** Live events to browsers (/api/events); tests pass their own to watch what is sent. */
   events?: SseHub;
 }
@@ -348,6 +379,8 @@ export function buildApp(options: BuildAppOptions) {
   const { paymentGateway: gateway } = options;
   const events = options.events ?? new SseHub();
   const notifications = new DrizzleNotificationRepository(db);
+  const passwordResets = new DrizzlePasswordResetRepository(db);
+  const reviews = new DrizzleReviewRepository(db);
   const notifier = new Notifier(notifications, staff, events, clock);
   // Every email to a patient about their visit also lands in their bell
   const appointmentEmails = new NotifyingAppointmentEmails(options.appointmentEmails, notifier);
@@ -633,6 +666,32 @@ export function buildApp(options: BuildAppOptions) {
         ),
         markAllNotificationsRead: new MarkAllNotificationsReadController(
           new MarkAllNotificationsRead(notifications, clock),
+        ),
+        requestPasswordReset: new RequestPasswordResetController(
+          new RequestPasswordReset(
+            users,
+            passwordResets,
+            options.secretTokens ?? new CryptoSecretTokens(),
+            accountEmails,
+            clock,
+          ),
+        ),
+        resetPassword: new ResetPasswordController(
+          new ResetPassword(users, passwordResets, sessions, hasher, clock),
+        ),
+        getAppointmentReview: new GetAppointmentReviewController(
+          new GetAppointmentReview(appointments, reviews),
+        ),
+        reviewAppointment: new ReviewAppointmentController(
+          new ReviewAppointment(appointments, reviews, clock),
+        ),
+        updateUser: new UpdateUserController(new UpdateUser(users)),
+        exportUsers: new ExportUsersController(new ListUsers(users), clock),
+        getUserPermissions: new GetUserPermissionsController(
+          new GetUserPermissions(users, access, clock),
+        ),
+        setUserOverrides: new SetUserOverridesController(
+          new SetUserOverrides(users, access, new DrizzleOverrideRepository(db), clock),
         ),
         getDashboard: new GetDashboardController(
           new GetDashboard(new DrizzleDashboardQueries(db), teams, clock),

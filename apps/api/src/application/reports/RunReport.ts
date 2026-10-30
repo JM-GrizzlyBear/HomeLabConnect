@@ -37,6 +37,8 @@ export type ReportOutput =
       rows: BookingsReportRow[];
       totals: Omit<BookingsReportRow, "period">;
       topReasons: { reason: string; count: number }[];
+      /** Patients' ratings of these visits: the average (1–5) and how many rated. */
+      ratings: { average: number | null; count: number };
     }
   | {
       kind: "tests";
@@ -99,9 +101,10 @@ export class RunReport {
   }
 
   private async bookings(range: ReportRange, period: ReportPeriod): Promise<ReportOutput> {
-    const [byPeriod, topReasons] = await Promise.all([
+    const [byPeriod, topReasons, ratings] = await Promise.all([
       this.queries.bookings(range, period),
       this.queries.topReasons(range, 5),
+      this.queries.ratings(range),
     ]);
     const withRate = (row: BookingsRow) => ({
       ...row,
@@ -112,7 +115,7 @@ export class RunReport {
       ...withRate(byPeriod.get(key) ?? EMPTY_BOOKINGS),
     }));
     const totals = withRate(sumRows([...byPeriod.values()], EMPTY_BOOKINGS));
-    return { kind: "bookings", range, period, rows, totals, topReasons };
+    return { kind: "bookings", range, period, rows, totals, topReasons, ratings };
   }
 
   private async tests(range: ReportRange): Promise<ReportOutput> {

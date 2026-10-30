@@ -38,6 +38,8 @@ export interface ReportQueries {
   bookings(range: ReportRange, period: ReportPeriod): Promise<Map<string, BookingsRow>>;
   /** The most common reasons visits were rejected or cancelled, booked in the range. */
   topReasons(range: ReportRange, limit: number): Promise<{ reason: string; count: number }[]>;
+  /** Patients' ratings of visits booked in the range: the average (1–5) and how many. */
+  ratings(range: ReportRange): Promise<{ average: number | null; count: number }>;
   /** Each test ordered on visits booked in the range. */
   tests(range: ReportRange): Promise<TestRow[]>;
 }
