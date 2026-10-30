@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { LogoMark, TestTubeIcon } from "./icons";
 
-// TODO: replace the placeholder hero image with the real photo/illustration.
-const HERO_IMAGE = "/images/auth-hero-placeholder.svg";
+/** A med tech with a sample kit arriving at a patient's door. */
+const HERO_IMAGE = "/images/home-visit.svg";
 
 interface AuthLayoutProps {
   title: string;

@@ -43,6 +43,8 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { ShiftsPage } from "./pages/ShiftsPage";
 import { TeamsPage } from "./pages/TeamsPage";
 import { UsersPage } from "./pages/UsersPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 
 export const routes: RouteObject[] = [
   { path: "/", element: <HomePage /> },
@@ -59,6 +61,22 @@ export const routes: RouteObject[] = [
     element: (
       <GuestOnly>
         <RegisterPage />
+      </GuestOnly>
+    ),
+  },
+  {
+    path: "/forgot-password",
+    element: (
+      <GuestOnly>
+        <ForgotPasswordPage />
+      </GuestOnly>
+    ),
+  },
+  {
+    path: "/reset-password",
+    element: (
+      <GuestOnly>
+        <ResetPasswordPage />
       </GuestOnly>
     ),
   },

@@ -1,7 +1,10 @@
 import type { BaseRole, UserStatus, UserSummary } from "@homelabconnect/shared";
 import {
   CircleAlertIcon,
+  DownloadIcon,
   KeyRoundIcon,
+  ListChecksIcon,
+  PencilIcon,
   SearchIcon,
   ShieldIcon,
   UserCheckIcon,
@@ -11,6 +14,8 @@ import { type SubmitEvent, useState } from "react";
 import { Link } from "react-router";
 import { ActionsMenu } from "@/components/ActionsMenu";
 import { ChangeRoleDialog } from "@/components/access/ChangeRoleDialog";
+import { EditUserDialog } from "@/components/access/EditUserDialog";
+import { UserPermissionsSheet } from "@/components/access/UserPermissionsSheet";
 import { EmptyState } from "@/components/data/EmptyState";
 import { TablePagination } from "@/components/data/TablePagination";
 import { SelectInputField } from "@/components/form/SelectInputField";
@@ -30,7 +35,7 @@ import {
 import { ApiError } from "../api/apiClient";
 import { queryKeys } from "../queries/queryKeys";
 import { useApiQuery } from "../queries/useApiQuery";
-import { fetchUsers, reissueTemporaryPassword, setUserStatus } from "../api/users";
+import { fetchUsers, reissueTemporaryPassword, setUserStatus, usersExportUrl } from "../api/users";
 import { useAuth } from "../auth/authContext";
 import { useCan } from "../auth/useCan";
 import { roleLabels } from "../auth/roleLabels";
@@ -90,6 +95,8 @@ export function UsersPage() {
     { errorMessage: "Could not load users. Try again." },
   );
   const [changingRole, setChangingRole] = useState<UserSummary | null>(null);
+  const [editing, setEditing] = useState<UserSummary | null>(null);
+  const [viewingPermissions, setViewingPermissions] = useState<UserSummary | null>(null);
 
   function applySearch(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -158,11 +165,28 @@ export function UsersPage() {
       <PageHeader
         title="All Users"
         action={
-          can("users.create") && (
-            <Button asChild>
-              <Link to="/app/users/new">Create staff</Link>
-            </Button>
-          )
+          <div className="flex flex-wrap gap-2">
+            {can("users.export") && (
+              <Button asChild variant="outline">
+                <a
+                  href={usersExportUrl({
+                    q: filters.q || undefined,
+                    role: filters.role === ALL ? undefined : filters.role,
+                    status: filters.status === ALL ? undefined : filters.status,
+                  })}
+                  download
+                >
+                  <DownloadIcon />
+                  Export CSV
+                </a>
+              </Button>
+            )}
+            {can("users.create") && (
+              <Button asChild>
+                <Link to="/app/users/new">Create staff</Link>
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -262,6 +286,18 @@ export function UsersPage() {
                               label={`Actions for ${row.firstName} ${row.lastName}`}
                               items={[
                                 {
+                                  label: "Edit details",
+                                  icon: <PencilIcon />,
+                                  hidden: !can("users.update"),
+                                  onSelect: () => setEditing(row),
+                                },
+                                {
+                                  label: "Permissions",
+                                  icon: <ListChecksIcon />,
+                                  hidden: !can("permissions.view"),
+                                  onSelect: () => setViewingPermissions(row),
+                                },
+                                {
                                   label: "Change role",
                                   icon: <ShieldIcon />,
                                   hidden: !can("roles.assign") || !can("roles.view"),
@@ -318,6 +354,8 @@ export function UsersPage() {
         onClose={() => setChangingRole(null)}
         onChanged={reload}
       />
+      <EditUserDialog user={editing} onClose={() => setEditing(null)} onSaved={reload} />
+      <UserPermissionsSheet user={viewingPermissions} onClose={() => setViewingPermissions(null)} />
     </>
   );
 }

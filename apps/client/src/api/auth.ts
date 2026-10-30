@@ -36,3 +36,12 @@ export async function changePassword(request: ChangePasswordRequest): Promise<Se
 export async function logout(): Promise<void> {
   await apiRequest("/auth/logout", { method: "POST" });
 }
+
+/** Always succeeds (204), whether or not the email has an account. */
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiRequest("/auth/forgot-password", { method: "POST", body: { email } });
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await apiRequest("/auth/reset-password", { method: "POST", body: { token, newPassword } });
+}
