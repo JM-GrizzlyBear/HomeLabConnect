@@ -18,6 +18,9 @@ import {
   routeTeamsSchema,
   type TeamChoice,
   teamChoicesSchema,
+  type AppointmentReviewView,
+  appointmentReviewSchema,
+  type ReviewAppointmentRequest,
 } from "@homelabconnect/shared";
 import { apiRequest } from "./apiClient";
 
@@ -186,4 +189,18 @@ export async function reorderRoute(
   return myAppointmentsSchema.parse(
     await apiRequest("/routes", { method: "PUT", body: { teamId, date, appointmentIds } }),
   );
+}
+
+export async function fetchAppointmentReview(
+  id: string,
+  signal?: AbortSignal,
+): Promise<AppointmentReviewView> {
+  return appointmentReviewSchema.parse(await apiRequest(`/appointments/${id}/review`, { signal }));
+}
+
+export async function reviewAppointment(
+  id: string,
+  review: ReviewAppointmentRequest,
+): Promise<void> {
+  await apiRequest(`/appointments/${id}/review`, { method: "POST", body: review });
 }

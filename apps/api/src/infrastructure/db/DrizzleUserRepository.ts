@@ -208,6 +208,18 @@ export class DrizzleUserRepository implements UserRepository {
       .where(eq(users.id, userId));
   }
 
+  async updateAccount(
+    userId: string,
+    changes: { firstName: string; lastName: string; phone: string | null; email: string },
+  ): Promise<void> {
+    try {
+      await this.db.update(users).set(changes).where(eq(users.id, userId));
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new EmailAlreadyTaken();
+      throw error;
+    }
+  }
+
   async updateProfile(userId: string, changes: ProfileChanges): Promise<void> {
     await this.db.transaction(async (tx) => {
       await tx

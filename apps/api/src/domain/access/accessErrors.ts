@@ -45,3 +45,19 @@ export class CannotChangeOwnRole extends DomainError {
     super("You can't change your own role.", "cannot_change_own_role");
   }
 }
+
+/** Admins can't override their own permissions (they could lock themselves out). */
+export class CannotOverrideOwnPermissions extends DomainError {
+  readonly kind = "validation";
+  constructor() {
+    super("You can't change your own permissions.", "cannot_override_own_permissions");
+  }
+}
+
+/** An override that can't apply: an admin target, an unknown permission or a past end date. */
+export class InvalidOverride extends DomainError {
+  readonly kind = "validation";
+  constructor(message: string) {
+    super(message, "invalid_override");
+  }
+}

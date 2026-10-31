@@ -176,6 +176,13 @@
       "when": 1793289029221,
       "tag": "0024_kind_wong",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793374715271,
+      "tag": "0025_chemical_mauler",
+      "breakpoints": true
     }
   ]
 }

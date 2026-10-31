@@ -261,3 +261,20 @@ export type Quote = z.infer<typeof quoteSchema>;
 export type AppointmentView = z.infer<typeof appointmentSchema>;
 export type AppointmentList = z.infer<typeof appointmentListSchema>;
 export type ProposeTimeRequest = z.infer<typeof proposeTimeRequestSchema>;
+
+/** The patient's rating of a finished visit; null until they give one. */
+export const appointmentReviewSchema = z
+  .object({
+    rating: z.number().int(),
+    comment: z.string().nullable(),
+    createdAt: z.iso.datetime(),
+  })
+  .nullable();
+
+export const reviewAppointmentRequestSchema = z.object({
+  rating: z.number().int().min(1, "Choose 1 to 5 stars.").max(5, "Choose 1 to 5 stars."),
+  comment: z.string().trim().max(500, "Keep the comment under 500 characters.").nullable(),
+});
+
+export type AppointmentReviewView = z.infer<typeof appointmentReviewSchema>;
+export type ReviewAppointmentRequest = z.infer<typeof reviewAppointmentRequestSchema>;

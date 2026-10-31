@@ -73,6 +73,44 @@ export const setUserStatusRequestSchema = z.object({
   isActive: z.boolean(),
 });
 
+/** An admin corrects someone's details. Patients must keep a phone number. */
+export const updateUserRequestSchema = z.object({
+  firstName: firstNameSchema,
+  lastName: lastNameSchema,
+  email: emailSchema,
+  phone: phoneSchema.nullable(),
+});
+
+/** One person's override of one permission, optionally until a date. */
+export const permissionOverrideSchema = z.object({
+  key: z.string(),
+  effect: z.enum(["grant", "deny"]),
+  /** "YYYY-MM-DD": works through that day (Philippine time); null for no end. */
+  until: z.iso.date("Enter a valid date.").nullable(),
+});
+
+/** What one person may do, and why: each permission's result and where it came from. */
+export const userPermissionsSchema = z.object({
+  userId: z.uuid(),
+  name: z.string(),
+  role: baseRoleSchema,
+  customRole: z.string().nullable(),
+  permissions: z.array(
+    z.object({
+      key: z.string(),
+      /** What their role alone (base or custom) would decide. */
+      inherited: z.boolean(),
+      granted: z.boolean(),
+      source: z.enum(["override", "custom_role", "base_role", "none"]),
+    }),
+  ),
+  overrides: z.array(permissionOverrideSchema),
+});
+
+export const setUserOverridesRequestSchema = z.object({
+  overrides: z.array(permissionOverrideSchema).max(200),
+});
+
 /** The `:id` in /users/:id/... routes. */
 export const userIdParamsSchema = z.object({
   id: z.uuid("Not a valid user id."),
@@ -86,3 +124,6 @@ export type ListUsersQuery = z.input<typeof listUsersQuerySchema>;
 export type UserSummary = z.infer<typeof userSummarySchema>;
 export type UserList = z.infer<typeof userListSchema>;
 export type SetUserStatusRequest = z.infer<typeof setUserStatusRequestSchema>;
+export type UpdateUserRequest = z.infer<typeof updateUserRequestSchema>;
+export type PermissionOverrideView = z.infer<typeof permissionOverrideSchema>;
+export type UserPermissions = z.infer<typeof userPermissionsSchema>;

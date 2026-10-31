@@ -26,9 +26,33 @@ const AUDITED: Record<string, [action: string, options?: AuditOptions]> = {
   ],
   logout: ["auth.logout", { describe: () => null }],
   changePassword: ["auth.password_changed", { describe: () => null }],
+  requestPasswordReset: ["auth.password_reset_requested", { describe: emailTried }],
+  resetPassword: [
+    "auth.password_reset",
+    {
+      target: "user",
+      actor: (_request, response) => text(bodyOf(response?.body).userId),
+      describe: () => null,
+    },
+  ],
   // Users and roles
   createStaffAccount: ["users.create", { target: "user" }],
   setUserActive: ["users.set_active", { target: "user" }],
+  updateUser: ["users.update", { target: "user" }],
+  setUserOverrides: [
+    "permissions.override",
+    {
+      target: "user",
+      describe: (request) => {
+        const overrides = bodyOf(request.body).overrides;
+        if (!Array.isArray(overrides)) return null;
+        const list = overrides
+          .map((entry) => `${text(bodyOf(entry).effect)} ${text(bodyOf(entry).key)}`)
+          .join(", ");
+        return list.slice(0, 300) || "cleared all overrides";
+      },
+    },
+  ],
   reissueTemporaryPassword: ["users.reissue_password", { target: "user" }],
   assignCustomRole: ["users.assign_role", { target: "user" }],
   createCustomRole: ["roles.create", { target: "role" }],

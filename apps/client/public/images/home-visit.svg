@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 460" fill="none">
+  <title>A med tech with a sample kit arriving at a patient's door</title>
+
+  <!-- House front -->
+  <path d="M206 120 300 64l94 56v340H206Z" fill="#effaf3" />
+  <path d="M196 126 300 62l104 64" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+  <rect x="240" y="226" width="78" height="234" rx="8" fill="#1b7f53" />
+  <rect x="252" y="240" width="54" height="80" rx="6" fill="#289d68" />
+  <rect x="252" y="332" width="54" height="80" rx="6" fill="#289d68" />
+  <circle cx="300" cy="340" r="5" fill="#d7f3e1" />
+  <rect x="226" y="140" width="52" height="52" rx="6" fill="#ffffff" />
+  <path d="M252 140v52M226 166h52" stroke="#b1e6c7" stroke-width="4" />
+  <!-- Door step and plant -->
+  <rect x="226" y="452" width="106" height="8" rx="3" fill="#145139" />
+  <path d="M346 452c-4-26 6-44 14-54-2 20 0 36-6 54Z" fill="#4bb983" />
+  <path d="M338 452c-10-18-8-34-2-44 4 16 8 28 8 44Z" fill="#7fd3a6" />
+
+  <!-- Legs -->
+  <path d="M98 330h30l-4 122h-26Z" fill="#145139" />
+  <path d="M134 330h30l2 122h-26Z" fill="#114330" />
+  <path d="M94 448h34v12H88c0-7 2-12 6-12ZM136 448h34c4 0 6 5 6 12h-40Z" fill="#08261b" />
+
+  <!-- Body: scrubs -->
+  <path d="M90 214c0-24 18-40 42-40s42 16 42 40v124H90Z" fill="#ffffff" />
+  <path d="M110 178l22 30 22-30" stroke="#b1e6c7" stroke-width="6" stroke-linejoin="round" />
+  <rect x="140" y="236" width="22" height="16" rx="3" fill="#d7f3e1" />
+  <path d="M146 244h10M151 239v10" stroke="#1b7f53" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Arm holding the kit -->
+  <path d="M168 210c14 8 22 34 24 70" stroke="#ffffff" stroke-width="20" stroke-linecap="round" />
+  <path d="M96 214c-14 12-18 42-14 72" stroke="#ffffff" stroke-width="20" stroke-linecap="round" />
+  <circle cx="192" cy="284" r="10" fill="#c98b62" />
+  <circle cx="82" cy="290" r="10" fill="#c98b62" />
+
+  <!-- Sample kit -->
+  <rect x="166" y="290" width="62" height="46" rx="8" fill="#ffffff" stroke="#1b7f53" stroke-width="4" />
+  <path d="M184 290v-10a6 6 0 0 1 6-6h14a6 6 0 0 1 6 6v10" stroke="#1b7f53" stroke-width="4" />
+  <path d="M197 302v22M186 313h22" stroke="#289d68" stroke-width="6" stroke-linecap="round" />
+
+  <!-- Head -->
+  <rect x="122" y="152" width="20" height="26" rx="8" fill="#c98b62" />
+  <circle cx="132" cy="128" r="32" fill="#c98b62" />
+  <path d="M100 124c0-22 14-36 33-36 20 0 32 14 32 30-8-8-20-12-34-12s-24 6-31 18Z" fill="#2b1d16" />
+  <path d="M104 118c-4 10-4 24 2 34" stroke="#2b1d16" stroke-width="8" stroke-linecap="round" />
+  <circle cx="122" cy="132" r="3" fill="#2b1d16" />
+  <circle cx="144" cy="132" r="3" fill="#2b1d16" />
+  <path d="M124 146c6 5 14 5 20 0" stroke="#2b1d16" stroke-width="3" stroke-linecap="round" />
+  <!-- Mask hanging at the neck -->
+  <path d="M116 168c10 8 22 8 32 0" stroke="#7fd3a6" stroke-width="6" stroke-linecap="round" />
+
+  <!-- Map pin: the visit is here -->
+  <path d="M60 40c-16 0-28 12-28 28 0 22 28 50 28 50s28-28 28-50c0-16-12-28-28-28Z" fill="#ffffff" />
+  <circle cx="60" cy="68" r="10" fill="#289d68" />
+</svg>

@@ -21,9 +21,15 @@ export interface AuditEntry extends NewAuditEntry {
 
 /** The groups admins filter the log by, as action prefixes. */
 export const AUDIT_GROUPS = {
-  sign_ins: ["auth.login", "auth.logout", "auth.password_changed"],
+  sign_ins: [
+    "auth.login",
+    "auth.logout",
+    "auth.password_changed",
+    "auth.password_reset_requested",
+    "auth.password_reset",
+  ],
   failed_sign_ins: ["auth.login_failed"],
-  users: ["users.", "roles."],
+  users: ["users.", "roles.", "permissions."],
   settings: ["settings.", "closed_days."],
   catalog: ["procedures.", "categories.", "promotions."],
   scheduling: ["teams.", "shifts.", "leave."],

@@ -53,3 +53,23 @@ erDiagram
 - A custom role lists only the permissions it changes; everything else is inherited from its base role.
 - A user's custom role must be built on the user's base role. A custom role can't be deleted while `users.custom_role_id` points at it (`ON DELETE RESTRICT`).
 - The seed creates the _President_ and _Senior Med Tech_ roles once; admins' later edits to them are kept on re-seed.
+
+## Per-user overrides
+
+```mermaid
+erDiagram
+    users ||--o{ user_permission_overrides : "has"
+    permissions ||--o{ user_permission_overrides : "overridden in"
+
+    user_permission_overrides {
+        uuid user_id PK, FK "deleted with the user"
+        text permission_id PK, FK
+        text effect "grant | deny"
+        timestamptz expires_at "end of the chosen day (Philippine time); null for no end"
+        uuid granted_by FK "the admin who set it"
+        timestamptz created_at
+    }
+```
+
+- Checked first: user override → custom role → base role → deny. An expired override is ignored.
+- Saving replaces all of a person's overrides at once. Admins can't be overridden (they always have everything), and nobody overrides themselves.

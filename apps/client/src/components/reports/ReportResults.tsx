@@ -199,6 +199,15 @@ function BookingsResults({ report }: { report: Of<"bookings"> }) {
           total={["Total", ...counts(totals)]}
         />
       </ContentCard>
+      <ContentCard title="What patients said">
+        <p className="text-sm" aria-label="Average rating">
+          {report.ratings.count === 0
+            ? "No visits in this range have been rated yet."
+            : `${report.ratings.average} out of 5 stars, from ${report.ratings.count} ${
+                report.ratings.count === 1 ? "rating" : "ratings"
+              }.`}
+        </p>
+      </ContentCard>
       <ContentCard title="Why visits didn't go ahead">
         {report.topReasons.length === 0 ? (
           <EmptyState title="No rejections or cancellations in this range." />

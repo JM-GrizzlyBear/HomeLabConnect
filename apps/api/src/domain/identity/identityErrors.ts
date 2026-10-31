@@ -112,3 +112,12 @@ export class CannotDeactivateSelf extends DomainError {
     super("You can't deactivate your own account.", "cannot_deactivate_self");
   }
 }
+
+/** A password reset link that is unknown, used, expired, or for an inactive account. */
+export class InvalidResetLink extends DomainError {
+  readonly kind = "validation";
+
+  constructor() {
+    super("This link has expired or was already used. Ask for a new one.", "invalid_reset_link");
+  }
+}

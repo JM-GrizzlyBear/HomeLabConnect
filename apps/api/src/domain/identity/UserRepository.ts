@@ -76,6 +76,11 @@ export interface UserRepository {
   setCustomRole(userId: string, customRoleId: string | null): Promise<void>;
   /** Saves the user's fields and, when `changes.patient` is set, their patient details. */
   updateProfile(userId: string, changes: ProfileChanges): Promise<void>;
+  /** An admin's correction of the basics. Throws EmailAlreadyTaken on a duplicate email. */
+  updateAccount(
+    userId: string,
+    changes: { firstName: string; lastName: string; phone: string | null; email: string },
+  ): Promise<void>;
   /** Sets or (with null) clears the profile photo. */
   setPhoto(userId: string, photo: StoredPhoto | null): Promise<void>;
 }

@@ -16,3 +16,5 @@ export * from "./audit.js";
 export * from "./reports.js";
 export * from "./support.js";
 export * from "./notifications.js";
+export * from "./passwordResets.js";
+export * from "./permissionOverrides.js";

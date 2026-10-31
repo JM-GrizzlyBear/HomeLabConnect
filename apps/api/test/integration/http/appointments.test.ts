@@ -323,13 +323,21 @@ describe("staff review", () => {
     expect(
       (await request(app).post(`/api/appointments/${body.id}/accept`).set(asPatient)).status,
     ).toBe(403);
-    // Support can see and propose times, but not accept or cancel
+    // Support can see, accept and reject bookings, but not book or cancel
     expect((await request(app).get(`/api/appointments/${body.id}`).set(asSupport)).status).toBe(
       200,
     );
     expect(
-      (await request(app).post(`/api/appointments/${body.id}/accept`).set(asSupport)).status,
+      (
+        await request(app)
+          .patch(`/api/appointments/${body.id}/cancel`)
+          .set(asSupport)
+          .send({ reason: "No" })
+      ).status,
     ).toBe(403);
+    expect(
+      (await request(app).post(`/api/appointments/${body.id}/accept`).set(asSupport)).status,
+    ).toBe(200);
     expect(
       (
         await request(app)

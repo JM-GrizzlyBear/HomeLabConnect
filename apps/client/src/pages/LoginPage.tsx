@@ -68,6 +68,11 @@ export function LoginPage() {
           autoComplete="current-password"
           {...field("password")}
         />
+        <p className="text-right text-sm">
+          <Link to="/forgot-password" className="font-medium text-brand-700 hover:underline">
+            Forgot password?
+          </Link>
+        </p>
         <div className="flex justify-center pt-2">
           <Button type="submit" size="lg" loading={submitting} className="min-w-40">
             Login Now

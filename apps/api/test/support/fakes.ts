@@ -13,6 +13,7 @@ import { CustomRoleNameTaken } from "../../src/domain/access/accessErrors.js";
 import type { CustomRole } from "../../src/domain/access/customRole.js";
 import type {
   AccountEmails,
+  PasswordResetEmail,
   TemporaryPasswordEmail,
 } from "../../src/application/ports/AccountEmails.js";
 import type { Clock } from "../../src/application/ports/Clock.js";
@@ -120,6 +121,13 @@ export class FakeAccountEmails implements AccountEmails {
 
   async sendTemporaryPasswordReissued(email: TemporaryPasswordEmail): Promise<void> {
     this.record("reissued", email);
+  }
+
+  readonly resets: PasswordResetEmail[] = [];
+
+  async sendPasswordReset(email: PasswordResetEmail): Promise<void> {
+    if (this.failing) throw new Error("SMTP unavailable");
+    this.resets.push(email);
   }
 
   private record(kind: "welcome" | "reissued", email: TemporaryPasswordEmail): void {
@@ -389,6 +397,14 @@ export class InMemoryUserRepository implements UserRepository {
     const props = this.users.get(userId);
     if (props) this.users.set(userId, { ...props, ...fields });
     if (patient) this.patients.set(userId, patient);
+  }
+
+  async updateAccount(
+    userId: string,
+    changes: { firstName: string; lastName: string; phone: string | null; email: string },
+  ): Promise<void> {
+    const props = this.users.get(userId);
+    if (props) this.users.set(userId, { ...props, ...changes });
   }
 }
 
